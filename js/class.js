@@ -84,7 +84,19 @@ async function scanQRCode() {
     }
     requestAnimationFrame(scanQRCode);
 }
+async function requestVideoPermission() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        console.log('Video permission granted');
+        const videoElement = document.getElementById('camera');
+        videoElement.srcObject = stream;
+        videoElement.play();
+    } catch (err) {
+    }
+}
 
+// Example usage
+requestVideoPermission();
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Radius of the Earth in meters
     const dLat = (lat2 - lat1) * Math.PI / 180;
