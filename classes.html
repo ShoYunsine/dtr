@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" type="text/css" href="css/style.css">
+  <link rel="stylesheet" type="text/css" href="css/classes.css">
+  <link rel="stylesheet" type="text/css" href="css/notifs.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="shortcut icon" href="Images/logo.png">
+  <link rel="icon" type="image/png" href="Images/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+  <title>Add Class</title>
+</head>
+
+<body>
+  <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle">
+  <label for="sidebar-toggle" class="backdrop"></label>
+  <div class="top-bar">
+    <div class="logo">
+
+      <label for="sidebar-toggle" class="sidebar-button">☰</label>
+      <a>Create</a><img src="Images/logo.png">
+    </div>
+    <div class="nav-links">
+      <i id="sun" class="icon icon-sun fas fa-sun"></i>
+      <i id="moon" class="icon icon-moon fas fa-moon"></i>
+      <div class="switch">
+        <input type="checkbox" id="darkModeToggle">
+        <label for="darkModeToggle" class="switch-slider"></label>
+      </div>
+      <a id="account"><img id="accountImg" src="Images/gear.png"></img>Account</a>
+    </div>
+  </div>
+  <aside class="sidebar">
+    <nav>
+      <ul>
+        <li>
+          <div class="logo">
+            <a style="color: transparent;" href="index.html">Date Time Record</a>
+          </div>
+        </li>
+        <li><a href="#">Classes</a><i class="fas fa-plus-circle"></i><input id="classSearch" placeholder="Search">
+          <ul id="classList">
+          </ul>
+        </li>
+        <li><a href="#">QR Code</a>
+          <div><canvas id="qrcode"></canvas></div>
+          <button id="downloadQR">Download QR Code</button>
+          <div id="accountDetails">
+            <div id="bg"><img id="accountImg" src="Images/gear.png"></img></div>
+            <div id="accountName">Not currently logged in</div>
+            <div id="accountEmail">·</div>
+          </div>
+        </li>
+        <li><a href="#">Notifications</a></li>
+        <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
+      </ul>
+    </nav>
+  </aside>
+  <div id="notifs">
+    
+  </div>
+  <div class="main-container">
+    <input type="radio" id="addTab" name="formToggle" checked>
+    <input type="radio" id="joinTab" name="formToggle">
+    <div id="formSwitch">
+      <label for="addTab" class="switch-btn">Add</label>
+      <label for="joinTab" class="switch-btn">Join</label>
+    </div>
+    <div class="form-section">
+      <form id="classaddForm">
+        <div>
+          <h3 for="className">Class Name</h3>
+          <input type="text" id="className" name="className" required placeholder="Class Name">
+        </div>
+        <div>
+          <h3 for="timeIn">Time In</h3>
+          <input type="time" id="timeIn" name="timeIn" required>
+        </div>
+        <div>
+          <h3 for="timezone">Time Zone</h3>
+          <input id="timezone" list="timezone-list" required placeholder="Select Time Zone">
+          <datalist id="timezone-list">
+            <option value="UTC-12:00">Baker Island, USA (UTC-12:00)</option>
+            <option value="UTC-11:00">American Samoa (UTC-11:00)</option>
+            <option value="UTC-10:00">Hawaii-Aleutian Time (UTC-10:00)</option>
+            <option value="UTC-09:00">Alaska Time (UTC-09:00)</option>
+            <option value="UTC-08:00">Pacific Time (UTC-08:00)</option>
+            <option value="UTC-07:00">Mountain Time (UTC-07:00)</option>
+            <option value="UTC-06:00">Central Time (UTC-06:00)</option>
+            <option value="UTC-05:00">Eastern Time (UTC-05:00)</option>
+            <option value="UTC-04:00">Atlantic Time (UTC-04:00)</option>
+            <option value="UTC-03:00">Argentina (UTC-03:00)</option>
+            <option value="UTC-02:00">South Georgia and the South Sandwich Islands (UTC-02:00)</option>
+            <option value="UTC-01:00">Azores (UTC-01:00)</option>
+            <option value="UTC+00:00">Greenwich Mean Time (UTC+00:00)</option>
+            <option value="UTC+01:00">Central European Time (UTC+01:00)</option>
+            <option value="UTC+02:00">Eastern European Time (UTC+02:00)</option>
+            <option value="UTC+03:00">East Africa Time (UTC+03:00)</option>
+            <option value="UTC+04:00">Azerbaijan Time (UTC+04:00)</option>
+            <option value="UTC+05:00">Pakistan Standard Time (UTC+05:00)</option>
+            <option value="UTC+06:00">Bangladesh Standard Time (UTC+06:00)</option>
+            <option value="UTC+07:00">Indochina Time (UTC+07:00)</option>
+            <option value="UTC+08:00">Philippine Standard Time (UTC+08:00)</option>
+            <option value="UTC+09:00">Japan Standard Time (UTC+09:00)</option>
+            <option value="UTC+10:00">Australian Eastern Time (UTC+10:00)</option>
+            <option value="UTC+11:00">Solomon Islands (UTC+11:00)</option>
+            <option value="UTC+12:00">Fiji (UTC+12:00)</option>
+            <option value="UTC+13:00">Tonga (UTC+13:00)</option>
+            <option value="UTC+14:00">Line Islands (UTC+14:00)</option>
+        </datalist>
+      </div>
+      
+        <div>
+          <h3 for="school-name">School</h3>
+          <input id="school" list="school-name" required placeholder="None">
+          <datalist id="school-name">
+            <option value="None">None</option>
+            <option value="Sorsogon State University, Main Campus">Sorsogon State University, Main Campus</option>
+          </datalist>
+        </div>
+        <div>
+          <h3 for="coordinates">Latitude</h3>
+          <input type="text" id="lat" name="coordinates" required placeholder="Latitude">
+        </div>
+        <div>
+          <h3 for="coordinates">Longitude</h3>
+          <input type="text" id="long" name="coordinates" required placeholder="Longitude">
+        </div>
+        <button id="getLocation" class="submit-btn">Get Current Location</button>
+        <div>
+          <h3 for="radius">Radius</h3>
+          <input type="number" id="radius" name="radius" required placeholder="Radius (Meters)">
+        </div>
+        <h4><b>Disclaimer: Given data is unchangeable</b></h4>
+        <button form="classaddForm" type="submit" id="addclass-btn" class="submit-btn">Add Class</button>
+      </form>
+      <form id="classjoinForm">
+        <div>
+          <h3 for="classCode">Class Code</h3>
+          <input type="text" id="classCode" name="classCode" required placeholder="Code">
+        </div>
+        <button form="classjoinForm" type="submit" id="joinclass-btn" class="submit-btn">Join Class</button>
+      </form>
+    </div>
+  </div>
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/classes.js"></script>
+  <script type="text/javascript">
+    on_classes = true;
+  </script>
+  <script type="module" src="js/script.js"></script>
+</body>
+
+</html>

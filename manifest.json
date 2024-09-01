@@ -1,0 +1,17 @@
+{
+    "lang": "en-us",
+    "name": "Date Time Record",
+    "short_name": "Date Time Record",
+    "description": "Track your attendance",
+    "start_url": "https://shoyunsine.github.io/dtr/index.html",
+    "background_color": "#000001",
+    "theme_color": "#000001",
+    "orientation": "portrait",
+    "display": "standalone",
+    "icons": [
+        {
+            "src": "Images/logo.png",
+            "sizes": "512x512"
+        }
+    ]
+}

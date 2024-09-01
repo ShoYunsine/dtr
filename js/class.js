@@ -1,0 +1,298 @@
+import { fetchClass, fetchMembers, changeMemberRole, fetchProfile, getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance } from './firebase.js';
+import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { basicNotif } from './notif.js';
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+const debouncedUpdateList = debounce(updatememberList, 300);
+const debouncedUpdateattList = debounce(updateattendanceList, 300);
+
+let classroom;
+const className = document.getElementById('className');
+const schoolName = document.getElementById('school');
+const classCode = document.getElementById('code');
+const timeIn = document.getElementById('timeIn');
+const lat = document.getElementById('latitude');
+const long = document.getElementById('longitude');
+const rad = document.getElementById('radius');
+let syntax;
+
+function convertTo12Hour(militaryTime) {
+    const regex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!regex.test(militaryTime)) {
+        return 'Invalid military time format';
+    }
+
+    let [hours, minutes] = militaryTime.split(':').map(Number);
+    let period = hours >= 12 ? 'PM' : 'AM';
+    if (hours === 0) hours = 12;
+    else if (hours > 12) hours -= 12;
+
+    return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
+function capitalizeFirstLetter(str) {
+    if (!str) return str; // Handle empty strings
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
+async function updateattendanceList() {
+    const currentUserlogged = await getCurrentUser();
+    const currentmember = await fetchMember(syntax, currentUserlogged.uid)
+    const members = await fetchMembers(syntax);
+    const attendanceList = document.getElementById('attendance-List');
+    if (!currentmember) {
+        window.location.href = `classes.html`;
+    }
+    if (!attendanceList) {
+        console.error('Element with ID "attendanceList" not found');
+        return;
+    }
+    attendanceList.innerHTML = '';
+
+    for (const member of members) {
+        try {
+            const memberData = await fetchProfile(member.id);
+            console.log(memberData);
+            var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
+            if (!time) {
+                time = "Not Available"
+            } else {
+                time = convertTo12Hour(time);
+            };
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-item');
+            listItem.innerHTML = `
+<div>
+<h3>${memberData.displayName}</h3>
+<p><b>Status:</b> ${capitalizeFirstLetter(status)} <b>Time In:</b> ${time}</p>
+</div>`;
+            attendanceList.appendChild(listItem);
+        } catch (error) {
+            console.error(`Failed to fetch profile for member with ID ${member.id}:`, error);
+        }
+    }
+}
+
+async function updatememberList() {
+    const currentUserlogged = await getCurrentUser();
+    const currentmember = await fetchMember(syntax, currentUserlogged.uid)
+    const members = await fetchMembers(syntax);
+    const memberList = document.getElementById('memberList');
+    if (!currentmember) {
+        window.location.href = `classes.html`;
+    }
+    if (!memberList) {
+        console.error('Element with ID "memberList" not found');
+        return;
+    }
+    memberList.innerHTML = '';
+
+    for (const member of members) {
+        try {
+            const memberData = await fetchProfile(member.id);
+            console.log(memberData);
+
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-item');
+            listItem.innerHTML = `
+<div>
+<h3>${memberData.displayName}</h3>
+<p><b>Role: ${capitalizeFirstLetter(member.role)}</b></p>
+</div>
+${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.id !== currentUserlogged.uid ? `<input type="checkbox" id="userOptionsToggle">` : ''}
+    ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.id !== currentUserlogged.uid ? `<label for="userOptionsToggle" class="userOptionsToggle"><i id="i" class="fa-solid fa-gear"></i> Options</label>` : ''}
+<div id="userOptions">
+${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.id !== currentUserlogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
+${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.role !== 'admin'
+                    && member.id !== currentUserlogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
+${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.role === 'admin'
+                    && member.id !== currentUserlogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
+        ${(currentmember.role === 'owner' && member.id !== currentUserlogged.uid) ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="give-owner"><i id="i" class="fa-solid fa-arrow-right-arrow-left"></i> Transfer Ownership</button>` : ''}
+            </div>`;
+            memberList.appendChild(listItem);
+        } catch (error) {
+            console.error(`Failed to fetch profile for member with ID ${member.id}:`, error);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    syntax = urlParams.get('syntax');
+    console.log(syntax);
+    const collectionRef = collection(db, "classes", syntax, "members");
+    let isInitialLoad = true;
+
+    onSnapshot(collectionRef, (snapshot) => {
+        debouncedUpdateattList();
+        debouncedUpdateList();
+        snapshot.docChanges().forEach(async (change) => {
+            const docData = await change.doc.data(); // Get the document data
+            const modifiedUser = await fetchProfile(change.doc.id);
+            switch (change.type) {
+
+                case "added":
+                    break;
+                case "modified":
+                    //basicNotif(`User ${modifiedUser.displayName}`, `Role has been changed to <b><i>${docData.role}</i></b>.`, 5000);
+                    break;
+                case "removed":
+                    //basicNotif(`User ${modifiedUser.displayName}`, `Has been removed.`, 5000);
+                    break;
+                default:
+                    break;
+            }
+        });
+
+    });
+
+    if (syntax) {
+        classroom = await fetchClass(syntax);
+        if (classroom) {
+            className.innerHTML = classroom.name;
+            schoolName.innerHTML = classroom.school;
+            timeIn.innerHTML = `Time In: ${convertTo12Hour(classroom.timeIn)} ${classroom.timezone}`;
+            classCode.innerHTML = `<i>${classroom.code}</i> <i role="button" id="clipboard" class="fa-regular fa-clipboard"></i>`;
+            lat.innerHTML = `${classroom.lat}º`;
+            long.innerHTML = `${classroom.long}º`;
+            rad.innerHTML = `${classroom.rad}m`;
+            document.getElementById('clipboard').addEventListener('click', async () => {
+                console.log("Copying plain text...");
+                const textToCopy = `Join *${classroom.name}* today to get your attendance checked.\n${window.location.origin}/classes.html?classCode=${classroom.code}`;
+
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    //console.log('Copied plain text to clipboard');
+                } catch (err) {
+                    //console.error('Failed to copy text:', err);
+                }
+            });
+        } else {
+            //console.error('Failed to fetch classroom');
+            window.location.href = `classes.html`;
+        }
+    } else {
+        console.error('No syntax provided in URL');
+    }
+});
+
+document.getElementById('memberList').addEventListener('click', async function (event) {
+    if (event.target.classList.contains('remove-btn')) {
+        var listItem = event.target.closest('li');
+        var btn = event.target;
+        let id = btn.getAttribute('data-typeId');
+
+        try {
+            await kickfromClass(syntax, id);
+            console.log("Class removed successfully:", syntax);
+        } catch (error) {
+            console.error("Error removing class:", syntax, id, error);
+        }
+        listItem.remove();
+    } else if (event.target.classList.contains('set-admin')) {
+        var btn = event.target;
+        let id = btn.getAttribute('data-typeId');
+        changeMemberRole(syntax, id, "admin");
+    } else if (event.target.classList.contains('remove-admin')) {
+        var btn = event.target;
+        let id = btn.getAttribute('data-typeId');
+        changeMemberRole(syntax, id, "student");
+    } else if (event.target.classList.contains('give-owner')) {
+        var btn = event.target;
+        let id = btn.getAttribute('data-typeId');
+        const currentUserlogged = await getCurrentUser();
+        changeMemberRole(syntax, currentUserlogged.uid, "admin");
+        changeMemberRole(syntax, id, "owner");
+    }
+});
+
+const classSearchInput = document.getElementById('memberSearch');
+const classList = document.getElementById('memberList');
+let items = Array.from(classList.getElementsByClassName('list-item'));
+
+const filterClasses = () => {
+    const searchTerm = classSearchInput.value.toLowerCase();
+    items.forEach(item => {
+        const h3Text = item.querySelector('h3').textContent.toLowerCase();
+        if (h3Text.includes(searchTerm)) {
+            item.classList.remove('hidden');
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+};
+
+classSearchInput.addEventListener('keyup', () => {
+    filterClasses();
+});
+
+const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+        if (mutation.addedNodes.length) {
+            items = Array.from(classList.getElementsByClassName('list-item'));
+            filterClasses();
+        }
+    });
+});
+
+observer.observe(classList, { childList: true });
+
+filterClasses();
+
+const attendanceSearchInput = document.getElementById('attendanceSearch');
+const attendanceList = document.getElementById('attendance-List');
+
+// Get initial list of items
+let items2 = Array.from(attendanceList.getElementsByClassName('list-item'));
+
+const filterClasses2 = () => {
+    const searchTerm = attendanceSearchInput.value.toLowerCase();
+    console.log('Search term:', searchTerm);
+    items2.forEach(item => {
+        console.log(item)
+        const h3Text = item.querySelector('h3').textContent.toLowerCase();
+        if (h3Text.includes(searchTerm)) {
+            item.classList.remove('hidden');
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+};
+
+// Event listener for search input
+attendanceSearchInput.addEventListener('keyup', filterClasses2);
+
+// Mutation Observer to watch for changes in the attendanceList
+const observer2 = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+        if (mutation.addedNodes.length || mutation.removedNodes.length) {
+            // Update items array and reapply filter
+            items2 = Array.from(attendanceList.getElementsByClassName('list-item'));
+            filterClasses2();
+        }
+    });
+});
+
+// Start observing the attendanceList for changes
+observer2.observe(attendanceList, { childList: true });
+
+// Initial filter
+filterClasses2();

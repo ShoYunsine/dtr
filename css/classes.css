@@ -1,0 +1,503 @@
+#reader {
+  width: 300px;
+  height: 300px;
+  margin: auto;
+  display: none;
+  border: 2px solid #000;
+}
+
+#qr-result {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#classList {
+  max-height: 348px;
+  overflow-y: auto;
+}
+
+#qrscanner-container {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fcfcfc;
+  border-radius: 10px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  padding: 40px;
+  width: 270px;
+  height: auto;
+  max-width: 70%;
+  z-index: 1000;
+}
+
+#qrscanner-container video {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  /* Ensures the video fills the container */
+}
+
+
+#dashboard:hover {
+  background: #a1a0a07c;
+  color: white;
+}
+
+#accountDetails.show {
+  right: 0;
+}
+
+.main-container {
+  flex-grow: 1;
+  margin-left: 250px;
+  display: flex;
+  overflow-x: hidden;
+  flex-direction: column;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.form-group {
+  display: flex;
+  gap: 15px;
+  /* Space between input fields */
+  flex-wrap: wrap;
+}
+
+.form-step {
+  display: none;
+  /* Hide all steps initially */
+}
+
+.form-step.active {
+  display: block;
+  /* Show the active step */
+}
+
+.form-section,
+.list-section {
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.form-section h3,
+.form-group h3 {
+  position: absolute;
+  text-align: left;
+  transform: translate(-10%, -20%);
+  font-size: 12px;
+  color: var(--text-color-second);
+  margin: 0;
+  padding: 10px;
+  z-index: 1;
+}
+
+.form-section h4 {
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-color-second);
+  margin: 0;
+  margin-left: -10px;
+  padding: 10px;
+  z-index: 1;
+}
+
+.form-section h2 {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-x: hidden;
+  font-size: 200%;
+  margin: auto;
+  margin-bottom: 8px;
+  text-align: center;
+  max-width: 200px;
+  color: var(--text-color-main);
+}
+
+.form-section p {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-color-second);
+  margin: 0;
+  margin-top: -20px;
+  padding: 10px;
+  z-index: 1;
+}
+
+.form-section p a {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-color-second);
+  margin: 4px;
+}
+
+.form-section input,
+.form-group input,
+.form-section #school-name {
+  width: 95%;
+  padding: 12px 8px;
+  background-color: #00000000;
+  border: 1px none #ddd;
+  border-bottom: 2px solid #ddd;
+  border-radius: 0;
+  margin: auto;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  height: 20px;
+  font-size: 12px;
+  color: var(--text-color-second);
+}
+
+.form-section input:focus-visible {
+  outline: none;
+  border: 1px none #ddd;
+  border-bottom: 2px solid #00a2ff;
+}
+
+.form-section div ul {
+  padding: 12px 8px;
+  background-color: #00000000;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-top: 0px;
+  font-size: 16px;
+}
+
+.form-section select {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.list-section ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Skeleton Loader CSS */
+.skeleton {
+  background-color: #00000000;
+  border-radius: 4px;
+  margin: 12px 0;
+  width: 100%;
+  height: 120px;
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  /* Start hidden */
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.skeleton::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-image: linear-gradient(to right, #ba7eff0c, #00eeff52, #ffbb0086, #ff00b3, #c300ff);
+  animation: shimmer 1.5s infinite;
+
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+
+.list-item {
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  height: 100px;
+  background-color: #f9f9f900;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-direction: row;
+  margin: 12px 0;
+  opacity: 0;
+  /* Start hidden */
+  transition: all 0.3s ease;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+#memberList {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+#memberList .list-item {
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  height: auto;
+  background-color: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-direction: row;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+#memberList::-webkit-scrollbar,
+#classList::-webkit-scrollbar {
+  display: none;
+  /* Hide scrollbar for webkit-based browsers */
+}
+
+
+#memberList .list-item h3 {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-color-main);
+}
+
+.list-item h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-color-main);
+}
+
+.list-item.hidden,
+#memberList .list-item.hidden {
+  display: none;
+}
+
+.list-item p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-color-second);
+  white-space: nowrap;
+  width: 145px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-item #uid {
+  margin-top: 5px;
+  font-size: 9px;
+  color: var(--text-color-second);
+}
+
+#userOptions {
+  display: none;
+  flex-grow: 1;
+  flex-wrap: wrap;
+  align-items: stretch;
+  flex-direction: row;
+  align-content: center;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+#userOptions button,
+.list-item button,
+#memberList .list-item .set-role,
+#memberList .list-item label {
+  flex-grow: 1;
+  display: flex;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-color-main);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+  gap: 4px;
+  align-items: center;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+}
+
+#userOptions button {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+#userOptions button:nth-of-type(1) {
+  opacity: 0;
+  animation-delay: 0s;
+}
+
+#userOptions button:nth-of-type(2) {
+  opacity: 0;
+  animation-delay: 0.1s;
+}
+
+#userOptions button:nth-of-type(3) {
+  opacity: 0;
+  animation-delay: 0.2s;
+}
+
+#userOptions button:nth-of-type(4) {
+  opacity: 0;
+  animation-delay: 0.3s;
+}
+
+#userOptionsToggle:checked~#userOptions {
+  display: flex;
+}
+
+#userOptionsToggle {
+  display: none;
+}
+
+#i {
+  color: var(--text-color-main);
+}
+
+#attendance-List {
+  border: none;
+  display: flex;
+  gap: 0 10px;
+  flex-wrap: wrap;
+}
+
+#attendance-List .list-item.hidden {
+  display: none;
+}
+
+#attendance-List .list-item {
+  display: flex;
+  width: auto;
+  padding: 4px;
+  height: auto;
+  flex-grow: 1;
+}
+
+#attendance-List h3 {
+  position: relative;
+  font-size: 12px;
+  transform: none;
+  padding-bottom: 0;
+}
+
+#attendance-List p {
+  width: auto;
+  text-align: left;
+}
+
+#userOptions button:hover,
+.list-item button:hover,
+#memberList .list-item .set-role:hover,
+#memberList .list-item label:hover {
+  background-color: rgb(4, 135, 243);
+  color: #ffffff;
+}
+
+.submit-btn {
+  border: 1px solid var(--border-color);
+  width: 100%;
+  background-color: rgba(128, 0, 0, 0);
+  color: var(--text-color-main);
+  border-radius: 4px;
+  height: 30px;
+  cursor: pointer;
+  margin: 10px 0;
+  font-size: 12px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.submit-btn:hover {
+  background-color: rgb(168, 168, 168);
+  color: white;
+}
+
+.submit-btn:active {
+  transform: scale(0.98);
+}
+
+#classaddForm,
+#classjoinForm {
+  display: none;
+}
+
+/* Show the classaddForm when addTab is checked */
+#addTab:checked~#formSwitch+.form-section #classaddForm {
+  display: block;
+}
+
+/* Show the classjoinForm when joinTab is checked */
+#joinTab:checked~#formSwitch+.form-section #classjoinForm {
+  display: block;
+}
+
+.switch-btn {
+  flex: 0 1 120px;
+  padding: 10px;
+  border: none;
+  color: var(--text-color-second);
+  border-radius: 0;
+  cursor: pointer;
+  text-align: center;
+  margin: 0 5px;
+  font-size: 12px;
+  border-bottom: 2px solid transparent;
+  box-shadow: inset 0 0 5px #e0e0e000;
+  transition: all 0.2s ease;
+}
+
+#formSwitch {
+  background-color: transparent;
+  display: flex;
+  justify-content: center;
+  border-radius: 0;
+  padding: 5px;
+  width: 99%;
+  margin-bottom: 5px;
+
+}
+
+#addTab:checked~#formSwitch label[for="addTab"],
+#joinTab:checked~#formSwitch label[for="joinTab"] {
+  color: #00a2ff;
+  border-bottom: 2px solid #00a2ff;
+}
+
+input[type="radio"] {
+  display: none;
+}
+
+@media (max-width: 785px) {
+  .main-container {
+    width: 90%;
+    margin: auto;
+    overflow-x: hidden;
+  }
+
+  .form-group {
+    justify-content: center;
+  }
+
+  #attendance-List {
+    justify-content: center;
+  }
+
+  #attendance-List .list-item{
+    justify-content: flex-start;
+    flex-grow: 1;
+  }
+}

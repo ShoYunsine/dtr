@@ -1,0 +1,150 @@
+
+.container {
+  width: 100%;
+  margin: auto;
+  margin-top: 10px;
+  height: calc(100% - 10px);
+  z-index: 1;
+  transition: right 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  align-self: center;
+}
+
+#code {
+  font-size: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  margin: auto;
+  font-weight: bold;
+  gap: 10px;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+#clipboard {
+  font-size: 16px;
+  transition: 0.3s;
+}
+
+#clipboard:hover {
+  font-size: 16px;
+  color: var(--text-color-main);;
+}
+
+
+#school-select {
+  display: none;
+}
+
+#camera-button, #qr-code-reader {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--button-bg-color); /* Button background color */
+  color: white; /* Icon color */
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+#qr-code-reader {
+  right: 74px;
+  bottom: 25px;
+  width: 40px;
+  height: 40px;
+}
+
+#camera-button:hover, #qr-code-reader:hover {
+  background-color: var(--button-hover-bg-color); /* Darker button background on hover */
+}
+
+.attendanceList nav {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  justify-content: space-between;
+  color: var(--text-color-main);
+}
+
+.attendanceList #search {
+  display: flex;
+  flex-direction: row;
+  width: 80px;
+  text-align: left;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  padding: 4px 8px;
+  margin: 0;
+  transition: all 0.5s ease;
+  align-items: center;
+}
+
+.attendanceList #search input {
+  width: 40px;
+  text-align: left;
+  border-radius: 4px;
+  border: none;
+  padding: 8px 18px;
+  margin: 0%;
+  margin-left: -4px;
+  color: var(--text-color-second);
+  transition: all 0.3s ease;
+}
+
+.attendanceList #search i {
+  font-size: 15px;
+  color: var(--text-color-second);
+}
+
+.attendanceList #search:focus-within {
+  width: 200px;
+}
+
+.attendanceList #search input:focus-visible {
+  width: 150px;
+  padding: 8px 18px;
+  margin: 0;
+  margin-left: 4px;
+  outline: none; /* Remove default focus outline */
+}
+
+.attendanceList {
+  display: none;
+}
+
+#attendanceTab:checked ~ #formSwitch + .form-section #attendanceList {
+  display: block;
+}
+
+/* Show the classjoinForm when joinTab is checked */
+#postTab:checked ~ #formSwitch + .form-section #postList {
+  display: block;
+}
+
+#attendanceTab:checked~#formSwitch label[for="attendanceTab"],
+#postTab:checked~#formSwitch label[for="postTab"] {
+  color: var(--active-tab-color);
+  border-bottom: 2px solid var(--active-tab-color);
+}
+
+@media (max-width: 785px) {
+  .container {
+    align-self: center;
+    height: auto;
+  }
+
+  #tabs-content {
+    margin-top: 0;
+  }
+}
