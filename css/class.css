@@ -39,34 +39,38 @@
   display: none;
 }
 
-#camera-button, #qr-code-reader {
+#buttons {
+  display: flex;
   position: fixed;
+  flex-direction: row-reverse;
   bottom: 20px;
-  right: 20px;
+  right:12px;
+  padding: 4px;
+  gap: 10px;
+}
+
+#camera-button, #qr-code-reader {
   background-color: var(--button-bg-color); /* Button background color */
-  color: white; /* Icon color */
+  color: var(--text-color-main); /* Icon color */
   border: none;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 16px;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 4px var(--text-color-main);
+  opacity: 0.5;
   transition: all 0.3s ease;
 }
 
-#qr-code-reader {
-  right: 74px;
-  bottom: 25px;
-  width: 40px;
-  height: 40px;
-}
-
 #camera-button:hover, #qr-code-reader:hover {
-  background-color: var(--button-hover-bg-color); /* Darker button background on hover */
+  transform: scale(1.15);
+  background-color: var(--button-hover-bg-color);
+  opacity: 1;
+  filter: invert(); /* Darker button background on hover */
 }
 
 .attendanceList nav {
@@ -126,6 +130,7 @@
 #attendanceTab:checked ~ #formSwitch + .form-section #attendanceList {
   display: block;
 }
+
 
 /* Show the classjoinForm when joinTab is checked */
 #postTab:checked ~ #formSwitch + .form-section #postList {

@@ -1,21 +1,29 @@
 
 :root {
   --main-color: linear-gradient(to right, #ba7eff, #00eeff, #ffbb00, #ff00b3, #c300ff);
-  --background-color: #fcfcfc;
+  --background-color: #fffbf7;
   --text-color-main: black;
-  --text-color-second: #969696;
-  --border-color: #ddd;
+  --text-color-second: rgb(88, 88, 88);
+  --border-color: #9c9c9c;
   --active-tab-color: #0990ff;
-  --button-bg-color: #007bff;
-  --button-hover-bg-color: #00a2ff;
+  --button-bg-color: #fff5e71a;
+  --button-hover-bg-color: #fff5e7;
   --shadow: rgba(184, 184, 184, 0.849);
+  --late: rgb(255, 0, 255);
+  --present: rgb(0, 255, 0);
+  --absent: rgb(255, 0, 51);
 }
 
 .dark-mode {
-  --background-color: #333333;
-  --text-color-main: white;
+  --background-color: rgb(27, 31, 36);
+  --text-color-main: rgb(255, 255, 255);
   --border-color: white;
+  --late: rgb(158, 49, 158);
+  --present: rgb(84, 228, 84);
+  --absent: crimson;
   --sidebar-bg: var(--sidebar-bg-dark);
+  --button-bg-color: #211c311a;
+  --button-hover-bg-color: #211c31;
   --text-color-main: white;
   --text-color-second: rgb(145, 145, 145);
   --shadow: rgba(107, 107, 107, 0.692);
