@@ -37,7 +37,7 @@ if ('serviceWorker' in navigator) {
                                     cls.lat,
                                     cls.long
                                 );
-                              
+                                
                                 // Check if the user is within the class's radius
                                 if (distance <= cls.rad) {
                                     const { status }= await checkAttendance(cls.syntax,cls.timezone);

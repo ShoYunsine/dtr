@@ -302,7 +302,7 @@
   color: var(--text-color-second);
 }
 
-#userOptions {
+.userOptions {
   display: none;
   flex-grow: 1;
   flex-wrap: wrap;
@@ -313,7 +313,7 @@
   gap: 4px;
 }
 
-#userOptions button,
+.userOptions button,
 .list-item button,
 #memberList .list-item .set-role,
 #memberList .list-item label {
@@ -333,35 +333,35 @@
   transition: background-color 0.3s;
 }
 
-#userOptions button {
+.userOptions button {
   animation: fadeIn 0.5s ease forwards;
 }
 
-#userOptions button:nth-of-type(1) {
+.userOptions button:nth-of-type(1) {
   opacity: 0;
   animation-delay: 0s;
 }
 
-#userOptions button:nth-of-type(2) {
+.userOptions button:nth-of-type(2) {
   opacity: 0;
   animation-delay: 0.1s;
 }
 
-#userOptions button:nth-of-type(3) {
+.userOptions button:nth-of-type(3) {
   opacity: 0;
   animation-delay: 0.2s;
 }
 
-#userOptions button:nth-of-type(4) {
+.userOptions button:nth-of-type(4) {
   opacity: 0;
   animation-delay: 0.3s;
 }
 
-#userOptionsToggle:checked~#userOptions {
+.list-item > input[type=checkbox]:checked ~ .userOptions {
   display: flex;
 }
 
-#userOptionsToggle {
+.userOptionsToggle {
   display: none;
 }
 
@@ -382,10 +382,9 @@
 
 #attendance-List .list-item {
   display: flex;
-  width: auto;
+  width: 90px;
   padding: 4px;
   height: auto;
-  flex-grow: 1;
 }
 
 #attendance-List h3 {
@@ -393,6 +392,10 @@
   font-size: 12px;
   transform: none;
   padding-bottom: 0;
+  width: 70px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-x: hidden;
 }
 
 #attendance-List p {
@@ -400,7 +403,19 @@
   text-align: left;
 }
 
-#userOptions button:hover,
+#attendance-List .list-item div.status-present {
+  border-left: 3px dotted  var(--present);
+}
+
+#attendance-List .list-item div.status-late {
+  border-left: 3px dotted var(--late);
+}
+
+#attendance-List .list-item div.status-absent {
+  border-left: 3px dotted  var(--absent);
+}
+
+.userOptions button:hover,
 .list-item button:hover,
 #memberList .list-item .set-role:hover,
 #memberList .list-item label:hover {
@@ -471,6 +486,10 @@
 
 }
 
+
+
+
+
 #addTab:checked~#formSwitch label[for="addTab"],
 #joinTab:checked~#formSwitch label[for="joinTab"] {
   color: #00a2ff;
@@ -483,7 +502,7 @@ input[type="radio"] {
 
 @media (max-width: 785px) {
   .main-container {
-    width: 90%;
+    width: 97%;
     margin: auto;
     overflow-x: hidden;
   }
@@ -493,11 +512,10 @@ input[type="radio"] {
   }
 
   #attendance-List {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   #attendance-List .list-item{
     justify-content: flex-start;
-    flex-grow: 1;
   }
 }

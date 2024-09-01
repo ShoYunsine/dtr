@@ -44,12 +44,14 @@ function capitalizeFirstLetter(str) {
 }
 
 async function updateattendanceList() {
-    const currentUserlogged = await getCurrentUser();
-    const currentmember = await fetchMember(syntax, currentUserlogged.uid)
+    const currentUserLogged = await getCurrentUser();
+    const currentMember = await fetchMember(syntax, currentUserLogged.uid);
     const members = await fetchMembers(syntax);
     const attendanceList = document.getElementById('attendance-List');
-    if (!currentmember) {
+
+    if (!currentMember) {
         window.location.href = `classes.html`;
+        return;
     }
     if (!attendanceList) {
         console.error('Element with ID "attendanceList" not found');
@@ -60,20 +62,36 @@ async function updateattendanceList() {
     for (const member of members) {
         try {
             const memberData = await fetchProfile(member.id);
-            console.log(memberData);
             var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
             if (!time) {
-                time = "Not Available"
+                time = "Not Available";
             } else {
                 time = convertTo12Hour(time);
-            };
+            }
+
+            // Determine the color class based on status
+            let statusClass = '';
+            switch (status.toLowerCase()) {
+                case 'present':
+                    statusClass = 'status-present'; // Green
+                    break;
+                case 'late':
+                    statusClass = 'status-late'; // Purple
+                    break;
+                case 'absent':
+                    statusClass = 'status-absent'; // Red
+                    break;
+                default:
+                    statusClass = ''; // Default class or leave it empty
+            }
+
             const listItem = document.createElement('li');
             listItem.classList.add('list-item');
             listItem.innerHTML = `
-<div>
-<h3>${memberData.displayName}</h3>
-<p><b>Status:</b> ${capitalizeFirstLetter(status)} <b>Time In:</b> ${time}</p>
-</div>`;
+                <div class="${statusClass}">
+                    <h3>${memberData.displayName}</h3>
+                    <p>${capitalizeFirstLetter(status)}<br>${time}</p>
+                </div>`;
             attendanceList.appendChild(listItem);
         } catch (error) {
             console.error(`Failed to fetch profile for member with ID ${member.id}:`, error);
@@ -109,11 +127,11 @@ async function updatememberList() {
 </div>
 ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     && member.role !== 'owner'
-                    && member.id !== currentUserlogged.uid ? `<input type="checkbox" id="userOptionsToggle">` : ''}
+                    && member.id !== currentUserlogged.uid ? `<input style="display:none;" type="checkbox" id="userOptionsToggle${member.id}">` : ''}
     ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     && member.role !== 'owner'
-                    && member.id !== currentUserlogged.uid ? `<label for="userOptionsToggle" class="userOptionsToggle"><i id="i" class="fa-solid fa-gear"></i> Options</label>` : ''}
-<div id="userOptions">
+                    && member.id !== currentUserlogged.uid ? `<label for="userOptionsToggle${member.id}" class="userOptionsToggle"><i id="i" class="fa-solid fa-gear"></i> Options</label>` : ''}
+<div class="userOptions">
 ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     && member.role !== 'owner'
                     && member.id !== currentUserlogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
