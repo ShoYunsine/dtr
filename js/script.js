@@ -37,7 +37,7 @@ if ('serviceWorker' in navigator) {
                                     cls.lat,
                                     cls.long
                                 );
-                                deleteAllAttendanceRecords(cls.timezone,cls.syntax);
+                              
                                 // Check if the user is within the class's radius
                                 if (distance <= cls.rad) {
                                     const { status }= await checkAttendance(cls.syntax,cls.timezone);
@@ -51,6 +51,7 @@ if ('serviceWorker' in navigator) {
                                     markAbsent(cls.syntax,cls.timezone);
                                     //basicNotif(Checking location....,You are<br> <i>${distance} meters</i> away <br> from <b>"${cls.name}"</b>,5000);
                                 }
+                                await deleteAllAttendanceRecords(cls.timezone,cls.syntax);
                             }
                             
                         }, error => {
