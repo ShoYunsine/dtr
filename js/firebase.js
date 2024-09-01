@@ -7,8 +7,7 @@ document.head.appendChild(luxonScript);
 let DateTime;
 
 luxonScript.onload = function() {
-    // Access Luxon globally
-    DateTime = window.luxon.DateTime; // Access via window.luxon
+    DateTime = window.luxon.DateTime;
 }
 
 import {
@@ -66,10 +65,8 @@ export { db }
 setPersistence(auth, browserLocalPersistence)
     .then(() => {
         return signInWithEmailAndPassword(auth, email, password), signInWithPopup(auth, provider);
-
     })
     .catch((error) => {
-
     });
 
 onAuthStateChanged(auth, async (user) => {
@@ -90,21 +87,16 @@ onAuthStateChanged(auth, async (user) => {
 
             document.getElementById('classList').addEventListener('click', async function (event) {
                 if (event.target.classList.contains('remove-btn')) {
-                    // Get the list item that contains the remove button
                     var listItem = event.target.closest('li');
 
-                    // Get the unique syntax from the list item
                     var syntax = listItem.querySelector('#uid').textContent;
                     let classData = await fetchClass(syntax);
-                    // Confirm before proceeding with the deletion
                     if (await confirmNotif(`Are you sure you want to remove ${classData.name}`)) {
-                        // Remove the class from Firestore
                         try {
                             await removeClass(syntax);
                             basicNotif("Removed class succesfully", `Removed ${classData.name}`, 5000);
                             console.log("Class removed successfully:", syntax);
 
-                            // Remove the item from the DOM
                             listItem.remove();
                         } catch (error) {
 
@@ -115,20 +107,17 @@ onAuthStateChanged(auth, async (user) => {
                         console.log("Class removal canceled.");
                     }
                 } else if (event.target.classList.contains('leave-btn')) {
-                    // Get the list item that contains the leave button
                     var listItem = event.target.closest('li');
 
-                    // Get the unique syntax from the list item
                     var syntax = listItem.querySelector('#uid').textContent;
                     let classData = await fetchClass(syntax);
-                    // Confirm before proceeding with leaving the class
+
                     if (await confirmNotif(`Are you sure you want to leave ${classData.name}?`)) {
-                        // Remove the class from Firestore
+
                         try {
                             await leaveClass(syntax);
                             console.log("Class removed successfully:", syntax);
                             basicNotif("Left class succesfully", `Left ${classData.name}`, 5000);
-                            // Remove the item from the DOM
                             listItem.remove();
                         } catch (error) {
                             console.error("Error leaving class:", error);
@@ -138,13 +127,10 @@ onAuthStateChanged(auth, async (user) => {
                         console.log("Class leave canceled.");
                     }
                 } else {
-                    // Get the list item that was clicked
                     var listItem = event.target.closest('li');
 
-                    // Get the unique syntax from the list item
                     var syntax = listItem.querySelector('#uid').textContent;
 
-                    // Redirect to the new webpage with the syntax as a query parameter
                     window.location.href = `class.html?syntax=${syntax}`;
                 }
             });
@@ -170,7 +156,6 @@ onAuthStateChanged(auth, async (user) => {
                 filterClasses();
             });
 
-            // Mutation Observer to watch for new items
             const observer = new MutationObserver(mutations => {
                 mutations.forEach(mutation => {
                     if (mutation.addedNodes.length) {
@@ -182,13 +167,7 @@ onAuthStateChanged(auth, async (user) => {
 
             observer.observe(classList, { childList: true });
 
-            // Initial filter
             filterClasses();
-
-
-
-            // Set up a listener on the collection
-
         }
         const account = document.getElementById('account');
         account.innerHTML = `<img id="accountImg" src="${user.photoURL || 'Images/gear.png'}"></img>`;
@@ -427,7 +406,6 @@ function generateRandomSyntax() {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
 
-    // Generate a random 16-character string with hyphens
     for (let i = 0; i < 16; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
         if (i % 4 === 3 && i < 15) {
@@ -448,10 +426,8 @@ export async function addClass(className, schoolName, syntax, classcode, timeIn,
     }
 
     try {
-        // Reference to the new class document
         const classRef = doc(db, 'classes', syntax);
 
-        // Set the class document with initial data
         await setDoc(classRef, {
             name: className,
             school: schoolName,
@@ -464,17 +440,14 @@ export async function addClass(className, schoolName, syntax, classcode, timeIn,
             timezone: timezone
         });
 
-        // Reference to the members subcollection
         const membersRef = collection(classRef, 'members');
 
-        // Set the user as an admin in the members subcollection
         await setDoc(doc(membersRef, user.uid), {
             role: 'owner',
         });
 
         const userClassesRef = collection(db, 'users', user.uid, 'classes');
 
-        // Add the class syntax to the user's classes subcollection
         await setDoc(doc(userClassesRef, syntax), {
             syntax: syntax
 
@@ -497,7 +470,6 @@ async function deleteCollection(collectionPath) {
 export async function removeClass(syntax) {
     const auth = getAuth();
     const user = auth.currentUser;
-    // Reference to the specific class document in the 'classes' collection
     const classDocRef = doc(db, 'classes', syntax);
     const subcollectionNames = ['members'];
     const members = await fetchMembers(syntax);
@@ -1002,29 +974,20 @@ export async function getAttendance(syntax, timezone, id) {
 
 export async function checkAttendance(syntax, timezone, id) {
     try {
-        // Call the function to delete old attendance records
         await deleteAllAttendanceRecords(timezone, syntax);
 
-        // Fetch the class data
         const classdata = await fetchClass(syntax);
-        const currentDate = DateTime.now().toISODate(); // 'YYYY-MM-DD' format
+        const currentDate = DateTime.now().toISODate();
 
-        // Define the document path for the attendance record
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
 
-        const classTimezone = classdata.timezone; // Example: 'UTC+08:00'
-        const classTimeIn = classdata.timeIn; // Assuming this is in 'HH:mm' format (24-hour time)
+        const classTimezone = classdata.timezone;
+        const classTimeIn = classdata.timeIn;
 
-        // Get the current time in the specified timezone
         const currentTime = DateTime.now().setZone(timezone);
-
-        // Create a DateTime object for the class start time in the class timezone
         const classTime = DateTime.fromFormat(classTimeIn, 'HH:mm', { zone: classTimezone });
-
-        // Ensure class time is on the current date
         const classDateTime = classTime.set({ year: currentTime.year, month: currentTime.month, day: currentTime.day });
 
-        // Compare the current time with the class time
         let status;
         if (currentTime <= classDateTime) {
             status = 'present';
@@ -1032,30 +995,27 @@ export async function checkAttendance(syntax, timezone, id) {
             status = 'late';
         }
 
-        // Record the time when the attendance is checked
         const timeChecked = currentTime.toFormat('HH:mm');
 
-        // Fetch existing attendance data
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
-        // Check if there is already attendance data for the current date
         if (existingAttendance[currentDate]) {
-            //console.log('Attendance for today has already been recorded.');
-            return {status: existingAttendance[currentDate].status , time: existingAttendance[currentDate].timeChecked};
+            if (!existingAttendance[currentDate].status === 'absent') {
+                return {status: existingAttendance[currentDate].status , time: existingAttendance[currentDate].timeChecked};
+            };
         }
 
-        // Update or set the attendance document with the new status and timeChecked
         const updatedAttendance = {
             ...existingAttendance,
-            [currentDate]: { status: status, timeChecked: timeChecked } // Include timeChecked here
+            [currentDate]: { status: status, timeChecked: timeChecked }
         };
 
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
 
         return {status: status , time: timeChecked};
     } catch (error) {
-        //console.error('Error checking attendance:', error);
+
         throw error;
     }
 }
@@ -1064,28 +1024,22 @@ export async function markAbsent(syntax, timezone, id) {
     try {
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
 
-        // Record the time when the attendance is checked
         const currentDate = DateTime.now().toISODate();
-        // Fetch existing attendance data
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
-        // Check if there is already attendance data for the current date
         if (existingAttendance[currentDate]) {
-            //console.log('Attendance for today has already been recorded.');
             return {status: existingAttendance[currentDate].status , time: existingAttendance[currentDate].timeChecked};
         }
 
-        // Update or set the attendance document with the new status and timeChecked
         const updatedAttendance = {
             ...existingAttendance,
-            [currentDate]: { status: 'absent' } // Include timeChecked here
+            [currentDate]: { status: 'absent' }
         };
 
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
 
     } catch (error) {
-        //console.error('Error checking attendance:', error);
         throw error;
     }
 }
@@ -1095,26 +1049,21 @@ export async function deleteAllAttendanceRecords(classTimezone, classId) {
         let ownerEmail;
         const currentDateTime = DateTime.now().setZone(classTimezone);
         const today = currentDateTime.weekday;
-        //console.log(`Current DateTime in ${classTimezone}: ${currentDateTime.toISO()}`);
-        //console.log(`Today is: ${today} (6=Saturday, 7=Sunday)`);
 
         const emailFlagDoc = doc(db, 'weeklyEmailSent', classId);
         const emailFlagSnapshot = await getDoc(emailFlagDoc);
 
         if (today !== 7) {
-            //console.log('Today is not Saturday. No action taken.');
             deleteDoc(emailFlagDoc);
             return;
         }
 
         if (emailFlagSnapshot.exists() && emailFlagSnapshot.data().lastSentDate === currentDateTime.toISODate()) {
-            //console.log('Email has already been sent this week. No action taken.');
             return;
         }
 
-        const deletedData = []; // To store the deleted data
+        const deletedData = [];
 
-        // Fetch all member documents for the specific class
         const membersSnapshot = await getDocs(collection(db, 'classes', classId, 'members'));
         for (const memberDoc of membersSnapshot.docs) {
             const memberData = memberDoc.data();
@@ -1123,22 +1072,20 @@ export async function deleteAllAttendanceRecords(classTimezone, classId) {
             if (memberData.role === "owner") {
                 ownerEmail = memberProfile.email;
             }
-            // Prepare the deleted data
+
             const memberName = memberProfile.displayName || 'Unknown';
             deletedData.push({ classId, memberName, attendance });
 
-            // Remove the attendance field
             await updateDoc(memberDoc.ref, { attendance: deleteField() });
         }
 
         if (deletedData.length > 0 && ownerEmail) {
             const weekdays = Array.from({ length: 7 }, (_, index) => {
                 const date = currentDateTime.startOf('week').plus({ days: index });
-                return `${date.toFormat('EEEE, MMMM dd')}`; // Format: "Monday, September 01"
+                return `${date.toFormat('EEEE, MMMM dd')}`;
             });
-            const classdata = await fetchClass(classId); // Fetch class data for name
+            const classdata = await fetchClass(classId);
 
-            // Map attendance data for each member
             const members = deletedData.map(data => {
                 const { memberName, attendance } = data;
                 return {
@@ -1153,7 +1100,6 @@ export async function deleteAllAttendanceRecords(classTimezone, classId) {
                 };
             });
 
-            // Build the email parameters
             const emailParams = {
                 owner_email: ownerEmail,
                 className: classdata.name,
@@ -1163,19 +1109,17 @@ export async function deleteAllAttendanceRecords(classTimezone, classId) {
 
             console.log(emailParams);
 
-            // Send email using EmailJS
             await emailjs.send("service_p3ddhzv", "template_3n5ewnh", emailParams)
                 .then(() => {
-                    //console.log('Email sent successfully');
                     return setDoc(emailFlagDoc, { lastSentDate: currentDateTime.toISODate() });
                 })
                 .catch(error => {
-                    //console.error('Error sending email:', error);
+
                 });
         }
 
     } catch (error) {
-       // console.error('Error deleting attendance records:', error);
+
     }
 }
 
@@ -1187,9 +1131,7 @@ document.head.appendChild(emailjsScript);
 
 let emailjsInitialized = false;
 
-// Initialize EmailJS once the script is loaded
 emailjsScript.onload = function() {
-    // Initialize EmailJS with your user ID
     emailjs.init('BYrDpkwjPv2ZItQov');
     emailjsInitialized = true;
 };

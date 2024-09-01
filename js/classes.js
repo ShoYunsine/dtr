@@ -1,23 +1,6 @@
-import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+
 import { fetchProfile, generateUniqueSyntax, addClass, removeClass, generateClassCode, joinClassByCode, leaveClass, getCurrentUser } from './firebase.js';
 import { basicNotif } from './notif.js';
-
-const video = document.getElementById('camera');
-const canvas = document.createElement('canvas');
-const canvasContext = canvas.getContext('2d');
-
-function startCamera() {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(stream => {
-            video.srcObject = stream;
-            video.setAttribute('playsinline', true);
-            video.play();
-            requestAnimationFrame(scanQRCode);
-        })
-        .catch(err => {
-            console.error('Error accessing camera:', err);
-        });
-}
 
 function getLocation() {
     return new Promise((resolve, reject) => {
@@ -37,22 +20,7 @@ function getLocation() {
         }
     });
 }
-function scanQRCode() {
-    if (video.videoWidth > 0 && video.videoHeight > 0) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, canvas.width, canvas.height);
 
-        if (code) {
-            const userid = code.data
-            const user = fetchProfile(userid)
-        } else {
-        }
-    }
-    requestAnimationFrame(scanQRCode);
-}
 
 document.getElementById('getLocation').addEventListener('click', async function (event) {
     event.preventDefault();
