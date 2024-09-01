@@ -17,52 +17,63 @@ function convertTo12Hour(militaryTime) {
 }
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('../js/sw.js')
-        .then(async registration => {
-            if ('sync' in registration) {
-                const classes = await getUserClasses();
+    navigator.serviceWorker.register('./js/sw.js')
+        .then(registration => {
 
-                for (const cls of userClasses) {
-                    const distance = calculateDistance(
-                        location.latitude,
-                        location.longitude,
-                        cls.lat,
-                        cls.long
-                    );
-                    
-                    await deleteAllAttendanceRecords(cls.timezone, cls.syntax);
-  
-                    if (distance <= cls.rad) {
-                        const { status } = await checkAttendance(cls.syntax, cls.timezone);
+            if ('sync' in registration) {
+
+                function startTracking() {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.watchPosition(async position => {
+                            const location = {
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            };
+                            const classes = await getUserClasses();
+                            for (const cls of classes) {
+                                const distance = calculateDistance(
+                                    location.latitude,
+                                    location.longitude,
+                                    cls.lat,
+                                    cls.long
+                                );
+                                deleteAllAttendanceRecords(cls.timezone,cls.syntax);
+                                // Check if the user is within the class's radius
+                                if (distance <= cls.rad) {
+                                    const { status }= await checkAttendance(cls.syntax,cls.timezone);
+                                    if (status == "late") {
+                                        //basicNotif(You are late for ${cls.name},Class time is ${convertTo12Hour(cls.timeIn)} ${cls.timezone},5000);
+                                    } else {
+                                        //basicNotif(You are right on time,Attendance taken,5000);
+                                    };
+                                    //basicNotif(Checking location....,In radius in <b>"${cls.name}"</b>,5000);
+                                } else {
+                                    markAbsent(cls.syntax,cls.timezone);
+                                    //basicNotif(Checking location....,You are<br> <i>${distance} meters</i> away <br> from <b>"${cls.name}"</b>,5000);
+                                }
+                            }
+                            
+                        }, error => {
+                            console.error(`Error getting location: ${error.message}`);
+                        });
                     } else {
-                        await markAbsent(cls.syntax, cls.timezone);
+                        console.error("Geolocation is not supported by this browser.");
                     }
                 }
 
-                // Send relevant data to the Service Worker
-                if (registration.active) {
-                    registration.active.postMessage({
-                        type: 'SET_CLASSES',
-                        classes: classes
-                    });
-                }
-
-                try {
-                    await registration.sync.register('track-location');
-                    console.log('Background sync for tracking registered.');
-                } catch (error) {
-                    console.error('Background sync registration failed:', error);
-                }
+                // Start tracking
+                startTracking();
             }
         })
+
         .catch(error => {
             console.log('Service Worker registration failed:', error);
         });
 } else {
     console.log('Service Workers not supported in this browser.');
-}
+};
 
-const worker = new Worker('../js/worker.js');
+const worker = new Worker('./js/worker.js');
 
 worker.onmessage = (event) => {
     console.log('Message from worker:', event.data);
