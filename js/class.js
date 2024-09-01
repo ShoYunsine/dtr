@@ -1,6 +1,7 @@
 import { fetchClass, fetchMembers, changeMemberRole, fetchProfile, getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance } from './firebase.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif } from './notif.js';
+import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 
 // Debounce function
 function debounce(func, wait) {
@@ -9,6 +10,85 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(this, args), wait);
     };
+}
+const qrreader = document.getElementById('qrscanner-container');
+const video = document.getElementById('camera');
+const canvas = document.createElement('canvas');
+const canvasContext = canvas.getContext('2d', { willReadFrequently: true });
+
+function startCamera() {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }) // Use back camera for better focus
+        .then(stream => {
+            video.srcObject = stream;
+            video.setAttribute('playsinline', true);
+            video.play();
+            setTimeout(scanQRCode, 500);
+        })
+        .catch(err => {
+            console.error('Error accessing camera:', err);
+        });
+}
+
+function stopCamera() {
+    const stream = video.srcObject;
+    const tracks = stream.getTracks();
+
+    tracks.forEach(track => track.stop()); // Stop all tracks (video and/or audio)
+    video.srcObject = null; // Clear the video element's source
+}
+
+async function getCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+            return position.coords;
+        }, function (error) {
+            console.error(`Error getting location: ${error.message}`);
+        });
+    } else {
+        console.error("Geolocation is not supported by this browser.");
+    }
+}
+
+async function scanQRCode() {
+    if (video.videoWidth > 0 && video.videoHeight > 0) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+        if (code) {
+            basicNotif('QR code detected:', code.data,5000)
+            console.log('QR code detected:', code.data);
+            video.style.border = "1px solid green"; // Optional: change border color to indicate success
+            stopCamera();
+            const location = await getCurrentLocation();
+            const distance = calculateDistance(
+                location.latitude,
+                location.longitude,
+                cls.lat,
+                cls.long
+            );
+            if (distance <= classroom.rad) {
+                await checkAttendance(syntax,cls.classroom.timezone,code.data);
+            }
+        } else {
+            video.style.border = "1px solid red"; // Optional: change border color to indicate failure
+            console.log('No QR code detected.');
+        }
+    }
+    requestAnimationFrame(scanQRCode);
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Radius of the Earth in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in meters
 }
 
 const debouncedUpdateList = debounce(updatememberList, 300);
@@ -242,6 +322,20 @@ document.getElementById('memberList').addEventListener('click', async function (
     }
 });
 
+document.getElementById('qr-code-reader').addEventListener('click', function (event) {
+    if (qrreader) { // Check if the element exists
+        if (qrreader.style.display === 'block') {
+            qrreader.style.display = 'none';
+            startCamera();
+        } else {
+            qrreader.style.display = 'block';
+            stopCamera();
+        }
+    } else {
+        console.error('Element with ID "qrreader" not found.');
+    }
+});
+
 const classSearchInput = document.getElementById('memberSearch');
 const classList = document.getElementById('memberList');
 let items = Array.from(classList.getElementsByClassName('list-item'));
@@ -314,3 +408,4 @@ observer2.observe(attendanceList, { childList: true });
 
 // Initial filter
 filterClasses2();
+
