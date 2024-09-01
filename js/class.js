@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             rad.innerHTML = `${classroom.rad}m`;
             document.getElementById('clipboard').addEventListener('click', async () => {
                 console.log("Copying plain text...");
-                const textToCopy = `Join *${classroom.name}* today to get your attendance checked.\n${window.location.origin}/classes.html?classCode=${classroom.code}`;
+                const textToCopy = `Join *${classroom.name}* today to get your attendance checked.\n${window.location.origin}/dtr/classes.html?classCode=${classroom.code}`;
 
                 try {
                     await navigator.clipboard.writeText(textToCopy);
