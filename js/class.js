@@ -1,6 +1,6 @@
 import { fetchClass, fetchMembers, changeMemberRole, fetchProfile, getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance } from './firebase.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import { basicNotif } from './notif.js';
+import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 
 // Debounce function
@@ -58,9 +58,15 @@ async function scanQRCode() {
         const code = jsQR(imageData.data, canvas.width, canvas.height);
 
         if (code) {
-            basicNotif('QR code detected:', code.data, 5000)
+            basicNotif('QR code detected:',"", 5000)
             qrreader.style.display = "none"
             const mememberData = await fetchMember(syntax, code.data)
+            const mememberProfile = await fetchProfile(code.data)
+            confirmNotif('Is this the correct account?', mememberProfile.displayName, 5000)
+            if (confirmNotif('Is this the correct account?', mememberProfile.displayName, 5000) == false) {
+                basicNotif('Canceled',"", 5000)
+                return;
+            }
             if (mememberData) {
                 video.style.border = "1px solid green"; // Optional: change border color to indicate success
                 stopCamera();
@@ -84,6 +90,7 @@ async function scanQRCode() {
     }
     requestAnimationFrame(scanQRCode);
 }
+
 async function requestVideoPermission() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -97,6 +104,7 @@ async function requestVideoPermission() {
 
 // Example usage
 requestVideoPermission();
+
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Radius of the Earth in meters
     const dLat = (lat2 - lat1) * Math.PI / 180;
