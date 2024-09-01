@@ -58,19 +58,24 @@ async function scanQRCode() {
         const code = jsQR(imageData.data, canvas.width, canvas.height);
 
         if (code) {
-            basicNotif('QR code detected:', code.data,5000)
-            console.log('QR code detected:', code.data);
-            video.style.border = "1px solid green"; // Optional: change border color to indicate success
-            stopCamera();
-            const location = await getCurrentLocation();
-            const distance = calculateDistance(
-                location.latitude,
-                location.longitude,
-                cls.lat,
-                cls.long
-            );
-            if (distance <= classroom.rad) {
-                await checkAttendance(syntax,cls.classroom.timezone,code.data);
+            basicNotif('QR code detected:', code.data, 5000)
+            qrreader.style.display = "none"
+            const mememberData = await fetchMember(syntax, code.data)
+            if (mememberData) {
+                video.style.border = "1px solid green"; // Optional: change border color to indicate success
+                stopCamera();
+                const location = await getCurrentLocation();
+                const distance = calculateDistance(
+                    location.latitude,
+                    location.longitude,
+                    cls.lat,
+                    cls.long
+                );
+                if (distance <= classroom.rad) {
+                    await checkAttendance(syntax, cls.classroom.timezone, code.data);
+                }
+            } else {
+                basicNotif('Not a member', code.data, 5000)
             }
         } else {
             video.style.border = "1px solid red"; // Optional: change border color to indicate failure
