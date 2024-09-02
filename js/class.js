@@ -61,7 +61,7 @@ async function scanQRCode() {
 
         if (code) {
             stopCamera();
-            basicNotif('QR code detected:',"", 5000)
+            basicNotif('QR code detected',"", 5000)
             qrreader.style.display = "none"
             const mememberData = await fetchMember(syntax, code.data)
             const mememberProfile = await fetchProfile(code.data)
@@ -69,7 +69,9 @@ async function scanQRCode() {
                 basicNotif('Canceled',"", 5000)
                 return;
             } else {
+                basicNotif('Checking attandance...',"Please wait...", 5000)
                 if (mememberData) {
+                basicNotif('Member fetched',"", 5000)
                 video.style.border = "1px solid green"; // Optional: change border color to indicate success
                 
                 const location = await getCurrentLocation();
