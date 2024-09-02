@@ -39,7 +39,7 @@
   display: none;
 }
 
-#buttons {
+#buttonsdown {
   display: flex;
   position: fixed;
   flex-direction: row-reverse;
