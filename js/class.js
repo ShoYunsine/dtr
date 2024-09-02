@@ -270,9 +270,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log(syntax);
     const collectionRef = collection(db, "classes", syntax, "members");
     let isInitialLoad = true;
-debouncedUpdateattList();
-        debouncedUpdateList();
+
     onSnapshot(collectionRef, (snapshot) => {
+        debouncedUpdateattList();
+        debouncedUpdateList();
         snapshot.docChanges().forEach(async (change) => {
             const docData = await change.doc.data(); // Get the document data
             const modifiedUser = await fetchProfile(change.doc.id);
