@@ -923,8 +923,6 @@ async function deleteExpiredPostsForClass(syntax) {
 
 export async function getAttendance(syntax, timezone, id) {
     try {
-        // Call the function to delete old attendance records
-
         // Fetch the class data
         const classdata = await fetchClass(syntax);
         const currentDate = DateTime.now().toISODate(); // 'YYYY-MM-DD' format
@@ -932,38 +930,14 @@ export async function getAttendance(syntax, timezone, id) {
         // Define the document path for the attendance record
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
 
-        const classTimezone = classdata.timezone; // Example: 'UTC+08:00'
-        const classTimeIn = classdata.timeIn; // Assuming this is in 'HH:mm' format (24-hour time)
-
-        // Get the current time in the specified timezone
-        const currentTime = DateTime.now().setZone(timezone);
-
-        // Create a DateTime object for the class start time in the class timezone
-        const classTime = DateTime.fromFormat(classTimeIn, 'HH:mm', { zone: classTimezone });
-
-        // Ensure class time is on the current date
-        const classDateTime = classTime.set({ year: currentTime.year, month: currentTime.month, day: currentTime.day });
-
-        // Compare the current time with the class time
-        let status;
-        if (currentTime <= classDateTime) {
-            status = 'present';
-        } else {
-            status = 'late';
-        }
-
-        // Record the time when the attendance is checked
-        const timeChecked = currentTime.toFormat('HH:mm');
-
-        // Fetch existing attendance data
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
         if (existingAttendance[currentDate]) {
             console.log('Attendance for today has already been recorded.');
-            return {status: existingAttendance[currentDate].status , time: existingAttendance[currentDate].timeChecked};
+            return { status: existingAttendance[currentDate].status, time: existingAttendance[currentDate].timeChecked };
         } else {
-            return {status: "Absent"};
+            return { status: "Absent" };
         }
 
     } catch (error) {
@@ -1000,27 +974,26 @@ export async function checkAttendance(syntax, timezone, id) {
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
-        if (existingAttendance[currentDate]) {
-            if (!existingAttendance[currentDate].status === 'absent') {
-                return {status: existingAttendance[currentDate].status , time: existingAttendance[currentDate].timeChecked};
+        // Update if there's no record for today or if the status was "absent"
+        if (!existingAttendance[currentDate] || existingAttendance[currentDate].status === 'absent') {
+            const updatedAttendance = {
+                ...existingAttendance,
+                [currentDate]: { status: status, timeChecked: timeChecked }
             };
+
+            await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
+
+            return { status: status, time: timeChecked };
+        } else {
+            // If the record already exists and was not "absent", return existing status and time
+            return { status: existingAttendance[currentDate].status, time: existingAttendance[currentDate].timeChecked };
         }
-
-        const updatedAttendance = {
-            ...existingAttendance,
-            [currentDate]: { status: status, timeChecked: timeChecked }
-        };
-
-        await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
-
-        return {status: status , time: timeChecked};
     } catch (error) {
-
         throw error;
     }
 }
 
-export async function markAbsent(syntax, timezone, id) {
+export async function markAbsent(syntax, id) {
     try {
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
 
@@ -1028,8 +1001,9 @@ export async function markAbsent(syntax, timezone, id) {
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
-        if (existingAttendance[currentDate]) {
-            return {status: existingAttendance[currentDate].status , time: existingAttendance[currentDate].timeChecked};
+        // If attendance is already marked as 'present' or 'late', don't overwrite it with 'absent'
+        if (existingAttendance[currentDate] && existingAttendance[currentDate].status !== 'absent') {
+            return { status: existingAttendance[currentDate].status, time: existingAttendance[currentDate].timeChecked };
         }
 
         const updatedAttendance = {
@@ -1037,6 +1011,7 @@ export async function markAbsent(syntax, timezone, id) {
             [currentDate]: { status: 'absent' }
         };
 
+        basicNotif(updatedAttendance, "", 5000);
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
 
     } catch (error) {

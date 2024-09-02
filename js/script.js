@@ -1,5 +1,5 @@
 import './firebase.js';
-import { checkAttendance, deleteAllAttendanceRecords, getCurrentUser, getUserClasses, markAbsent } from './firebase.js';
+import { checkAttendance, deleteAllAttendanceRecords, getAttendance, getCurrentUser, getUserClasses, markAbsent } from './firebase.js';
 import { basicNotif, confirmNotif } from './notif.js';
 
 function convertTo12Hour(militaryTime) {
@@ -37,14 +37,20 @@ if ('serviceWorker' in navigator) {
                                     cls.lat,
                                     cls.long
                                 );
+                                const attendance = await getAttendance(cls.syntax, cls.timezone);
+                                //await basicNotif(`${cls.name} ${attendance.status}`, "", 5000);
                                 if (distance <= cls.rad) {
-                                    const { status }= await checkAttendance(cls.syntax,cls.timezone);
+                                    const { status } = await checkAttendance(cls.syntax, cls.timezone);
+                                    //basicNotif(`${cls.name} inRadius`, "", 5000);
                                 } else {
-                                    markAbsent(cls.syntax,cls.timezone);
+                                    const attendance = await getAttendance(cls.syntax, cls.timezone);
+                                    if (attendance.status === "Absent") {
+                                        await markAbsent(cls.syntax);
+                                    }
                                 }
-                                await deleteAllAttendanceRecords(cls.timezone,cls.syntax);
+                                await deleteAllAttendanceRecords(cls.timezone, cls.syntax);
                             }
-                            
+                
                         }, error => {
                             console.error(`Error getting location: ${error.message}`);
                         });
