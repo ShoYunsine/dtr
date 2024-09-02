@@ -66,8 +66,8 @@ async function scanQRCode() {
             if (await confirmNotif('Is this the correct account?', mememberProfile.displayName, 5000) == false) {
                 basicNotif('Canceled',"", 5000)
                 return;
-            }
-            if (mememberData) {
+            } else {
+                if (mememberData) {
                 video.style.border = "1px solid green"; // Optional: change border color to indicate success
                 
                 const location = await getCurrentLocation();
@@ -77,14 +77,15 @@ async function scanQRCode() {
                     classroom.lat,
                     classroom.long
                 );
-                basicNotif(`${(distance <= classroom.rad)}  ${location} `, code.data, 5000);
                 if (distance <= classroom.rad) {
                     const attendance = await checkAttendance(syntax, cls.classroom.timezone, code.data);
                     basicNotif(`Attandance checked ${attendance.status}  ${attendance.timeChecked} `, code.data, 5000);
-                }
+                };
             } else {
                 basicNotif('Not a member', code.data, 5000);
+            };
             }
+            
         } else {
             video.style.border = "1px solid red"; // Optional: change border color to indicate failure
             console.log('No QR code detected.');
