@@ -63,7 +63,6 @@ async function scanQRCode() {
             qrreader.style.display = "none"
             const mememberData = await fetchMember(syntax, code.data)
             const mememberProfile = await fetchProfile(code.data)
-            confirmNotif('Is this the correct account?', mememberProfile.displayName, 5000)
             if (confirmNotif('Is this the correct account?', mememberProfile.displayName, 5000) == false) {
                 basicNotif('Canceled',"", 5000)
                 return;
