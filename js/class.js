@@ -58,6 +58,7 @@ async function scanQRCode() {
         const code = jsQR(imageData.data, canvas.width, canvas.height);
 
         if (code) {
+            stopCamera();
             basicNotif('QR code detected:',"", 5000)
             qrreader.style.display = "none"
             const mememberData = await fetchMember(syntax, code.data)
@@ -69,7 +70,7 @@ async function scanQRCode() {
             }
             if (mememberData) {
                 video.style.border = "1px solid green"; // Optional: change border color to indicate success
-                stopCamera();
+                
                 const location = await getCurrentLocation();
                 const distance = calculateDistance(
                     location.latitude,
