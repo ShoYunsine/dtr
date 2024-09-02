@@ -77,9 +77,10 @@ async function scanQRCode() {
                     cls.lat,
                     cls.long
                 );
+                basicNotif(`${(distance <= classroom.rad)}  ${location} `, code.data, 5000);
                 if (distance <= classroom.rad) {
                     const attendance = await checkAttendance(syntax, cls.classroom.timezone, code.data);
-                    basicNotif(`Attandance checked ${attendance.status}  ${attendance.timeChecked}`, code.data, 5000);
+                    basicNotif(`Attandance checked ${attendance.status}  ${attendance.timeChecked} `, code.data, 5000);
                 }
             } else {
                 basicNotif('Not a member', code.data, 5000);
