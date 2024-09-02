@@ -37,9 +37,9 @@ if ('serviceWorker' in navigator) {
                                     cls.lat,
                                     cls.long
                                 );
-                                const attendance = await getAttendance(cls.syntax, cls.timezone);
+                                
                                  
-                                basicNotif(`${cls.name} ${attendance.status} ${distance}`, "", 5000);
+                                //basicNotif(`${cls.name} ${attendance.status} ${distance}`, "", 5000);
                                 if (distance <= cls.rad) {
                                     const { status } = await checkAttendance(cls.syntax, cls.timezone);
                                     basicNotif(`${cls.name} inRadius`, "", 5000);
