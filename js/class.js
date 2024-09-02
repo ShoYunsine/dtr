@@ -78,10 +78,11 @@ async function scanQRCode() {
                     cls.long
                 );
                 if (distance <= classroom.rad) {
-                    await checkAttendance(syntax, cls.classroom.timezone, code.data);
+                    const attendance = await checkAttendance(syntax, cls.classroom.timezone, code.data);
+                    basicNotif(`Attandance checked ${attendance.status}  ${attendance.timeChecked}`, code.data, 5000);
                 }
             } else {
-                basicNotif('Not a member', code.data, 5000)
+                basicNotif('Not a member', code.data, 5000);
             }
         } else {
             video.style.border = "1px solid red"; // Optional: change border color to indicate failure
