@@ -38,16 +38,18 @@ function stopCamera() {
 }
 
 async function getCurrentLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-            return position.coords;
-        }, function (error) {
-            console.error(`Error getting location: ${error.message}`);
-        });
-    } else {
-        console.error("Geolocation is not supported by this browser.");
-    }
+    return new Promise((resolve, reject) => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => resolve(position.coords),
+                error => reject(`Error getting location: ${error.message}`)
+            );
+        } else {
+            reject("Geolocation is not supported by this browser.");
+        }
+    });
 }
+
 
 async function scanQRCode() {
     if (video.videoWidth > 0 && video.videoHeight > 0) {
