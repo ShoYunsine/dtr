@@ -74,8 +74,8 @@ async function scanQRCode() {
                 const distance = calculateDistance(
                     location.latitude,
                     location.longitude,
-                    cls.lat,
-                    cls.long
+                    classroom.lat,
+                    classroom.long
                 );
                 basicNotif(`${(distance <= classroom.rad)}  ${location} `, code.data, 5000);
                 if (distance <= classroom.rad) {
