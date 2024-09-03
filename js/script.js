@@ -15,6 +15,7 @@ function convertTo12Hour(militaryTime) {
 
     return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
+const classes = await getUserClasses();
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./js/sw.js')
@@ -29,7 +30,7 @@ if ('serviceWorker' in navigator) {
                                 latitude: position.coords.latitude,
                                 longitude: position.coords.longitude
                             };
-                            const classes = await getUserClasses();
+                            
                             for (const cls of classes) {
                                 const distance = calculateDistance(
                                     location.latitude,
