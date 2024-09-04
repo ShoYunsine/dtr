@@ -15,14 +15,14 @@ function convertTo12Hour(militaryTime) {
 
     return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
-const classes = await getUserClasses();
+
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./js/sw.js')
         .then(registration => {
 
             if ('sync' in registration) {
-
+const classes = await getUserClasses();
                 function startTracking() {
                     if (navigator.geolocation) {
                         navigator.geolocation.watchPosition(async position => {
