@@ -22,7 +22,7 @@ if ('serviceWorker' in navigator) {
         .then(registration => {
 
             if ('sync' in registration) {
-const classes = await getUserClasses();
+
                 function startTracking() {
                     if (navigator.geolocation) {
                         navigator.geolocation.watchPosition(async position => {
@@ -30,7 +30,7 @@ const classes = await getUserClasses();
                                 latitude: position.coords.latitude,
                                 longitude: position.coords.longitude
                             };
-                            
+                            const classes = await getUserClasses();
                             for (const cls of classes) {
                                 const distance = calculateDistance(
                                     location.latitude,
