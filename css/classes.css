@@ -516,6 +516,7 @@ input[type="radio"] {
   }
 
   #attendance-List .list-item{
+    flex-grow:1;
     justify-content: flex-start;
   }
 }
