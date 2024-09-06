@@ -82,7 +82,7 @@ async function scanQRCode() {
                     classroom.long
                 );
                 basicNotif(distance,distance <= classroom.rad, 5000)
-                basicNotif(code.data.type,distance <= classroom.rad, 5000)
+                basicNotif(code.data,distance <= classroom.rad, 5000)
                 if (distance <= classroom.rad) {
                     const attendance = await checkAttendance(syntax, cls.classroom.timezone, code.data);
                     basicNotif(`Attandance checked ${attendance.status}  ${attendance.timeChecked} `, code.data, 5000);
