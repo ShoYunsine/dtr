@@ -39,8 +39,7 @@ import {
     deleteDoc,
     onSnapshot,
     updateDoc,
-    deleteField,
-    enablePersistence 
+    deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import { basicNotif, confirmNotif } from "./notif.js";
@@ -63,14 +62,12 @@ let currentUser;
 
 export { db }
 
-enablePersistence(db)
+db.enablePersistence()
   .catch(function (err) {
     if (err.code == 'failed-precondition') {
-      // This can happen if multiple tabs are open and persistence is already enabled in one tab
       console.log("Persistence failed: Multiple tabs open.");
     } else if (err.code == 'unimplemented') {
-      // This can happen if the browser doesn't support all of the features required to enable persistence
-      console.log("Persistence is not available in this browser.");
+      console.log("Persistence is not supported by this browser.");
     }
   });
 
