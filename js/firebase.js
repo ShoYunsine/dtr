@@ -62,15 +62,6 @@ let currentUser;
 
 export { db }
 
-db.enablePersistence()
-  .catch(function (err) {
-    if (err.code == 'failed-precondition') {
-      console.log("Persistence failed: Multiple tabs open.");
-    } else if (err.code == 'unimplemented') {
-      console.log("Persistence is not supported by this browser.");
-    }
-  });
-
 setPersistence(auth, browserLocalPersistence)
     .then(() => {
         return signInWithEmailAndPassword(auth, email, password), signInWithPopup(auth, provider);
