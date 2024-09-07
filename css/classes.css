@@ -22,19 +22,17 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--background-color);
+  background: transparent;
   border-radius: 4px;
-  box-shadow: 0 14px 28px var(--shadow);
-  padding: 10px;
-  width: 97%;
-  height: auto;
-  max-width: 70%;
+  margin: auto;
+  width: 95%;
+  height: 95%;
   z-index: 1000;
 }
 
 #qrscanner-container video {
   width: 100%;
-  aspect-ratio: 1/1;
+  height: 100%;
   object-fit: cover;
   /* Ensures the video fills the container */
 }
