@@ -47,6 +47,7 @@
   right:12px;
   padding: 4px;
   gap: 10px;
+  z-index: 10000;
 }
 
 #camera-button, #qr-code-reader {
