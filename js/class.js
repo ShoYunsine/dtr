@@ -525,7 +525,7 @@ async function addPostTemplate(img) {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
             postToClass(user.email, img, currentDate, currentTime, description, syntax, postSyntax,user.uid);
-            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email ,syntax, postSyntax,user.uid);
+            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax,user.uid);
             cancelFunction(template);
         });
 
