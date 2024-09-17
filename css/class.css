@@ -221,7 +221,7 @@
 #post img{
   width: 100%;
   align-self: center;
-  margin-left: 0px;
+  margin-left: -3px;
 }
 
 #post textarea{
