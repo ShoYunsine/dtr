@@ -563,7 +563,7 @@ function createPostItem(email, img, dateTime, description, currentUserEmail,post
         </div>
     `;
 
-    posts.insertBefore(template, posts.firstChild);
+    posts.appendChild(template, posts.firstChild);
 
     if (email === currentUserEmail) {
         template.querySelector('#deletePost').addEventListener('click', () => {
