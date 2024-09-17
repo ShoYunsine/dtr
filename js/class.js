@@ -550,7 +550,6 @@ document.getElementById('camera-input').addEventListener('change', handleImageUp
 function createPostItem(email, img, dateTime, description, currentUserEmail,postId) {
     const posts = document.getElementById('posts');
     const template = document.createElement('li');
-    template.className = 'template';
     template.id = 'post';
     template.innerHTML = `
         <p>${email}</p>
