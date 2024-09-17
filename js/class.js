@@ -132,10 +132,10 @@ let classroom;
 const className = document.getElementById('className');
 const schoolName = document.getElementById('school');
 const classCode = document.getElementById('code');
-const timeIn = document.getElementById('timeIn');
-const lat = document.getElementById('latitude');
-const long = document.getElementById('longitude');
-const rad = document.getElementById('radius');
+//const timeIn = document.getElementById('timeIn');
+//const lat = document.getElementById('latitude');
+//const long = document.getElementById('longitude');
+//const rad = document.getElementById('radius');
 let syntax;
 
 function convertTo12Hour(militaryTime) {
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { email, image, dateTime, description } = post;
 
         // Call the createPostItem function for each post
-        createPostItem(email, image, dateTime, description, currentUser.email,post.id);
+        createPostItem(email, image, dateTime, description, currentUser.email, post.id,post.userid);
     })
 
     onSnapshot(collectionRef, (snapshot) => {
@@ -312,11 +312,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (classroom) {
             className.innerHTML = classroom.name;
             schoolName.innerHTML = classroom.school;
-            timeIn.innerHTML = `Time In: ${convertTo12Hour(classroom.timeIn)} ${classroom.timezone}`;
+            //timeIn.innerHTML = `Time In: ${convertTo12Hour(classroom.timeIn)} ${classroom.timezone}`;
             classCode.innerHTML = `<i>${classroom.code}</i> <i role="button" id="clipboard" class="fa-regular fa-clipboard"></i>`;
-            lat.innerHTML = `${classroom.lat}º`;
-            long.innerHTML = `${classroom.long}º`;
-            rad.innerHTML = `${classroom.rad}m`;
+            //lat.innerHTML = `${classroom.lat}º`;
+            //long.innerHTML = `${classroom.long}º`;
+            //rad.innerHTML = `${classroom.rad}m`;
             document.getElementById('clipboard').addEventListener('click', async () => {
                 console.log("Copying plain text...");
                 const textToCopy = `Join *${classroom.name}* today to get your attendance checked.\n${window.location.origin}/dtr/classes.html?classCode=${classroom.code}`;
@@ -485,6 +485,7 @@ async function handleImageUpload(event) {
     });
 }
 
+
 async function addPostTemplate(img) {
     const posts = document.getElementById('posts');
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
@@ -500,11 +501,15 @@ async function addPostTemplate(img) {
     if (!existingTemplate) {
         // Create the template
         const user = await getCurrentUser();
+        const userdata = await fetchProfile(user.uid);
         const template = document.createElement('li');
         template.className = 'template';
         template.id = 'post';
         template.innerHTML = `
-            <p>${user.email}</p>
+        <div id="postHeader">
+        <img class="img" src="${userdata.photoUrl}">
+            <p>${user.displayName}</p>
+        </div>
             <img src="${img}" alt="Post Image">
             <textarea id="desc" placeholder="Enter description here..."></textarea>
             <p>${currentDate} ${currentTime}</p>
@@ -514,11 +519,13 @@ async function addPostTemplate(img) {
             </div>
         `;
         posts.insertBefore(template, posts.firstChild);
+        const targetElement = template.querySelector('#postHeader');
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
-            postToClass(user.email,img,currentDate,currentTime,description,syntax,postSyntax);
-            createPostItem(user.email,img,`${currentDate} ${currentTime}`,description,syntax,postSyntax);
+            postToClass(user.email, img, currentDate, currentTime, description, syntax, postSyntax,user.uid);
+            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, syntax, postSyntax,user.uid);
             cancelFunction(template);
         });
 
@@ -535,8 +542,8 @@ function cancelFunction(template) {
     template.remove();
 }
 
-function postFunction(email,img,currentDate,currentTime,description,syntax) {
-    postToClass(email,img,currentDate,currentTime,description,syntax);
+function postFunction(email, img, currentDate, currentTime, description, syntax,userid) {
+    postToClass(email, img, currentDate, currentTime, description, syntax,userid);
     console.log('Post button clicked.');
 }
 
@@ -547,18 +554,34 @@ document.getElementById('camera-button').addEventListener('click', () => {
 
 // Event listener to handle the file input change
 document.getElementById('camera-input').addEventListener('change', handleImageUpload);
-function createPostItem(email, img, dateTime, description, currentUserEmail,postId) {
+async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid) {
+    const user = await getCurrentUser();
+    const currentMemberData = await fetchMember(syntax, user.uid);
+    const userdata = await fetchProfile(userid);
     const posts = document.getElementById('posts');
     const template = document.createElement('li');
     template.id = 'post';
     template.innerHTML = `
-        <p>${email}</p>
+        <div id="postHeader">
+        <div>
+        <img class="img" src="${userdata.photoUrl}">
+            <p>${userdata.displayName}</p>
+            </div>
+            <label for="postOptionstoggle${postId}"><i class="fa-solid fa-ellipsis-vertical"></i></label>
+        </div>
+        <input class="like" type="checkbox" id="like${postId}">
         <img src="${img}" alt="Post Image">
+        <div id="postButtons">
+        <label id="heartUncheck" for="like${postId}"><i class="fa-regular fa-heart"></i></label>
+        <label id="heartCheck" for="like${postId}"><i class="fa-solid fa-heart"></i></label>
+        </div>
         <p id="desc">${description}</p>
         <p>${dateTime}</p>
-        <div id="post-buttons">
-            ${email === currentUserEmail ? 
-            `<button class="post-button" id="deletePost" data-post-id="${postId}">Delete</button>` : 
+        <input class="option" type="checkbox" id="postOptionstoggle${postId}">
+        
+        <div id="postOptions">
+        ${email === currentUserEmail || currentmember.role === 'owner' || currentmember.role === 'admin' ?
+            `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
             ''}
         </div>
     `;
@@ -566,10 +589,13 @@ function createPostItem(email, img, dateTime, description, currentUserEmail,post
     posts.appendChild(template, posts.firstChild);
 
     if (email === currentUserEmail) {
-        template.querySelector('#deletePost').addEventListener('click', () => {
+        template.querySelector('#deletePost').addEventListener('click', async () => {
+            if (await confirmNotif(`Are you sure you want to delete the post?`)) {
+
             const postId = event.target.getAttribute('data-post-id');
             deletePost(syntax, postId); // Add deletePost function to remove the post
             cancelFunction(template);
+            };
         });
     }
 }

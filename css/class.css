@@ -13,7 +13,7 @@
 }
 
 #code {
-  font-size: 24px;
+  font-size: 12px;
   border: 1px solid var(--border-color);
   border-radius: 5px;
   margin: auto;
@@ -49,6 +49,7 @@
   gap: 10px;
   z-index: 10000;
 }
+
 #posts {
   display: flex;
   flex-grow: 1;
@@ -59,11 +60,130 @@
   align-content: center;
   align-items: center;
   gap:10px;
+  padding: 0;
+}
+
+#postHeader {
+  display: flex;
+  width: 97%;
+  align-self: center;
+  padding: 4px 12px;
+  white-space: wrap;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#postHeader div {
+  display: flex;
+  width: 50%;
+  flex-direction: row;
+  align-items: center;
+  align-self: start;
+}
+
+#postHeader label {
+  display: flex;
+ color: var(--text-color-main);
+ justify-self: flex-end;
+}
+
+#postOptions {
+  display: flex;
+  width: 75%;
+  align-self: center;
+  margin: auto;
+  position: fixed;
+  bottom: -50%;
+  background-color: var(--background-color);
+  height: auto;
+  z-index: 1000000;
+  border-radius: 15px 15px 0 0;
+  border: 1px none var(--border-color);
+  transition: 0.3s;
+  box-shadow: 0 24px 24px var(--text-color-main);
+
+}
+
+#postOptions .postOptionButton{
+  color: var(--text-color-main);
+  background-color: transparent;
+  text-align: left;
+  margin-left: 14px;
+  width: 100%;
+  outline-style: none;
+  border: none;
+  height: 50px;
+}
+
+#postOptions .postOptionButton:hover{
+  color: var(--text-color-main);
+  background-color: var(--button-hover-bg-color);
+  text-align: left;
+  margin-left: 14px;
+  outline-style: none;
+  border: none;
+  height: 50px;
+}
+
+#postButtons {
+  display: flex;
+  color: var(--text-color-main);
+  flex-direction: row;
+  padding: 8px 12px;
+  gap: 4px;
+  font-size: 20px;
+}
+
+#post input {
+  position: absolute;
+  left: -100%;
+}
+
+#post > .option:focus ~ #postOptions {
+  bottom: -1%;
+}
+
+@keyframes scaleUp {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5); /* Scale up by 20% */
+  }
+  100% {
+    transform: scale(1); /* Return to original size */
+  }
+}
+
+#heartCheck {
+  display: none;
+  color: rgb(233, 0, 136);
+}
+
+#heartUncheck {
+  display: block;
+}
+
+#post .like:checked ~ #postButtons #heartCheck {
+  display: block;
+  animation: scaleUp 0.3s ease;
+}
+
+#post .like:checked ~ #postButtons #heartUncheck {
+  display: none;
+}
+
+#postHeader .img {
+  display: flex;
+  width: 25px;
+  border-radius: 100%;
+  border: 3px solid var(--border-color);
 }
 
 #post {
   height: auto;
-  border: 1px solid var(--border-color);
+  border: 1px none var(--border-color);
   display: flex;
     flex-direction: column;
     align-content: flex-start;
@@ -71,6 +191,7 @@
     align-items: flex-start;
     border-radius: 4px;
     gap: 10px;
+    width: 100%;
 }
 
 #post p:first-child {
@@ -80,6 +201,9 @@
 
 #desc {
   color: var(--text-color-main);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 #desc + p {
@@ -90,10 +214,14 @@
 
 #post p{
   margin-top: 0;
+  width: 95%;
+  text-align: left;
 }
 
 #post img{
   width: 100%;
+  align-self: center;
+  margin-left: -7px;
 }
 
 #post textarea{
@@ -143,7 +271,7 @@
 .attendanceList nav {
   display: flex;
   align-items: center;
-  padding: 4px;
+  padding: 4px 14px;
   justify-content: space-between;
   color: var(--text-color-main);
 }
@@ -154,7 +282,7 @@
   width: 80px;
   text-align: left;
   border-radius: 4px;
-  border: 1px solid var(--border-color);
+  border: 1px none var(--border-color);
   padding: 4px 8px;
   margin: 0;
   transition: all 0.5s ease;
@@ -218,5 +346,19 @@
 
   #tabs-content {
     margin-top: 0;
+  }
+
+  #postOptions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 414px) {
+  #postHeader, #postButtons, #desc {
+    width: 90%;
+  }
+
+  #postHeader div {
+    width: 90%;
   }
 }

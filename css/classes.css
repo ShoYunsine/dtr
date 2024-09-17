@@ -54,7 +54,6 @@
   overflow-x: hidden;
   flex-direction: column;
   justify-content: center;
-  flex-wrap: wrap;
   align-items: stretch;
 }
 
@@ -502,8 +501,8 @@ input[type="radio"] {
 
 @media (max-width: 785px) {
   .main-container {
-    width: 97%;
-    margin: auto;
+    width: 100%;
+    margin: 0;
     overflow-x: hidden;
   }
 
