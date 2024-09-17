@@ -79,7 +79,7 @@ onAuthStateChanged(auth, async (user) => {
         if (typeof on_login == 'undefined') {
             basicNotif("Logged in", `Welcome ${user.displayName}`, 5000);
             displayUserClasses();
-            updateProfile(user.displayName, user.email, user.uid);
+            updateProfile(user.displayName, user.email, user.uid, user.photoURL);
             const qrcode = `${user.uid}`
             const parts = qrcode.split('/');
             console.log(parts);
@@ -228,13 +228,13 @@ function checkpasswordlength(password) {
     }
 }
 
-async function updateProfile(displayName, email, uid, school) {
+async function updateProfile(displayName, email, uid, photoUrl) {
     const userDocRef = doc(db, 'users', uid);
     await setDoc(userDocRef, {
         displayName: displayName || 'Anonymous',
         email: email,
         uid: uid,
-        school: school || 'None'
+        photoUrl: photoUrl || 'None'
     }, { merge: true })
         .then(() => {
             console.log('Profile updated successfully');
@@ -271,7 +271,7 @@ export async function signUpWithEmail() {
             createUserWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
                     const user = userCredential.user;
-                    updateProfile(displayName, email, user.uid);
+                    updateProfile(displayName, email, user.uid, user.photoURL);
                 })
                 .catch((error) => {
                     const errorCode = error.code;
@@ -708,7 +708,7 @@ export async function fetchClassPosts(syntax) {
         posts.sort((a, b) => {
             const dateA = new Date(a.dateTime); // Ensure dateTime is a valid date string
             const dateB = new Date(b.dateTime);
-            return dateB - dateA; // Sort descending: latest posts first
+            return dateB + dateA; // Sort descending: latest posts first
         });
 
         console.log('Fetched posts:', posts);
@@ -1167,7 +1167,7 @@ function convertTo12Hour(militaryTime) {
     return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
-export async function postToClass(email, img, currentDate, currentTime, description, syntax, postSyntax) {
+export async function postToClass(email, img, currentDate, currentTime, description, syntax, postSyntax,userid) {
     // Generate a unique post syntax or ID
    
 
@@ -1186,6 +1186,7 @@ export async function postToClass(email, img, currentDate, currentTime, descript
         image: imgUrl, // Image URL or base64 encoded image
         description: description, // The description entered by the user
         dateTime: dateTime,
+        userid: userid,
         }, { merge: true })
         console.log('Post successfully saved!');
     } catch (error) {

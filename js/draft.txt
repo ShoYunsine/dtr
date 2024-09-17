@@ -155,3 +155,6 @@ messaging.onBackgroundMessage((payload) => {
     {{/each}}
   </tbody>
 </table>
+
+ <p id="timeIn">.</p>
+      <p><i><a id="latitude">.</a><a id="longitude">.</a><a id="radius">.</a></i></p>
