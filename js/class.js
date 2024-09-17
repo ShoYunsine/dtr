@@ -1,4 +1,4 @@
-import { fetchClass, fetchMembers, changeMemberRole, fetchProfile, getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance } from './firebase.js';
+import { fetchClass, fetchMembers, changeMemberRole, fetchProfile, getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance, postToClass, fetchClassPosts, deletePost, generateUniquePostSyntax } from './firebase.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
@@ -61,37 +61,37 @@ async function scanQRCode() {
 
         if (code) {
             stopCamera();
-            basicNotif('QR code detected',"", 5000)
+            basicNotif('QR code detected', "", 5000)
             qrreader.style.display = "none"
             const mememberData = await fetchMember(syntax, code.data)
             const mememberProfile = await fetchProfile(code.data)
             if (await confirmNotif('Is this the correct account?', mememberProfile.displayName, 5000) == false) {
-                basicNotif('Canceled',"", 5000)
+                basicNotif('Canceled', "", 5000)
                 return;
             } else {
-                basicNotif('Checking attandance...',"Please wait...", 5000)
+                basicNotif('Checking attandance...', "Please wait...", 5000)
                 if (mememberData) {
-                basicNotif('Member fetched',"", 5000)
-                video.style.border = "1px solid green"; // Optional: change border color to indicate success
-                
-                const location = await getCurrentLocation();
-                const distance = calculateDistance(
-                    location.latitude,
-                    location.longitude,
-                    classroom.lat,
-                    classroom.long
-                );
-                //basicNotif(distance,distance <= classroom.rad, 5000)
-                //basicNotif(code.data,distance <= classroom.rad, 5000)
-                if (distance <= classroom.rad) {
-                    const attendance = await checkAttendance(syntax, classroom.timezone, code.data);
-                    basicNotif(`Attandance checked ${attendance.status}  ${attendance.timeChecked} `, code.data, 5000);
+                    basicNotif('Member fetched', "", 5000)
+                    video.style.border = "1px solid green"; // Optional: change border color to indicate success
+
+                    const location = await getCurrentLocation();
+                    const distance = calculateDistance(
+                        location.latitude,
+                        location.longitude,
+                        classroom.lat,
+                        classroom.long
+                    );
+                    //basicNotif(distance,distance <= classroom.rad, 5000)
+                    //basicNotif(code.data,distance <= classroom.rad, 5000)
+                    if (distance <= classroom.rad) {
+                        const attendance = await checkAttendance(syntax, classroom.timezone, code.data);
+                        basicNotif(`Attandance checked ${attendance.status}  ${attendance.timeChecked} `, code.data, 5000);
+                    };
+                } else {
+                    basicNotif('Not a member', code.data, 5000);
                 };
-            } else {
-                basicNotif('Not a member', code.data, 5000);
-            };
             }
-            
+
         } else {
             video.style.border = "1px solid red"; // Optional: change border color to indicate failure
             console.log('No QR code detected.');
@@ -273,6 +273,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const collectionRef = collection(db, "classes", syntax, "members");
     let isInitialLoad = true;
 
+    const classPosts = await fetchClassPosts(syntax);
+    const currentUser = await getCurrentUser(); // Fetch the current user's email
+
+    classPosts.forEach(post => {
+        // Destructure the post object
+        const { email, image, dateTime, description } = post;
+
+        // Call the createPostItem function for each post
+        createPostItem(email, image, dateTime, description, currentUser.email,post.id);
+    })
+
     onSnapshot(collectionRef, (snapshot) => {
         debouncedUpdateattList();
         debouncedUpdateList();
@@ -443,3 +454,123 @@ observer2.observe(attendanceList, { childList: true });
 // Initial filter
 filterClasses2();
 
+async function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        console.error('No file provided.');
+        return;
+    }
+
+    const img = new Image();
+    const reader = new FileReader();
+
+    return new Promise((resolve, reject) => {
+        reader.onload = function (e) {
+            img.src = e.target.result;
+        };
+
+        reader.onerror = function (error) {
+            console.error('Error reading file:', error);
+            reject('Error reading file.');
+        };
+
+        img.onload = function () {
+            // Create or update the post template
+            addPostTemplate(img.src);
+            console.log(img.src)
+            resolve();
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
+
+async function addPostTemplate(img) {
+    const posts = document.getElementById('posts');
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    const currentDate = new Date().toLocaleDateString('en-US', options);
+    const currentTime = new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true, // Ensures AM/PM format
+    });
+    // Check if a template with the class 'template' already exists
+    const existingTemplate = document.querySelector('.template');
+
+    if (!existingTemplate) {
+        // Create the template
+        const user = await getCurrentUser();
+        const template = document.createElement('li');
+        template.className = 'template';
+        template.id = 'post';
+        template.innerHTML = `
+            <p>${user.email}</p>
+            <img src="${img}" alt="Post Image">
+            <textarea id="desc" placeholder="Enter description here..."></textarea>
+            <p>${currentDate} ${currentTime}</p>
+            <div id="post-buttons">
+            <button class="post-button" id="postPost">Post</button>
+            <button class="post-button" id="cancelPost">Cancel</button>
+            </div>
+        `;
+        posts.insertBefore(template, posts.firstChild);
+        template.querySelector('#postPost').addEventListener('click', async () => {
+            const description = template.querySelector('#desc').value;
+            const postSyntax = await generateUniquePostSyntax(syntax);
+            postToClass(user.email,img,currentDate,currentTime,description,syntax,postSyntax);
+            createPostItem(user.email,img,`${currentDate} ${currentTime}`,description,syntax,postSyntax);
+            cancelFunction(template);
+        });
+
+        template.querySelector('#cancelPost').addEventListener('click', () => {
+            cancelFunction(template);
+        });
+    } else {
+        console.log('Post template already exists.');
+    }
+}
+
+function cancelFunction(template) {
+    // Remove the template from the DOM
+    template.remove();
+}
+
+function postFunction(email,img,currentDate,currentTime,description,syntax) {
+    postToClass(email,img,currentDate,currentTime,description,syntax);
+    console.log('Post button clicked.');
+}
+
+
+document.getElementById('camera-button').addEventListener('click', () => {
+    document.getElementById('camera-input').click();
+});
+
+// Event listener to handle the file input change
+document.getElementById('camera-input').addEventListener('change', handleImageUpload);
+function createPostItem(email, img, dateTime, description, currentUserEmail,postId) {
+    const posts = document.getElementById('posts');
+    const template = document.createElement('li');
+    template.className = 'template';
+    template.id = 'post';
+    template.innerHTML = `
+        <p>${email}</p>
+        <img src="${img}" alt="Post Image">
+        <p id="desc">${description}</p>
+        <p>${dateTime}</p>
+        <div id="post-buttons">
+            ${email === currentUserEmail ? 
+            `<button class="post-button" id="deletePost" data-post-id="${postId}">Delete</button>` : 
+            ''}
+        </div>
+    `;
+
+    posts.insertBefore(template, posts.firstChild);
+
+    if (email === currentUserEmail) {
+        template.querySelector('#deletePost').addEventListener('click', () => {
+            const postId = event.target.getAttribute('data-post-id');
+            deletePost(syntax, postId); // Add deletePost function to remove the post
+            cancelFunction(template);
+        });
+    }
+}

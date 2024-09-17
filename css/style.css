@@ -261,7 +261,7 @@ a {
   display: flex;
 }
 
-#downloadQR {
+#downloadQR, #uploadFaceData, #imageUpload {
   border: 1px solid var(--border-color);
   background-color: transparent;
   color: var(--text-color-main);
@@ -272,6 +272,11 @@ a {
   font-size: 14px;
   margin-top: 10px;
   transition: background-color 0.3s;
+}
+
+#imageUpload {
+  width: 89%;
+  margin: auto;
 }
 
 #downloadQR:hover {

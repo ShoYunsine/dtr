@@ -63,7 +63,12 @@
             <div id="accountEmail">·</div>
           </div>
         </li>
-        <li><a href="#">Notifications</a></li>
+        <li><a>Save Face</a>
+          <form id="faceForm">
+            <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+            <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+            <button form="faceForm" type="submit" id="uploadFaceData">Save Face</button>
+          </form></li>
         <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
       </ul>
     </nav>
@@ -88,7 +93,7 @@
       <label for="attendanceTab" class="switch-btn">Attendance</label>
       <label for="postTab" class="switch-btn">Posts</label>
     </div>
-    <div class="form-section">
+    <div class="form-section" style="padding:0;">
       <div id="attendanceList" class="attendanceList">
         <nav>
           <div id="search"><i class="fa-solid fa-magnifying-glass"></i><input id="attendanceSearch"
@@ -99,10 +104,13 @@
 
         </ul>
       </div>
-      <div id="postList" class="attendanceList">
+      <div id="postList" class="attendanceList" style="margin:0;">
+        <ul id="posts">
+        </ul>
       </div>
     </div>
   </div>
+  <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
   <div id="buttonsdown">
     <button id="camera-button">
     <i class="fas fa-camera"></i>
@@ -110,6 +118,7 @@
   <button id="qr-code-reader">
     <i class="fas fa-qrcode"></i>
   </button></div>
+  
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/class.js"></script>
   <script type="text/javascript">

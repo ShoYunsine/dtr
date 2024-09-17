@@ -44,6 +44,10 @@ import {
 
 import { basicNotif, confirmNotif } from "./notif.js";
 
+import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+import * as facerecognition from "./facerecog.js";
+
 const firebaseConfig = {
     apiKey: "AIzaSyD2njL-ut8J-eEtp-1Pr6XzF8uEccBEngc",
     authDomain: "date-time-record.firebaseapp.com",
@@ -84,6 +88,34 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('signout').addEventListener('click', async function (event) {
                 signOutAccount();
             });
+
+            document.getElementById('faceForm').addEventListener('submit', async function(event) {
+                event.preventDefault(); // Prevent the default form submission
+                
+                console.log('Form submitted'); // Check if form submission is captured
+            
+                try {
+                    const fileInput = document.getElementById('imageUpload');
+                    const file = fileInput.files[0];
+            
+                    if (!file) {
+                        console.log('No file selected.');
+                        return;
+                    }
+            
+                    console.log('File selected:', file); // Log selected file
+            
+                    const detections = await facerecognition.handleImageUpload(file);
+                    const descriptors = detections.map(detection => Array.from(detection.descriptor)); // Convert Float32Array to Array
+                    saveDescriptorsToFirebase(descriptors);
+                    console.log('Returned Detections:', detections);
+                    console.log('Returned Descriptors:', descriptors);
+                    // Do something with the detections, like processing or displaying them
+                } catch (error) {
+                    console.error('Error during image upload and processing:', error);
+                }
+            });
+            
 
             document.getElementById('classList').addEventListener('click', async function (event) {
                 if (event.target.classList.contains('remove-btn')) {
@@ -210,6 +242,20 @@ async function updateProfile(displayName, email, uid, school) {
         .catch((error) => {
             console.error('Error updating profile:', error);
         });
+}
+
+export async function saveDescriptorsToFirebase(descriptors) {
+    const uid = currentUser.uid;
+    try {
+        const userDocRef = doc(db, 'users', uid);
+
+        const flatDescriptors = descriptors.flat();
+        await setDoc(userDocRef, { faceDescriptors: flatDescriptors }, { merge: true });
+
+        console.log('Descriptors saved successfully.');
+    } catch (error) {
+        console.error('Error saving descriptors:', error);
+    }
 }
 
 export async function signUpWithEmail() {
@@ -397,6 +443,29 @@ export async function generateUniqueSyntax() {
     while (exists) {
         syntax = generateRandomSyntax();
         exists = await checkIfSyntaxExists(syntax);
+        console.log(`Generated syntax: ${syntax}, Exists: ${exists}`);
+    }
+    return syntax;
+}
+
+async function checkIfPostSyntaxExists(classId,syntax) {
+    const docRef = doc(db, 'classes', classId, 'posts',syntax);
+    try {
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists();
+    } catch (error) {
+        console.error("Error checking document existence:", error);
+        return false;
+    }
+}
+
+export async function generateUniquePostSyntax(classId) {
+    let syntax;
+    let exists = true;
+
+    while (exists) {
+        syntax = generateRandomSyntax();
+        exists = await checkIfPostSyntaxExists(classId,syntax);
         console.log(`Generated syntax: ${syntax}, Exists: ${exists}`);
     }
     return syntax;
@@ -620,6 +689,32 @@ export async function getUserClasses() {
         return classList;
     } catch (error) {
         console.error('Error fetching user classes:', error);
+        return [];
+    }
+}
+
+export async function fetchClassPosts(syntax) {
+    const classRef = doc(db, 'classes', syntax);
+    const postsRef = collection(classRef, 'posts');
+
+    try {
+        const querySnapshot = await getDocs(postsRef);
+        const posts = [];
+        querySnapshot.forEach((doc) => {
+            posts.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Sort posts by dateTime
+        posts.sort((a, b) => {
+            const dateA = new Date(a.dateTime); // Ensure dateTime is a valid date string
+            const dateB = new Date(b.dateTime);
+            return dateB - dateA; // Sort descending: latest posts first
+        });
+
+        console.log('Fetched posts:', posts);
+        return posts;
+    } catch (error) {
+        console.error('Error fetching posts:', error);
         return [];
     }
 }
@@ -868,59 +963,6 @@ export async function joinClassByCode(classCode, user) {
 
 }
 
-export async function createPost(classId, userId, content) {
-    try {
-        const expirationTime = new Date();
-        expirationTime.setDate(expirationTime.getDate() + 1); // Set expiration to 24 hours from now
-
-        await addDoc(collection(db, `classes/${classId}/posts`), {
-            userId: userId,
-            content: content,
-            createdAt: serverTimestamp(),
-            expiresAt: expirationTime
-        });
-        console.log('Post created');
-    } catch (error) {
-        console.error('Error creating post:', error);
-    }
-}
-
-export async function fetchActivePostsForClass(syntax) {
-    const now = new Date();
-    const postsQuery = query(
-        collection(db, `classes/${syntax}/posts`),
-        where("expiresAt", ">", now)
-    );
-
-    try {
-        const querySnapshot = await getDocs(postsQuery);
-        const activePosts = querySnapshot.docs.map(doc => doc.data());
-        console.log('Active posts for class:', activePosts);
-        return activePosts;
-    } catch (error) {
-        console.error('Error fetching posts:', error);
-        return [];
-    }
-}
-
-async function deleteExpiredPostsForClass(syntax) {
-    const now = new Date();
-    const postsQuery = query(
-        collection(db, `classes/${syntax}/posts`),
-        where("expiresAt", "<=", now)
-    );
-
-    try {
-        const querySnapshot = await getDocs(postsQuery);
-        for (const docSnapshot of querySnapshot.docs) {
-            await deleteDoc(doc(db, `classes/${syntax}/posts`, docSnapshot.id));
-        }
-        console.log('Expired posts for class deleted');
-    } catch (error) {
-        console.error('Error deleting posts:', error);
-    }
-}
-
 export async function getAttendance(syntax, timezone, id) {
     try {
         // Fetch the class data
@@ -1123,4 +1165,60 @@ function convertTo12Hour(militaryTime) {
     else if (hours > 12) hours -= 12;
 
     return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
+export async function postToClass(email, img, currentDate, currentTime, description, syntax, postSyntax) {
+    // Generate a unique post syntax or ID
+   
+
+    // Create a reference to the document
+    const postDocRef = doc(db, 'classes', syntax, 'posts', postSyntax);
+
+    // Create a timestamp combining date and time
+    const dateTime = `${currentDate} ${currentTime}`;
+
+    const imgUrl = await uploadImageToStorage(img,syntax,postSyntax)
+
+    try {
+        // Save the data to Firestore
+        await setDoc(postDocRef, {
+            email: email,
+        image: imgUrl, // Image URL or base64 encoded image
+        description: description, // The description entered by the user
+        dateTime: dateTime,
+        }, { merge: true })
+        console.log('Post successfully saved!');
+    } catch (error) {
+        console.error('Error saving post:', error);
+    }
+}
+
+export async function deletePost(syntax, postId) {
+    try {
+        const storage = getStorage();
+        const imgRef = ref(storage, 'images/' + syntax + '/' + postId); // Unique path
+        await deleteObject(imgRef);
+        console.log('Image deleted successfully from Firebase Storage');
+
+        // Delete the post document from Firestore
+        const postDocRef = doc(db, 'classes', syntax, 'posts', postId);
+        await deleteDoc(postDocRef);
+        console.log('Post document deleted successfully from Firestore');
+        
+        // Optionally, remove the post item from the DOM
+        const postItem = document.getElementById(postId);
+        if (postItem) {
+            postItem.remove();
+        }
+    } catch (error) {
+        console.error('Error deleting post:', error);
+    }
+}
+
+async function uploadImageToStorage(base64Image,syntax,postSyntax) {
+    const storage = getStorage();
+    const storageRef = ref(storage, 'images/' + syntax + '/' + postSyntax); // Unique path
+    await uploadString(storageRef, base64Image, 'data_url'); // Upload base64 string
+    const downloadURL = await getDownloadURL(storageRef); // Get URL
+    return downloadURL;
 }

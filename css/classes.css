@@ -313,6 +313,7 @@
 
 .userOptions button,
 .list-item button,
+.post-button,
 #memberList .list-item .set-role,
 #memberList .list-item label {
   flex-grow: 1;
@@ -415,6 +416,7 @@
 
 .userOptions button:hover,
 .list-item button:hover,
+.post-button:hover ,
 #memberList .list-item .set-role:hover,
 #memberList .list-item label:hover {
   background-color: rgb(4, 135, 243);

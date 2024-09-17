@@ -54,7 +54,13 @@
             <div id="accountEmail">·</div>
           </div>
         </li>
-        <li><a href="#">Notifications</a></li>
+        <li><a>Save Face</a>
+          <form id="faceForm">
+            <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+            <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+            <button form="faceForm" type="submit" id="uploadFaceData">Save Face</button>
+          </form>
+        </li>
         <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
       </ul>
     </nav>
