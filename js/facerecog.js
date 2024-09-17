@@ -22,9 +22,9 @@ export async function handleImageUpload(file) {
         img.onload = async function () {
             try {
                 console.log('Loading models...');
-                await faceapi.nets.tinyFaceDetector.loadFromUri('../models');
-                await faceapi.nets.faceLandmark68Net.loadFromUri('../models');
-                await faceapi.nets.faceRecognitionNet.loadFromUri('../models');
+                await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('./models');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('./models');
                 console.log('Models loaded successfully.');
 
                 const canvas = document.getElementById('canvas');
