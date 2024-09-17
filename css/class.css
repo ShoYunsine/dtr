@@ -49,6 +49,61 @@
   gap: 10px;
   z-index: 10000;
 }
+#posts {
+  display: flex;
+  flex-grow: 1;
+  border: none;
+  justify-content: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-content: center;
+  align-items: center;
+  gap:10px;
+}
+
+#post {
+  height: auto;
+  border: 1px solid var(--border-color);
+  display: flex;
+    flex-direction: column;
+    align-content: flex-start;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    border-radius: 4px;
+    gap: 10px;
+}
+
+#post p:first-child {
+  margin-top: 8px;
+}
+
+#post p{
+  margin-top: 0;
+}
+
+#post img{
+  width: 100%;
+}
+
+#post textarea{
+  width: 98%;
+  height: auto;
+  margin: auto;
+  color: var(--text-color-main);
+  background-color: transparent;
+  border: 1px none var(--border-color);
+}
+
+#post #post-buttons{
+  display: flex;
+  flex-direction: row;
+  width: 98%;
+  margin: auto;
+  color: var(--text-color-main);
+  background-color: transparent;
+  margin-bottom: 10px;
+  gap: 10px;
+}
 
 #camera-button, #qr-code-reader {
   background-color: var(--button-bg-color); /* Button background color */
