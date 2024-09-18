@@ -588,11 +588,11 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
 
     posts.appendChild(template);
 
-    if (email === currentUserEmail) {
+    
         template.querySelector('#deletePost').addEventListener('click', async () => {
             const postId = event.target.getAttribute('data-post-id');
             await deletePost(syntax, postId); // Add deletePost function to remove the post
             cancelFunction(template);
         });
-    }
+    
 }
