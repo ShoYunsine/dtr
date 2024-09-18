@@ -558,6 +558,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     const user = await getCurrentUser();
     const currentMemberData = await fetchMember(syntax, user.uid);
     const userdata = await fetchProfile(userid);
+    basicNotif(userdata.displayName,userid,5000);
     const posts = document.getElementById('posts');
     const template = document.createElement('li');
     template.id = 'post';
