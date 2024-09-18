@@ -6,7 +6,7 @@ document.head.appendChild(luxonScript);
 
 let DateTime;
 
-luxonScript.onload = function() {
+luxonScript.onload = function () {
     DateTime = window.luxon.DateTime;
 }
 
@@ -38,6 +38,7 @@ import {
     setDoc as setSubDoc,
     deleteDoc,
     onSnapshot,
+    orderBy,
     updateDoc,
     deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -76,6 +77,87 @@ setPersistence(auth, browserLocalPersistence)
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user
+        if (typeof on_index != 'undefined') {
+            const currentUser = await getCurrentUser(); // Fetch the current user's email
+            const userClasses = await getUserClasses(); // Fetch the user's classes
+
+            // Loop through each class
+            for (const classData of userClasses) {
+                const syntax = classData.syntax;  // Assuming `syntax` is a property of each class
+
+                // Fetch posts for the current class
+                const classPosts = await fetchClassPosts(syntax);
+
+                // Loop through each post and render it
+                classPosts.forEach(post => {
+                    const { email, image, dateTime, description } = post;
+                    async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid) {
+                        const user = await getCurrentUser();
+                        const currentMemberData = await fetchMember(syntax, user.uid);
+                        const userdata = await fetchProfile(userid);
+                        const posts = document.getElementById('posts');
+                        const template = document.createElement('li');
+                        template.id = 'post';
+                        template.innerHTML = `
+                            <div id="postHeader">
+                                <div>
+                                    <img class="img" src="${userdata.photoUrl}">
+                                    <p>${userdata.displayName}</p>
+                                </div>
+                                <label for="postOptionstoggle${postId}"><i class="fa-solid fa-ellipsis-vertical"></i></label>
+                            </div>
+                            <input class="like" type="checkbox" id="like${postId}">
+                            <img src="${img}" alt="Post Image">
+                            <div id="postButtons">
+                                <label id="heartUncheck" for="like${postId}"><i class="fa-regular fa-heart"></i></label>
+                                <label id="heartCheck" for="like${postId}"><i class="fa-solid fa-heart"></i></label>
+                            </div>
+                            <p id="desc">${description}</p>
+                            <p>${dateTime}</p>
+                            <input class="option" type="checkbox" id="postOptionstoggle${postId}">
+                            <div id="postOptions">
+                                ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
+                                `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
+                                ''}
+                            </div>
+                        `;
+
+                        posts.appendChild(template);
+
+                        const likeCheckbox = template.querySelector(`#like${postId}`);
+
+                        // Check if the post is liked by the current user on page load
+                        const userLikes = await fetchUserLikes(user.uid);
+                        if (userLikes.includes(postId)) {
+                            likeCheckbox.checked = true;
+                        }
+
+                        // Toggle like status on checkbox change
+                        likeCheckbox.addEventListener('change', async () => {
+                            if (likeCheckbox.checked) {
+                                await addToLikedPosts(user.uid, postId); // Add post to user's liked posts
+                            } else {
+                                await removeFromLikedPosts(user.uid, postId); // Remove post from user's liked posts
+                            }
+                        });
+
+                        template.querySelector('#deletePost').addEventListener('click', async (event) => {
+                            const postId = event.target.getAttribute('data-post-id');
+                            await deletePost(syntax, postId); // Add deletePost function to remove the post
+                            cancelFunction(template);
+                        });
+                    }
+                    function cancelFunction(template) {
+                        // Remove the template from the DOM
+                        template.remove();
+                    }
+                    // Call the createPostItem function for each post
+                    createPostItem(email, image, dateTime, description, currentUser.email, post.id, post.userid);
+                });
+            }
+
+        }
+
         if (typeof on_login == 'undefined') {
             basicNotif("Logged in", `Welcome ${user.displayName}`, 5000);
             displayUserClasses();
@@ -89,22 +171,22 @@ onAuthStateChanged(auth, async (user) => {
                 signOutAccount();
             });
 
-            document.getElementById('faceForm').addEventListener('submit', async function(event) {
+            document.getElementById('faceForm').addEventListener('submit', async function (event) {
                 event.preventDefault(); // Prevent the default form submission
-                
+
                 console.log('Form submitted'); // Check if form submission is captured
-            
+
                 try {
                     const fileInput = document.getElementById('imageUpload');
                     const file = fileInput.files[0];
-            
+
                     if (!file) {
                         console.log('No file selected.');
                         return;
                     }
-            
+
                     console.log('File selected:', file); // Log selected file
-            
+
                     const detections = await facerecognition.handleImageUpload(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor)); // Convert Float32Array to Array
                     saveDescriptorsToFirebase(descriptors);
@@ -115,7 +197,7 @@ onAuthStateChanged(auth, async (user) => {
                     console.error('Error during image upload and processing:', error);
                 }
             });
-            
+
 
             document.getElementById('classList').addEventListener('click', async function (event) {
                 if (event.target.classList.contains('remove-btn')) {
@@ -209,6 +291,26 @@ onAuthStateChanged(auth, async (user) => {
         }
     }
 });
+
+// Fetch the list of liked post IDs for a user
+export async function fetchUserLikes(userId) {
+    const userLikesRef = collection(db, 'users', userId, 'likedPosts');
+    const userLikesSnapshot = await getDocs(userLikesRef);
+    return userLikesSnapshot.docs.map(doc => doc.id);
+}
+
+// Add a post to the user's liked posts
+export async function addToLikedPosts(userId, postId) {
+    const userLikesRef = doc(db, 'users', userId, 'likedPosts', postId);
+    await setDoc(userLikesRef, { postId }); // Store an empty document with the postId as a reference
+}
+
+// Remove a post from the user's liked posts
+export async function removeFromLikedPosts(userId, postId) {
+    const userLikesRef = doc(db, 'users', userId, 'likedPosts', postId);
+    await deleteDoc(userLikesRef);
+}
+
 
 function downloadQRCode() {
     const canvas = document.getElementById('qrcode');
@@ -448,8 +550,8 @@ export async function generateUniqueSyntax() {
     return syntax;
 }
 
-async function checkIfPostSyntaxExists(classId,syntax) {
-    const docRef = doc(db, 'classes', classId, 'posts',syntax);
+async function checkIfPostSyntaxExists(classId, syntax) {
+    const docRef = doc(db, 'classes', classId, 'posts', syntax);
     try {
         const docSnap = await getDoc(docRef);
         return docSnap.exists();
@@ -465,7 +567,7 @@ export async function generateUniquePostSyntax(classId) {
 
     while (exists) {
         syntax = generateRandomSyntax();
-        exists = await checkIfPostSyntaxExists(classId,syntax);
+        exists = await checkIfPostSyntaxExists(classId, syntax);
         console.log(`Generated syntax: ${syntax}, Exists: ${exists}`);
     }
     return syntax;
@@ -694,22 +796,37 @@ export async function getUserClasses() {
 }
 
 export async function fetchClassPosts(syntax) {
-    const classRef = doc(db, 'classes', syntax);
-    const postsRef = collection(classRef, 'posts');
+    const classPostsRef = collection(db, 'classes', syntax, 'posts'); // Reference to class posts subcollection
+    const postsCollectionRef = collection(db, 'posts'); // Reference to the global posts collection
 
     try {
-        const querySnapshot = await getDocs(postsRef);
-        const posts = [];
-        querySnapshot.forEach((doc) => {
-            posts.push({ id: doc.id, ...doc.data() });
+        // Step 1: Fetch the posts subcollection under the class to get the post IDs
+        const classPostsSnapshot = await getDocs(classPostsRef);
+        const postIds = [];
+
+        classPostsSnapshot.forEach((doc) => {
+            postIds.push(doc.id);  // Assuming the ID of each document in the class post subcollection is the post ID
         });
 
-        // Sort posts by dateTime
-        posts.sort((a, b) => {
-            const dateA = new Date(a.dateTime); // Ensure dateTime is a valid date string
-            const dateB = new Date(b.dateTime);
-            return dateB + dateA; // Sort descending: latest posts first
-        });
+        if (postIds.length === 0) {
+            console.log('No posts found for this class.');
+            return [];
+        }
+
+        // Step 2: Fetch the actual posts from the global 'posts' collection using the post IDs
+        const posts = [];
+        for (const postId of postIds) {
+            const postRef = doc(postsCollectionRef, postId);  // Reference to the post in the 'posts' collection
+            const postDocSnapshot = await getDoc(postRef);
+            if (postDocSnapshot.exists()) {
+                posts.push({ id: postId, ...postDocSnapshot.data() });
+            } else {
+                console.error(`Post with ID ${postId} does not exist in 'posts' collection`);
+            }
+        }
+
+        // Sort posts by dateTime in descending order (newest to oldest)
+        posts.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
 
         console.log('Fetched posts:', posts);
         return posts;
@@ -1148,7 +1265,7 @@ document.head.appendChild(emailjsScript);
 
 let emailjsInitialized = false;
 
-emailjsScript.onload = function() {
+emailjsScript.onload = function () {
     emailjs.init('BYrDpkwjPv2ZItQov');
     emailjsInitialized = true;
 };
@@ -1167,26 +1284,33 @@ function convertTo12Hour(militaryTime) {
     return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
-export async function postToClass(email, img, currentDate, currentTime, description, syntax, postSyntax,userid) {
+export async function postPost(email, img, currentDate, currentTime, description, syntax, postSyntax, userid) {
     // Generate a unique post syntax or ID
-   
+
 
     // Create a reference to the document
-    const postDocRef = doc(db, 'classes', syntax, 'posts', postSyntax);
+    const postDocRef = doc(db, 'posts', postSyntax);
+    if (syntax) {
+        const postDocRefClass = doc(db, 'classes', syntax, 'posts', postSyntax);
+        await setDoc(postDocRefClass, {
+            userid: userid,
+        }, { merge: true })
+    }
 
     // Create a timestamp combining date and time
     const dateTime = `${currentDate} ${currentTime}`;
 
-    const imgUrl = await uploadImageToStorage(img,syntax,postSyntax)
+    const imgUrl = await uploadImageToStorage(img, syntax, postSyntax)
 
     try {
         // Save the data to Firestore
         await setDoc(postDocRef, {
             email: email,
-        image: imgUrl, // Image URL or base64 encoded image
-        description: description, // The description entered by the user
-        dateTime: dateTime,
-        userid: userid,
+            image: imgUrl, // Image URL or base64 encoded image
+            description: description, // The description entered by the user
+            dateTime: dateTime,
+            userid: userid,
+            syntax: syntax || 'None'
         }, { merge: true })
         console.log('Post successfully saved!');
     } catch (error) {
@@ -1197,7 +1321,7 @@ export async function postToClass(email, img, currentDate, currentTime, descript
 export async function deletePost(syntax, postId) {
     try {
         const storage = getStorage();
-        const imgRef = ref(storage, 'images/' + syntax + '/' + postId); // Unique path
+        const imgRef = ref(storage, 'images/posts/' + postId); // Unique path
         await deleteObject(imgRef);
         console.log('Image deleted successfully from Firebase Storage');
 
@@ -1205,7 +1329,7 @@ export async function deletePost(syntax, postId) {
         const postDocRef = doc(db, 'classes', syntax, 'posts', postId);
         await deleteDoc(postDocRef);
         console.log('Post document deleted successfully from Firestore');
-        
+
         // Optionally, remove the post item from the DOM
         const postItem = document.getElementById(postId);
         if (postItem) {
@@ -1216,9 +1340,9 @@ export async function deletePost(syntax, postId) {
     }
 }
 
-async function uploadImageToStorage(base64Image,syntax,postSyntax) {
+async function uploadImageToStorage(base64Image, syntax, postSyntax) {
     const storage = getStorage();
-    const storageRef = ref(storage, 'images/' + syntax + '/' + postSyntax); // Unique path
+    const storageRef = ref(storage, 'images/posts/' + postSyntax); // Unique path
     await uploadString(storageRef, base64Image, 'data_url'); // Upload base64 string
     const downloadURL = await getDownloadURL(storageRef); // Get URL
     return downloadURL;

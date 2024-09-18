@@ -1,4 +1,9 @@
-import { fetchClass, fetchMembers, changeMemberRole, fetchProfile, getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance, postToClass, fetchClassPosts, deletePost, generateUniquePostSyntax } from './firebase.js';
+import { fetchClass, fetchMembers, 
+    changeMemberRole, fetchProfile,
+     getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance, postPost, fetchClassPosts, deletePost, generateUniquePostSyntax, 
+     addToLikedPosts,
+     removeFromLikedPosts,
+     fetchUserLikes} from './firebase.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
@@ -524,7 +529,7 @@ async function addPostTemplate(img) {
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
-            postToClass(user.email, img, currentDate, currentTime, description, syntax, postSyntax,user.uid);
+            postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax,user.uid);
             createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax,user.uid);
             cancelFunction(template);
         });
@@ -563,24 +568,23 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     template.id = 'post';
     template.innerHTML = `
         <div id="postHeader">
-        <div>
-        <img class="img" src="${userdata.photoUrl}">
-            <p>${userdata.displayName}</p>
+            <div>
+                <img class="img" src="${userdata.photoUrl}">
+                <p>${userdata.displayName}</p>
             </div>
             <label for="postOptionstoggle${postId}"><i class="fa-solid fa-ellipsis-vertical"></i></label>
         </div>
         <input class="like" type="checkbox" id="like${postId}">
         <img src="${img}" alt="Post Image">
         <div id="postButtons">
-        <label id="heartUncheck" for="like${postId}"><i class="fa-regular fa-heart"></i></label>
-        <label id="heartCheck" for="like${postId}"><i class="fa-solid fa-heart"></i></label>
+            <label id="heartUncheck" for="like${postId}"><i class="fa-regular fa-heart"></i></label>
+            <label id="heartCheck" for="like${postId}"><i class="fa-solid fa-heart"></i></label>
         </div>
         <p id="desc">${description}</p>
         <p>${dateTime}</p>
         <input class="option" type="checkbox" id="postOptionstoggle${postId}">
-        
         <div id="postOptions">
-        ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
+            ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
             `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
             ''}
         </div>
@@ -588,11 +592,26 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
 
     posts.appendChild(template);
 
-    
-        template.querySelector('#deletePost').addEventListener('click', async () => {
-            const postId = event.target.getAttribute('data-post-id');
-            await deletePost(syntax, postId); // Add deletePost function to remove the post
-            cancelFunction(template);
-        });
-    
+    const likeCheckbox = template.querySelector(`#like${postId}`);
+
+    // Check if the post is liked by the current user on page load
+    const userLikes = await fetchUserLikes(user.uid);
+    if (userLikes.includes(postId)) {
+        likeCheckbox.checked = true;
+    }
+
+    // Toggle like status on checkbox change
+    likeCheckbox.addEventListener('change', async () => {
+        if (likeCheckbox.checked) {
+            await addToLikedPosts(user.uid, postId); // Add post to user's liked posts
+        } else {
+            await removeFromLikedPosts(user.uid, postId); // Remove post from user's liked posts
+        }
+    });
+
+    template.querySelector('#deletePost').addEventListener('click', async (event) => {
+        const postId = event.target.getAttribute('data-post-id');
+        await deletePost(syntax, postId); // Add deletePost function to remove the post
+        cancelFunction(template);
+    });
 }
