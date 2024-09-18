@@ -558,7 +558,6 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     const user = await getCurrentUser();
     const currentMemberData = await fetchMember(syntax, user.uid);
     const userdata = await fetchProfile(userid);
-    basicNotif(userdata.displayName,userid,5000);
     const posts = document.getElementById('posts');
     const template = document.createElement('li');
     template.id = 'post';
@@ -581,7 +580,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
         <input class="option" type="checkbox" id="postOptionstoggle${postId}">
         
         <div id="postOptions">
-        ${email === currentUserEmail || currentmember.role === 'owner' || currentmember.role === 'admin' ?
+        ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
             `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
             ''}
         </div>
