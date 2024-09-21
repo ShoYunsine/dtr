@@ -412,18 +412,24 @@ width: auto;
 }
 
 #attendance-List .list-item {
+  border: 1px solid var(--text-color-main);
   display: flex;
-  width: 90px;
+  width: 100%;
   padding: 4px;
   height: auto;
+}
+
+#attendance-List .list-item div {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
 }
 
 #attendance-List h3 {
   position: relative;
   font-size: 12px;
   transform: none;
-  padding-bottom: 0;
-  width: 70px;
+  width: 170px;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow-x: hidden;

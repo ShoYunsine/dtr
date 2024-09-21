@@ -336,11 +336,13 @@ onAuthStateChanged(auth, async (user) => {
 
                         observeComments(postId);
 
-                        template.querySelector('#deletePost').addEventListener('click', async (event) => {
-                            const postId = event.target.getAttribute('data-post-id');
-                            await deletePost(syntax, postId); // Add deletePost function to remove the post
-                            cancelFunction(template);
-                        });
+                        if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
+                            template.querySelector('#deletePost').addEventListener('click', async (event) => {
+                                const postId = event.target.getAttribute('data-post-id');
+                                await deletePost(syntax, postId); // Add deletePost function to remove the post
+                                cancelFunction(template);
+                            });
+                        };
                         await displayComments(postId);
                     }
                     function cancelFunction(template) {
@@ -435,7 +437,7 @@ onAuthStateChanged(auth, async (user) => {
 
                     console.log('File selected:', file); // Log selected file
 
-                    const detections = await facerecognition.handleImageUpload(file);
+                    const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor)); // Convert Float32Array to Array
                     saveDescriptorsToFirebase(descriptors);
                     console.log('Returned Detections:', detections);
@@ -1486,7 +1488,8 @@ export async function postPost(email, img, currentDate, currentTime, description
             description: description, // The description entered by the user
             dateTime: dateTime,
             userid: userid,
-            syntax: syntax || 'None'
+            syntax: syntax || 'None',
+            likes: 0
         }, { merge: true })
         console.log('Post successfully saved!');
     } catch (error) {

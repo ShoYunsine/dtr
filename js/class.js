@@ -11,7 +11,8 @@ import {
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
-
+import { faceDetect } from './facerecog.js';
+import * as faceapi from 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.esm.js';
 // Debounce function
 function debounce(func, wait) {
     let timeout;
@@ -51,7 +52,11 @@ async function getCurrentLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 position => resolve(position.coords),
-                error => reject(`Error getting location: ${error.message}`)
+                error => reject(console.log('Unable to retrieve location: ' + error.message)),
+                {
+                    enableHighAccuracy: true, // Set to false for quicker, less accurate location
+                    maximumAge: 150000 // Don't use cached location data
+                }
             );
         } else {
             reject("Geolocation is not supported by this browser.");
@@ -289,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { email, image, dateTime, description } = post;
 
         // Call the createPostItem function for each post
-        createPostItem(email, image, dateTime, description, currentUser.email, post.id, post.userid,post.likes);
+        createPostItem(email, image, dateTime, description, currentUser.email, post.id, post.userid, post.likes);
     })
     debouncedUpdateattList();
     debouncedUpdateList();
@@ -481,9 +486,113 @@ async function handleImageUpload(event) {
             reject('Error reading file.');
         };
 
-        img.onload = function () {
-            // Create or update the post template
-            addPostTemplate(img.src);
+        img.onload = async function () {
+            const canvass = document.getElementById('canvass');
+                canvass.style.display = 'flex';
+            const faces = await faceDetect(file);
+            const members = await fetchMembers(syntax);
+            const labeledDescriptors = [];
+            const matchResults = [];
+            for (const member of members) {
+                const memberProfile = await fetchProfile(member.id); // Fetch profile using member.id
+
+                // Ensure the profile has face descriptors
+                if (memberProfile && Array.isArray(memberProfile.faceDescriptors)) {
+                    console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
+
+                    // Check if the whole faceDescriptors array has a length of 128
+                    if (memberProfile.faceDescriptors.length === 128) {
+                        labeledDescriptors.push(
+                            new faceapi.LabeledFaceDescriptors(
+                                String(memberProfile.uid), // Member's name as label
+                                [new Float32Array(memberProfile.faceDescriptors)] // Wrap it in an array
+                            )
+                        );
+                    } else {
+                        console.log(`Invalid face descriptor length for member: ${memberProfile.displayName}. Expected 128, got ${memberProfile.faceDescriptors.length}.`);
+                    }
+                } else {
+                    console.log(`No face descriptors found for member: ${memberProfile.displayName}`);
+                }
+            }
+
+            const canvas = document.getElementById('canvas');
+            if (!canvas) {
+                console.error('Canvas element not found.');
+                return reject('Canvas element not found.');
+            }
+
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (!ctx) {
+                console.error('2D context not available.');
+                return reject('2D context not available.');
+            }
+
+            // Only create the FaceMatcher if there are labeled descriptors
+            if (labeledDescriptors.length > 0) {
+                
+                const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+                const facesCanvas = document.getElementById('faces'); // Ensure this canvas exists in your HTML
+                const facesCtx = facesCanvas.getContext('2d');
+
+                const croppedFaces = []; // Array to hold cropped face images
+                const faceWidth = 50; // Set a width for the cropped face
+                const faceHeight = 50; // Set a height for the cropped face
+
+                let xOffset = 0; // Position to start drawing faces on the new canvas
+                facesCtx.clearRect(0, 0, facesCanvas.width, facesCanvas.height);
+                for (const [index, face] of faces.entries()) {
+                    const bestMatch = faceMatcher.findBestMatch(face.descriptor);
+                    const label = bestMatch.label !== 'unknown' ? bestMatch.label : 'Unknown';
+                    const box = face.detection.box;
+
+                    // Create a temporary canvas for the cropped face
+                    const temp = document.getElementById('temp');
+                    temp.width = canvas.width;
+                    temp.height = canvas.height;
+                    const tempCtx = temp.getContext('2d');
+                    const croppedFaceCanvas = document.createElement('canvas');
+                    croppedFaceCanvas.width = faceWidth;
+                    croppedFaceCanvas.height = faceHeight;
+                    const croppedFaceCtx = croppedFaceCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    // Draw the cropped face onto the temporary canvas
+                    croppedFaceCtx.drawImage(
+                        temp, // Main canvas
+                        box.x, box.y, box.width, box.height, // Source rectangle from the main canvas
+                        0, 0, faceWidth, faceHeight // Destination rectangle on the temporary canvas
+                    );
+            
+
+                    // Store the cropped face image
+                    croppedFaces.push(croppedFaceCanvas);
+
+                    // Draw the cropped face on the facesCanvas
+                    facesCtx.drawImage(croppedFaceCanvas, xOffset, 0, faceWidth, faceHeight);
+                    xOffset += faceWidth; // Move the xOffset for the next face
+
+                    // Draw label on original canvas
+                    if (bestMatch.label !== 'unknown') {
+                        console.log(`Face ${index + 1} matches with ${bestMatch.label}`);
+                        matchResults.push(bestMatch.label); // Store the UID of the best match
+
+                        // Fetch display name
+                        const memberProfile = await fetchProfile(label);
+                        ctx.fillStyle = 'white'; // Text color
+                        ctx.fillText(memberProfile.displayName, box.x, box.y - 20); // Draw label
+                    } else {
+                        console.log(`Face ${index + 1} did not match any member.`);
+                        ctx.fillStyle = 'white'; // Text color
+                        ctx.fillText(label, box.x, box.y - 20); // Draw label
+                    }
+                    canvass.style.display = 'none'
+                }
+            } else {
+                console.log("No valid labeled descriptors found; FaceMatcher cannot be created.");
+            }
+
+
+            addPostTemplate(img.src,matchResults);
             resolve();
         };
 
@@ -492,7 +601,7 @@ async function handleImageUpload(event) {
 }
 
 
-async function addPostTemplate(img) {
+async function addPostTemplate(img,matches) {
     const posts = document.getElementById('posts');
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     const currentDate = new Date().toLocaleDateString('en-US', options);
@@ -517,7 +626,7 @@ async function addPostTemplate(img) {
             <p>${user.displayName}</p>
         </div>
             <img id="postImg" src="${img}" alt="Post Image">
-            <textarea id="desc" placeholder="Enter description here..."></textarea>
+            <textarea maxlength="1500" id="desc" placeholder="Enter description here..."></textarea>
             <p>${currentDate} ${currentTime}</p>
             <div id="post-buttons">
             <button class="post-button" id="postPost">Post</button>
@@ -530,8 +639,31 @@ async function addPostTemplate(img) {
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
-            postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax, user.uid);
-            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid,0);
+            await postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax, user.uid);
+
+            const location = await getCurrentLocation();
+            const distance = calculateDistance(
+                location.latitude,
+                location.longitude,
+                classroom.lat,
+                classroom.long
+            );
+            //basicNotif(distance,distance <= classroom.rad, 5000)
+            //basicNotif(code.data,distance <= classroom.rad, 5000)
+            if (distance <= classroom.rad) {
+                // Loop through matches array and check attendance for each match
+                if (matches) {
+                    for (const match of matches) {
+                        console.log(match)
+                        const attendance = await checkAttendance(syntax, classroom.timezone, match);
+                        updateattendanceList
+                    }
+                }
+                
+            }
+            
+
+            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid, 0);
             cancelFunction(template);
         });
 
@@ -709,9 +841,9 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
             }
             if (dragDistance < 0) {
                 dragDistance *= dragScaleFactor;
-                refreshMessage.style.bottom = `calc(${100}% - ${dragDistance/12}px)`; // Position above the comment section
-                commentSection.style.height = `calc(${50}% - ${dragDistance*2}px)`;
-                commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance/12}px)`;
+                refreshMessage.style.bottom = `calc(${100}% - ${dragDistance / 12}px)`; // Position above the comment section
+                commentSection.style.height = `calc(${50}% - ${dragDistance * 2}px)`;
+                commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance / 12}px)`;
             }
         }
 
@@ -800,12 +932,14 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     }
 
     observeComments(postId);
+    if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
+        template.querySelector('#deletePost').addEventListener('click', async (event) => {
+            const postId = event.target.getAttribute('data-post-id');
+            await deletePost(syntax, postId); // Add deletePost function to remove the post
+            cancelFunction(template);
+        });
+    };
 
-    template.querySelector('#deletePost').addEventListener('click', async (event) => {
-        const postId = event.target.getAttribute('data-post-id');
-        await deletePost(syntax, postId); // Add deletePost function to remove the post
-        cancelFunction(template);
-    });
     await displayComments(postId);
 }
 function formatTimeDifference(dateTime) {

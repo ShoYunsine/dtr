@@ -59,7 +59,7 @@
         </li>
         <li><a>Save Face</a>
           <form id="faceForm">
-            <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+            
             <input type="file" id="imageUpload" accept="image/*" name="faceImage">
             <button form="faceForm" type="submit" id="uploadFaceData">Save Face</button>
           </form></li>
@@ -95,7 +95,13 @@
 
         </ul>
       </div>
+     
       <div id="postList" class="attendanceList" style="margin:0;">
+        <div id="canvass">
+          <canvas id="canvas" style="display: block;"></canvas>
+          <canvas id="temp" style="display: none;"></canvas>
+          <canvas id="faces" style="display: block;"></canvas>
+        </div>
         <ul id="posts">
         </ul>
       </div>
