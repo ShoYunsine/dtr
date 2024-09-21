@@ -12,8 +12,18 @@
 }
 
 #classList {
+  display: flex;
   max-height: 348px;
-  overflow-y: auto;
+  overflow-x: auto;
+  flex-direction: row;
+  margin: 0%;
+  margin-bottom: 12px;
+  padding: 8px 0%;
+  border-bottom: 1px solid var(--text-color-second);
+}
+
+#classList li:first-child {
+margin:  0 12px;
 }
 
 #qrscanner-container {
@@ -222,18 +232,13 @@
 .list-item {
   text-overflow: ellipsis;
   overflow-x: hidden;
-  padding: 15px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  height: 100px;
   background-color: #f9f9f900;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  flex-direction: row;
-  margin: 12px 0;
+  flex-direction: column;
   opacity: 0;
-  /* Start hidden */
+  width: auto;
   transition: all 0.3s ease;
   animation: fadeIn 0.5s ease forwards;
 }
@@ -257,6 +262,11 @@
   flex-direction: row;
   gap: 10px;
   margin: 12px 0;
+  border-radius: 4px;
+  background-color: #f9f9f900;
+  opacity: 0;
+  transition: all 0.3s ease;
+  animation: fadeIn 0.5s ease forwards;
 }
 
 #memberList::-webkit-scrollbar,
@@ -283,20 +293,43 @@
   display: none;
 }
 
+
+#classPfp{
+  font-size: 16px;
+  border-radius: 100%;
+  padding: 10px;
+  border: 1px solid var(--text-color-main);
+  height: 20px;
+  width: 20px;
+  color: white;
+  text-shadow: 0 1px 2px var(--text-color-second);
+  font-weight: bold;
+  text-align: center;
+}
+
 .list-item p {
   margin: 0;
   font-size: 12px;
-  color: var(--text-color-second);
+  color: var(--text-color-main);
   white-space: nowrap;
-  width: 145px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.list-item div {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+width: auto;
 }
 
 .list-item #uid {
   margin-top: 5px;
   font-size: 9px;
   color: var(--text-color-second);
+  display: none;
 }
 
 .userOptions {

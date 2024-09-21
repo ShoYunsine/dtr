@@ -15,7 +15,7 @@
 }
 
 .dark-mode {
-  --background-color: rgb(6, 11, 17);
+  --background-color: rgb(2, 2, 15);
   --text-color-main: rgb(255, 255, 255);
   --border-color: white;
   --late: rgb(158, 49, 158);
@@ -482,5 +482,143 @@ a {
 
   .backdrop {
     display: none;
+  }
+}
+
+.loader {
+  position: relative;
+  width: 100px; /* Adjust width as needed */
+  height: 100px; /* Adjust height as needed */
+  display: flex;
+  margin: 50px auto;
+  justify-content: center;
+  align-items: center;
+}
+
+.circle {
+  width: 15px; /* Size of the circles */
+  height: 15px;
+  border-radius: 50%; /* Make it a circle */
+  background-color: grey; /* Circle color */
+  position: absolute; /* Position absolutely */
+}
+
+.circle.top {
+  top: 50%; /* Position for top circles */
+}
+
+.circle.bottom {
+  bottom: 50%; /* Position for bottom circles */
+}
+
+.circle:nth-child(1) {
+  left: 50%; /* Position for the first top circle */
+  animation-delay: 0s;
+}
+
+.circle:nth-child(2) {
+  right: 50%; /* Position for the second top circle */
+  animation-delay: 0.3s;
+}
+
+.circle:nth-child(3) {
+  left: 50%; /* Position for the first bottom circle */
+  animation-delay: 0.6s;
+}
+
+.circle:nth-child(4) {
+  right: 50%; /* Position for the second bottom circle */
+  animation-delay: 0.9s;
+}
+
+/* Pseudo-elements for semicircles */
+.circle::before {
+  content: "";
+  position: absolute;
+  width: 15px; /* Width of the semicircle */
+  height: 15px; /* Height of the semicircle */
+  background-color: transparent; /* Transparent to show the background */
+ 
+  border-radius: 15px; /* Make it a semicircle */
+  opacity: 0; /* Start as invisible */
+  animation: semicircleRotate 0.5s infinite ease-in-out; /* Animation for semicircle */
+}
+
+.circle:nth-child(1)::before {
+  top: -10%; /* Position above the first circle */
+  left: -5%;
+  border-top: 2px solid rgb(255, 187, 0); /* Line color */
+  border-left: 2px solid rgb(255, 187, 0); /* Line color */
+  animation-delay: 0s;
+}
+
+.circle:nth-child(2)::before {
+  top: -10%; /* Position above the second circle */
+  left: -5%;
+  border-top: 2px solid rgb(211, 3, 238); /* Line color */
+  border-left: 2px solid rgb(211, 3, 238); /* Line color */
+  animation: semicircleRotateOPP 0.5s infinite ease-in-out; /* Animation for semicircle */
+}
+
+.circle:nth-child(3)::before {
+  bottom: -10%; /* Position below the first circle */
+  left: -5%;
+  border-top: 2px solid rgb(0, 204, 255); /* Line color */
+  border-left: 2px solid rgb(0, 204, 255); /* Line color */
+  animation: semicircleRotateOPP 0.5s infinite ease-in-out ; /* Animation for semicircle */
+}
+
+.circle:nth-child(4)::before {
+  bottom: -10%; /* Position below the second circle */
+  left: -5%;
+  border-top: 2px solid rgb(255, 0, 157); /* Line color */
+  border-left: 2px solid rgb(255, 0, 157); /* Line color */
+}
+
+@keyframes pulse {
+  0%, 20% {
+      transform: scale(1);
+  }
+  50% {
+      transform: scale(1.5); /* Grow to 1.5 times */
+  }
+  100% {
+      transform: scale(1);
+  }
+}
+
+@keyframes semicircleRotate {
+  0% {
+      opacity: 1; /* Start invisible */
+      transform: rotate(0deg); /* Initial rotation */
+  }
+  30% {
+      opacity: 1; /* Fade in */
+      transform: rotate(90); /* Stay in place */
+  }
+  60% {
+      transform: rotate(180deg);
+  }
+  100% {
+      opacity: 1; /* Fade out */
+      transform: rotate(360deg); /* End rotation */
+  }
+}
+
+@keyframes semicircleRotateOPP     {
+  0% {
+      opacity: 1; /* Start invisible */
+      transform: rotate(-0deg); /* Initial rotation */
+  }
+  30% {
+      opacity: 1; /* Fade in */
+      transform: rotate(-90deg); /* Stay in place */
+  }
+  60% {
+      transform: rotate(-180deg); /* Rotate semicircle */
+  }
+  100% {
+      opacity: 1; /* Fade out */
+      transform: rotate(-360deg); /* End rotation */
   }
 }

@@ -40,12 +40,6 @@
   <aside class="sidebar">
     <nav>
       <ul>
-        <li><a href="classes.html">Classes</a><i class="fas fa-plus-circle"></i><input id="classSearch"
-            placeholder="Search">
-          <ul id="classList">
-
-          </ul>
-        </li>
         <li><a href="#">QR Code</a>
           <div><canvas id="qrcode"></canvas></div>
           <button id="downloadQR">Save QR Code</button>
@@ -68,8 +62,19 @@
   </aside>
   <div class="main-container">
     <div class="form-section" style="padding:0;">
+      <ul id="classList">
+        <li class="list-item">
+          <div>
+              <a href="classes.html" id="classPfp">+</a>
+              <p>Add Class</p>
+          </div> 
+      </li>
+      </ul>
+    </div>
+    <div class="form-section" style="padding:0;">
       <div id="postList" class="attendanceList" style="margin:0; display:block;">
         <ul id="posts">
+          
         </ul>
       </div>
     </div>
