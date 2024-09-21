@@ -5,7 +5,8 @@ import {
     addToLikedPosts,
     removeFromLikedPosts,
     fetchUserLikes,
-    displayComments
+    displayComments,
+    sendCommentToPost
 } from './firebase.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
@@ -515,7 +516,7 @@ async function addPostTemplate(img) {
         <img class="img" src="${userdata.photoUrl}">
             <p>${user.displayName}</p>
         </div>
-            <img src="${img}" alt="Post Image">
+            <img id="postImg" src="${img}" alt="Post Image">
             <textarea id="desc" placeholder="Enter description here..."></textarea>
             <p>${currentDate} ${currentTime}</p>
             <div id="post-buttons">
@@ -530,7 +531,7 @@ async function addPostTemplate(img) {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
             postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax, user.uid);
-            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid);
+            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid,0);
             cancelFunction(template);
         });
 
@@ -581,6 +582,12 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
             <label for="postOptionstoggle${postId}"><i class="fa-solid fa-ellipsis-vertical"></i></label>
         </div>
         <input style="display:none;" class="like" type="checkbox" id="like${postId}">
+        <div class="loader">
+            <div class="circle top"></div>
+            <div class="circle top"></div>
+            <div class="circle bottom"></div>
+            <div class="circle bottom"></div>
+        </div>
         <img id="postImg" src="${img}" alt="Post Image">
         <div id="postButtons">
             <label id="heartUncheck" for="like${postId}"><i class="fa-regular fa-heart"></i></label>
@@ -602,7 +609,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
         </div>
         <div id="commentSection">
         <div id="commentArea">
-            <img class="img" src="${user.photoURL}"><textarea id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i>
+            <img class="img" src="${user.photoURL}"><textarea maxlength="150" id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i>
         </div>
         </div>
         <div class="comments" id="commentSection${postId}">
@@ -614,7 +621,17 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     `;
 
     posts.appendChild(template);
+    const imgElement = template.querySelector('#postImg');
+    const loader = template.querySelector('.loader');
 
+    // Load the image
+    imgElement.src = img;
+
+    // Show loader until the image loads
+    imgElement.onload = () => {
+        loader.style.display = 'none'; // Hide loader
+        imgElement.style.display = 'block'; // Show image
+    };
     const likeCheckbox = template.querySelector(`#like${postId}`);
 
     // Check if the post is liked by the current user on page load
@@ -639,65 +656,112 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     function makeCommentSectionDraggable(postId) {
         const commentSection = document.getElementById(`commentSection${postId}`);
         const commentToggle = document.getElementById(`commentSectionToggle${postId}`);
-    
+
         let startY = 0;
         let currentY = 0;
         let isDragging = false;
-    
-        const dragThreshold = 150; // Threshold in percentage to trigger unchecking
-        const initialBottomPercent = -1
-    
+
+        const dragThreshold = 50;
+        const initialBottomPercent = -1; // Adjust as needed
+        const dragScaleFactor = 0.3;
+
+        // Create the "Refresh Comments" message
+        const refreshMessage = document.createElement('div');
+        refreshMessage.textContent = 'Refresh Comments';
+        refreshMessage.style.position = 'absolute';
+        refreshMessage.style.bottom = '100%'; // Position above the comment section
+        refreshMessage.style.left = '50%';
+        refreshMessage.style.transform = 'translateX(-50%)';
+        refreshMessage.style.fontSize = '12px';
+        refreshMessage.style.padding = '5px 10px';
+        refreshMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        refreshMessage.style.color = 'var(--text-color-main)';
+        refreshMessage.style.borderRadius = '15px';
+        refreshMessage.style.display = 'none'; // Hidden by default
+        commentSection.appendChild(refreshMessage);
+
         // Function to handle the start of the drag
         function startDrag(event) {
-            isDragging = true;
-            startY = event.touches ? event.touches[0].clientY : event.clientY; // For touch and mouse events
-            commentSection.style.transition = 'none'; // Disable smooth transition during drag
+            if (event.target === commentSection) {
+                isDragging = true;
+                startY = event.touches ? event.touches[0].clientY : event.clientY;
+                commentSection.style.transition = 'none'; // Disable smooth transition during drag
+            }
         }
-    
+
         // Function to handle dragging
         function drag(event) {
             if (!isDragging) return;
-    
+
             currentY = event.touches ? event.touches[0].clientY : event.clientY;
-            const dragDistance = currentY - startY;
-            console.log(dragDistance,initialBottomPercent)
-            // Convert pixel drag distance to percentage of the viewport height
-    
+            let dragDistance = currentY - startY;
+
+            // Show refresh message when dragging upwards
+            if (dragDistance < -10) {
+                refreshMessage.style.display = 'block';
+            } else {
+                refreshMessage.style.display = 'none';
+            }
+
+            // Adjust the bottom property based on the drag distance
             if (dragDistance > 0) {
-                // Adjust the bottom property based on the drag distance in percentage
                 commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance}px)`;
             }
+            if (dragDistance < 0) {
+                dragDistance *= dragScaleFactor;
+                refreshMessage.style.bottom = `calc(${100}% - ${dragDistance/12}px)`; // Position above the comment section
+                commentSection.style.height = `calc(${50}% - ${dragDistance*2}px)`;
+                commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance/12}px)`;
+            }
         }
-    
+
         // Function to handle the end of the drag
-        function endDrag() {
+        async function endDrag() {
             if (!isDragging) return;
             isDragging = false;
             commentSection.style.transition = 'bottom 0.3s ease'; // Re-enable smooth transition
-    
+
             const dragDistance = currentY - startY;
-    
+
+            // Hide the refresh message after dragging ends
+            refreshMessage.style.display = 'none';
+            commentSection.style.height = ''
             if (dragDistance > dragThreshold) {
-                commentSection.style.bottom = ''; // Remove the bottom property
+
+                commentSection.style.bottom = ''; // Close the comment section
                 commentToggle.checked = false;
-            } else {
-                // Reset to the original position
+            } else if (dragDistance < -10) {
+                await displayComments(postId); // Call your refresh function
                 commentSection.style.bottom = `${initialBottomPercent}%`;
+            } else {
+                commentSection.style.bottom = `${initialBottomPercent}%`; // Reset to the original position
             }
         }
-    
+
         // Attach event listeners for mouse and touch events
         commentSection.addEventListener('mousedown', startDrag);
         commentSection.addEventListener('mousemove', drag);
         commentSection.addEventListener('mouseup', endDrag);
         commentSection.addEventListener('mouseleave', endDrag);
-    
+
         commentSection.addEventListener('touchstart', startDrag);
         commentSection.addEventListener('touchmove', drag);
         commentSection.addEventListener('touchend', endDrag);
+
+        // Prevent child elements from triggering drag
+        commentSection.addEventListener('mousedown', (event) => {
+            if (event.target !== commentSection) {
+                event.stopPropagation();
+            }
+        });
+        commentSection.addEventListener('touchstart', (event) => {
+            if (event.target !== commentSection) {
+                event.stopPropagation();
+            }
+        });
     }
-    
-    makeCommentSectionDraggable(postId);                        
+
+    makeCommentSectionDraggable(postId);
 
     template.querySelector(`#postComment${postId}`).addEventListener('click', async () => {
         const commentInput = template.querySelector(`#commentInput${postId}`);
@@ -714,27 +778,27 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     function observeComments(postId) {
         const commentsContainer = template.querySelector(`#commentsContainer${postId}`);
         const commentsToggleLabel = template.querySelector(`#commentsToggleLabel${postId}`);
-    
+
         // Function to update the visibility of the checkbox label
         function updateCommentsToggle() {
             if (commentsContainer.children.length > 0) {
-                // Show the checkbox if comments exist
+                commentsToggleLabel.textContent = `View ${commentsContainer.children.length} ${commentsContainer.children.length > 1 ? 'comments' : 'comment'}`;
                 commentsToggleLabel.style.display = 'block';
             } else {
                 // Hide the checkbox if no comments exist
                 commentsToggleLabel.style.display = 'none';
             }
         }
-    
+
         updateCommentsToggle();
-    
+
         const observer = new MutationObserver(() => {
             updateCommentsToggle();
         });
-    
+
         observer.observe(commentsContainer, { childList: true });
     }
-    
+
     observeComments(postId);
 
     template.querySelector('#deletePost').addEventListener('click', async (event) => {
