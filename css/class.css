@@ -1,4 +1,3 @@
-
 .container {
   width: 100%;
   margin: auto;
@@ -31,7 +30,8 @@
 
 #clipboard:hover {
   font-size: 16px;
-  color: var(--text-color-main);;
+  color: var(--text-color-main);
+  ;
 }
 
 
@@ -44,7 +44,7 @@
   position: fixed;
   flex-direction: row-reverse;
   bottom: 20px;
-  right:12px;
+  right: 12px;
   padding: 4px;
   gap: 10px;
   z-index: 10000;
@@ -59,8 +59,9 @@
   flex-wrap: nowrap;
   align-content: center;
   align-items: center;
-  gap:20px;
+  gap: 30px;
   padding: 0;
+  transition: all 0.3s;
 }
 
 #postHeader {
@@ -74,6 +75,14 @@
   justify-content: space-between;
 }
 
+#likes {
+  color: var(--text-color-main);
+  margin-left: 10px;
+  padding: 2px 2px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
 #postHeader div {
   display: flex;
   width: 50%;
@@ -82,13 +91,30 @@
   align-self: start;
 }
 
-#postHeader label {
+#postHeader div div {
   display: flex;
- color: var(--text-color-main);
- justify-self: flex-end;
+  flex-direction: column;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
 }
 
-#postOptions {
+#postHeader div div p {
+  display: flex;
+  margin-top: 0;
+
+}
+
+#postHeader label {
+  display: flex;
+  color: var(--text-color-main);
+  justify-self: flex-end;
+}
+
+#postOptions,
+#commentSection,
+.comments {
   display: flex;
   width: 75%;
   align-self: center;
@@ -101,11 +127,60 @@
   border-radius: 15px 15px 0 0;
   border: 1px none var(--border-color);
   transition: 0.3s;
-  box-shadow: 0 24px 24px var(--text-color-main);
-
+  box-shadow: 0 0 1px var(--text-color-main);
 }
 
-#postOptions .postOptionButton{
+.comments {
+  height: 55%;
+  bottom: -55%;
+  flex-wrap: wrap;
+  flex-direction: column;
+  touch-action: none;
+  /* Disable default touch actions */
+}
+
+.comments label {
+  display: block;
+  margin: 8px 0;
+  color: var(--text-color-main);
+  font-size: 14px;
+  text-align: center;
+  padding: 8px 12px;
+  margin-top: 14px;
+}
+
+.comments label:first-child::before {
+  content: "";
+  /* Required to create the pseudo-element */
+  position: absolute;
+  /* Position it relative to the label */
+  top: 10px;
+  /* Adjust position above the label */
+  left: 50%;
+  /* Center it horizontally */
+  transform: translateX(-50%);
+  /* Adjust to perfectly center */
+  width: 30%;
+  /* Width of the rounded bar */
+  height: 5px;
+  /* Height of the rounded bar */
+  background-color: grey;
+  /* Color of the bar */
+  border-radius: 10px;
+  /* Rounded corners */
+}
+
+#commentSection {
+  position: relative;
+  display: none;
+  box-shadow: none;
+  margin: 0;
+  z-index: 1;
+  width: 95%;
+  animation: fadeIn 0.3s ease;
+}
+
+#postOptions .postOptionButton {
   color: var(--text-color-main);
   background-color: transparent;
   text-align: left;
@@ -116,7 +191,7 @@
   height: 50px;
 }
 
-#postOptions .postOptionButton:hover{
+#postOptions .postOptionButton:hover {
   color: var(--text-color-main);
   background-color: var(--button-hover-bg-color);
   text-align: left;
@@ -130,8 +205,8 @@
   display: flex;
   color: var(--text-color-main);
   flex-direction: row;
-  padding: 8px 12px;
-  gap: 4px;
+  padding: 0 12px;
+  gap: 12px;
   font-size: 20px;
 }
 
@@ -140,19 +215,42 @@
   left: -100%;
 }
 
-#post > .option:focus ~ #postOptions {
+#post>.option:focus~#postOptions {
   bottom: -1%;
 }
+
+#post>.comment:checked~#commentSection {
+  display: flex;
+}
+
+#post>.commentToggle:checked~.comments {
+  bottom: -1%;
+}
+
 
 @keyframes scaleUp {
   0% {
     transform: scale(1);
   }
+
   50% {
-    transform: scale(1.5); /* Scale up by 20% */
+    transform: scale(1.5);
+    /* Scale up by 20% */
   }
+
   100% {
-    transform: scale(1); /* Return to original size */
+    transform: scale(1);
+    /* Return to original size */
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
   }
 }
 
@@ -165,37 +263,42 @@
   display: block;
 }
 
-#post .like:checked ~ #postButtons #heartCheck {
+#post .like:checked~#postButtons #heartCheck {
   display: block;
   animation: scaleUp 0.3s ease;
 }
 
-#post .like:checked ~ #postButtons #heartUncheck {
+#post .like:checked~#postButtons #heartUncheck {
+  display: none;
+}
+
+#post .like:checked~#heartCheck {
+  display: block;
+  animation: scaleUp 0.3s ease;
+}
+
+#post .like:checked~#heartUncheck {
   display: none;
 }
 
 #postHeader .img {
   display: flex;
-  width: 25px;
+  width: 27px;
   border-radius: 100%;
-  border: 3px solid var(--border-color);
+  border: 1px solid var(--border-color);
 }
 
 #post {
   height: auto;
   border: 1px none var(--border-color);
   display: flex;
-    flex-direction: column;
-    align-content: flex-start;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    border-radius: 4px;
-    gap: 10px;
-    width: 100%;
-}
-
-#post p:first-child {
-  margin-top: 8px;
+  flex-direction: column;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  border-radius: 4px;
+  gap: 10px;
+  width: 100%;
 }
 
 
@@ -203,28 +306,34 @@
   color: var(--text-color-main);
   word-wrap: break-word;
   overflow-wrap: break-word;
+  font-size: 12px;
   white-space: normal;
 }
 
-#desc + p {
+#desc+p {
   font-size: 12px;
-  margin-bottom: -16px;
 }
 
 
-#post p{
+#desc+label {
+  color: var(--text-color-second);
+  margin-left: 12px;
+  font-size: 12px;
+}
+
+
+#post p {
   margin-top: 0;
   width: 95%;
+  padding: 0 10px;
   text-align: left;
 }
 
-#post img{
+#postImg {
   width: 100%;
-  align-self: center;
-  margin-left: -4px;
 }
 
-#post textarea{
+#post textarea {
   width: 98%;
   height: auto;
   margin: auto;
@@ -233,7 +342,43 @@
   border: 1px none var(--border-color);
 }
 
-#post #post-buttons{
+#commentArea {
+  display: flex;
+  flex-grow: 1;
+  margin-top: 10px;
+  border: 1px none var(--border-color);
+  border-radius: 40px;
+  height: 30px;
+  padding: 8px;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+}
+
+#commentArea textarea {
+  width: 100%;
+  margin: auto;
+  display: flex;
+  outline: none;
+  height: 14px;
+  border-bottom: 1px solid var(--border-color);
+  overflow-y: hidden;
+  padding: 8px 0;
+}
+
+#commentArea i {
+  color: var(--text-color-main);
+}
+
+#commentArea img {
+  display: flex;
+  width: 27px;
+  height: 27px;
+  border-radius: 100%;
+  border: 1px solid var(--border-color);
+}
+
+#post #post-buttons {
   display: flex;
   flex-direction: row;
   width: 98%;
@@ -244,9 +389,52 @@
   gap: 10px;
 }
 
-#camera-button, #qr-code-reader {
-  background-color: var(--button-bg-color); /* Button background color */
-  color: var(--text-color-main); /* Icon color */
+.commentBlock {
+  display: flex;
+  padding: 8px;
+  margin: 0 8px;
+  justify-content: space-between;
+}
+
+.commentBlock div {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  width: 90%;
+  align-items: center;
+}
+
+.commentBlock div div {
+  display: flex;
+  gap: 8px;
+  width: 90%;
+  margin: 0;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: center;
+}
+
+.commentBlock p:first-child {
+  display: flex;
+  padding: 8px;
+  color: var(--text-color-main);
+}
+
+.commentPfp {
+  display: flex;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color);
+  border-radius: 100%;
+}
+
+
+#camera-button,
+#qr-code-reader {
+  background-color: var(--button-bg-color);
+  /* Button background color */
+  color: var(--text-color-main);
+  /* Icon color */
   border: none;
   border-radius: 50%;
   width: 45px;
@@ -261,11 +449,13 @@
   transition: all 0.3s ease;
 }
 
-#camera-button:hover, #qr-code-reader:hover {
+#camera-button:hover,
+#qr-code-reader:hover {
   transform: scale(1.15);
   background-color: var(--button-hover-bg-color);
   opacity: 1;
-  filter: invert(); /* Darker button background on hover */
+  filter: invert();
+  /* Darker button background on hover */
 }
 
 .attendanceList nav {
@@ -315,20 +505,21 @@
   padding: 8px 18px;
   margin: 0;
   margin-left: 4px;
-  outline: none; /* Remove default focus outline */
+  outline: none;
+  /* Remove default focus outline */
 }
 
 .attendanceList {
   display: none;
 }
 
-#attendanceTab:checked ~ #formSwitch + .form-section #attendanceList {
+#attendanceTab:checked~#formSwitch+.form-section #attendanceList {
   display: block;
 }
 
 
 /* Show the classjoinForm when joinTab is checked */
-#postTab:checked ~ #formSwitch + .form-section #postList {
+#postTab:checked~#formSwitch+.form-section #postList {
   display: block;
 }
 
@@ -354,8 +545,15 @@
 }
 
 @media (max-width: 414px) {
-  #postHeader, #postButtons, #desc {
+
+  #postHeader,
+  #postButtons,
+  #desc {
     width: 90%;
+  }
+
+  .comments {
+    width: 100%;
   }
 
   #postHeader div {

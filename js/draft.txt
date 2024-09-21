@@ -117,6 +117,9 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
+ ${currentmember.role === 'owner' ? '<button class="remove-btn"><i id="i" class="fa-solid fa-square-minus"></i> Remove</button>' : ''}
+                    ${currentmember.role === 'admin' || currentmember.role === 'student' ? '<button class="leave-btn"><i id="i" class="fa-solid fa-arrow-right-from-bracket"></i> Leave</button>' : ''}
+
 // Retrieve an instance of Firebase Messaging
 const messaging = firebase.messaging();
 

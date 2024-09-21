@@ -64,25 +64,11 @@ document.getElementById('classaddForm').addEventListener('submit', async functio
         // Generate a unique syntax
         const uid = await generateUniqueSyntax();
         const classcode = await generateClassCode();
-        var classList = document.getElementById('classList');
-        var listItem = document.createElement('li');
 
         // Add the class to Firestore (or your database)
-        await addClass(className, school, uid, classcode, timeIn, lat, long, rad, timezone);
+        await addClass(className, uid, classcode, timeIn, lat, long, rad, timezone);
 
         // Add the new class to the DOM
-        listItem.classList.add('list-item');
-        listItem.innerHTML = `
-            <div>
-                <h3>${className}</h3>
-                <p>School: ${school}</p>
-                <p id="uid">${uid}</p>
-            </div>
-            <button class="remove-btn">Remove</button>
-        `;
-        classList.appendChild(listItem);
-
-        // Clear the input fields and reset dropdown
         document.getElementById('classaddForm').reset();
     } catch (error) {
         console.error('Error generating unique syntax or adding class:', error);

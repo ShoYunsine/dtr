@@ -40,7 +40,9 @@ import {
     onSnapshot,
     orderBy,
     updateDoc,
-    deleteField
+    deleteField,
+    increment,
+    addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import { basicNotif, confirmNotif } from "./notif.js";
@@ -65,6 +67,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 let currentUser;
 
+
 export { db }
 
 setPersistence(auth, browserLocalPersistence)
@@ -73,6 +76,7 @@ setPersistence(auth, browserLocalPersistence)
     })
     .catch((error) => {
     });
+
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -91,39 +95,78 @@ onAuthStateChanged(auth, async (user) => {
                 // Loop through each post and render it
                 classPosts.forEach(post => {
                     const { email, image, dateTime, description } = post;
-                    async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid) {
+                    async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid, likes) {
                         const user = await getCurrentUser();
                         const currentMemberData = await fetchMember(syntax, user.uid);
                         const userdata = await fetchProfile(userid);
                         const posts = document.getElementById('posts');
                         const template = document.createElement('li');
                         template.id = 'post';
+
+
+                        const timeDisplay = formatTimeDifference(dateTime);
+
                         template.innerHTML = `
                             <div id="postHeader">
                                 <div>
                                     <img class="img" src="${userdata.photoUrl}">
+                                    <div>
                                     <p>${userdata.displayName}</p>
+                                    </div>
                                 </div>
                                 <label for="postOptionstoggle${postId}"><i class="fa-solid fa-ellipsis-vertical"></i></label>
                             </div>
-                            <input class="like" type="checkbox" id="like${postId}">
-                            <img src="${img}" alt="Post Image">
+                            <input style="display:none;" class="like" type="checkbox" id="like${postId}">
+                            <div class="loader">
+                                <div class="circle top"></div>
+                                <div class="circle top"></div>
+                                <div class="circle bottom"></div>
+                                <div class="circle bottom"></div>
+                            </div>
+                            <img id="postImg" src="${img}" alt="Post Image">
                             <div id="postButtons">
                                 <label id="heartUncheck" for="like${postId}"><i class="fa-regular fa-heart"></i></label>
                                 <label id="heartCheck" for="like${postId}"><i class="fa-solid fa-heart"></i></label>
+                                <label for="comments${postId}"><i class="fa-regular fa-message"></i></label>
                             </div>
+                            <a id="likes">${likes} likes</a>
                             <p id="desc">${description}</p>
-                            <p>${dateTime}</p>
+                            <label for="commentSectionToggle${postId}" style="display:none;" id="commentsToggleLabel${postId}">
+                            Show Comments</label>
+                            <p>${timeDisplay}</p>
                             <input class="option" type="checkbox" id="postOptionstoggle${postId}">
+                            <input style="display:none;" class="comment" type="checkbox" id="comments${postId}">
+                            <input style="display:none;" class="commentToggle" type="checkbox" id="commentSectionToggle${postId}">
                             <div id="postOptions">
                                 ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
                                 `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
                                 ''}
                             </div>
+                            <div id="commentSection">
+                            <div id="commentArea">
+                                <img class="img" src="${user.photoURL}"><textarea id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i>
+                            </div>
+                            </div>
+                            <div class="comments" id="commentSection${postId}">
+                            <label for="commentSectionToggle${postId}" id="commentsToggleLabel${postId}">
+                            Comments</label>
+                                <div id="commentsContainer${postId}">
+                                </div>
+                            </div>
                         `;
 
                         posts.appendChild(template);
-
+                        const imgElement = template.querySelector('#postImg');
+                        const loader = template.querySelector('.loader');
+                    
+                        // Load the image
+                        imgElement.src = img;
+                    
+                        // Show loader until the image loads
+                        imgElement.onload = () => {
+                            loader.style.display = 'none'; // Hide loader
+                            imgElement.style.display = 'block'; // Show image
+                        };
                         const likeCheckbox = template.querySelector(`#like${postId}`);
 
                         // Check if the post is liked by the current user on page load
@@ -131,74 +174,140 @@ onAuthStateChanged(auth, async (user) => {
                         if (userLikes.includes(postId)) {
                             likeCheckbox.checked = true;
                         }
-
                         // Toggle like status on checkbox change
                         likeCheckbox.addEventListener('change', async () => {
+                            const likestxt = template.querySelector('#likes')
                             if (likeCheckbox.checked) {
+                                likestxt.innerHTML = `${likes + 1} likes`
+                                likes = likes + 1
                                 await addToLikedPosts(user.uid, postId); // Add post to user's liked posts
                             } else {
+                                likestxt.innerHTML = `${likes - 1} likes`
+                                likes = likes - 1
                                 await removeFromLikedPosts(user.uid, postId); // Remove post from user's liked posts
                             }
                         });
+
+                        function makeCommentSectionDraggable(postId) {
+                            const commentSection = document.getElementById(`commentSection${postId}`);
+                            const commentToggle = document.getElementById(`commentSectionToggle${postId}`);
+                        
+                            let startY = 0;
+                            let currentY = 0;
+                            let isDragging = false;
+                        
+                            const dragThreshold = 150; // Threshold in percentage to trigger unchecking
+                            const initialBottomPercent = -1
+                        
+                            // Function to handle the start of the drag
+                            function startDrag(event) {
+                                isDragging = true;
+                                startY = event.touches ? event.touches[0].clientY : event.clientY; // For touch and mouse events
+                                commentSection.style.transition = 'none'; // Disable smooth transition during drag
+                            }
+                        
+                            // Function to handle dragging
+                            function drag(event) {
+                                if (!isDragging) return;
+                        
+                                currentY = event.touches ? event.touches[0].clientY : event.clientY;
+                                const dragDistance = currentY - startY;
+                                console.log(dragDistance,initialBottomPercent)
+                                // Convert pixel drag distance to percentage of the viewport height
+                        
+                                if (dragDistance > 0) {
+                                    // Adjust the bottom property based on the drag distance in percentage
+                                    commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance}px)`;
+                                }
+                            }
+                        
+                            // Function to handle the end of the drag
+                            function endDrag() {
+                                if (!isDragging) return;
+                                isDragging = false;
+                                commentSection.style.transition = 'bottom 0.3s ease'; // Re-enable smooth transition
+                        
+                                const dragDistance = currentY - startY;
+                        
+                                if (dragDistance > dragThreshold) {
+                                    commentSection.style.bottom = ''; // Remove the bottom property
+                                    commentToggle.checked = false;
+                                } else {
+                                    // Reset to the original position
+                                    commentSection.style.bottom = `${initialBottomPercent}%`;
+                                }
+                            }
+                        
+                            // Attach event listeners for mouse and touch events
+                            commentSection.addEventListener('mousedown', startDrag);
+                            commentSection.addEventListener('mousemove', drag);
+                            commentSection.addEventListener('mouseup', endDrag);
+                            commentSection.addEventListener('mouseleave', endDrag);
+                        
+                            commentSection.addEventListener('touchstart', startDrag);
+                            commentSection.addEventListener('touchmove', drag);
+                            commentSection.addEventListener('touchend', endDrag);
+                        }
+                        
+                        makeCommentSectionDraggable(postId);                        
+
+                        template.querySelector(`#postComment${postId}`).addEventListener('click', async () => {
+                            const commentInput = template.querySelector(`#commentInput${postId}`);
+                            const commentText = commentInput.value.trim();
+
+                            if (commentText) {
+                                await sendCommentToPost(postId, user.uid, commentText);
+                                commentInput.value = ''; // Clear the input after sending
+                            } else {
+                                alert('Please enter a comment before sending.');
+                            }
+                        });
+
+                        function observeComments(postId) {
+                            const commentsContainer = template.querySelector(`#commentsContainer${postId}`);
+                            const commentsToggleLabel = template.querySelector(`#commentsToggleLabel${postId}`);
+                        
+                            // Function to update the visibility of the checkbox label
+                            function updateCommentsToggle() {
+                                if (commentsContainer.children.length > 0) {
+                                    // Show the checkbox if comments exist
+                                    commentsToggleLabel.style.display = 'block';
+                                } else {
+                                    // Hide the checkbox if no comments exist
+                                    commentsToggleLabel.style.display = 'none';
+                                }
+                            }
+                        
+                            updateCommentsToggle();
+                        
+                            const observer = new MutationObserver(() => {
+                                updateCommentsToggle();
+                            });
+                        
+                            observer.observe(commentsContainer, { childList: true });
+                        }
+                        
+                        observeComments(postId);
 
                         template.querySelector('#deletePost').addEventListener('click', async (event) => {
                             const postId = event.target.getAttribute('data-post-id');
                             await deletePost(syntax, postId); // Add deletePost function to remove the post
                             cancelFunction(template);
                         });
+                        await displayComments(postId);
                     }
                     function cancelFunction(template) {
                         // Remove the template from the DOM
                         template.remove();
                     }
                     // Call the createPostItem function for each post
-                    createPostItem(email, image, dateTime, description, currentUser.email, post.id, post.userid);
+                    createPostItem(email, image, dateTime, description, currentUser.email, post.id, post.userid, post.likes);
                 });
             }
 
         }
-
-        if (typeof on_login == 'undefined') {
-            basicNotif("Logged in", `Welcome ${user.displayName}`, 5000);
+        if (typeof on_index != 'undefined') {
             displayUserClasses();
-            updateProfile(user.displayName, user.email, user.uid, user.photoURL);
-            const qrcode = `${user.uid}`
-            const parts = qrcode.split('/');
-            console.log(parts);
-            console.log(qrcode);
-            generateQRCode(qrcode);
-            document.getElementById('signout').addEventListener('click', async function (event) {
-                signOutAccount();
-            });
-
-            document.getElementById('faceForm').addEventListener('submit', async function (event) {
-                event.preventDefault(); // Prevent the default form submission
-
-                console.log('Form submitted'); // Check if form submission is captured
-
-                try {
-                    const fileInput = document.getElementById('imageUpload');
-                    const file = fileInput.files[0];
-
-                    if (!file) {
-                        console.log('No file selected.');
-                        return;
-                    }
-
-                    console.log('File selected:', file); // Log selected file
-
-                    const detections = await facerecognition.handleImageUpload(file);
-                    const descriptors = detections.map(detection => Array.from(detection.descriptor)); // Convert Float32Array to Array
-                    saveDescriptorsToFirebase(descriptors);
-                    console.log('Returned Detections:', detections);
-                    console.log('Returned Descriptors:', descriptors);
-                    // Do something with the detections, like processing or displaying them
-                } catch (error) {
-                    console.error('Error during image upload and processing:', error);
-                }
-            });
-
-
             document.getElementById('classList').addEventListener('click', async function (event) {
                 if (event.target.classList.contains('remove-btn')) {
                     var listItem = event.target.closest('li');
@@ -249,39 +358,48 @@ onAuthStateChanged(auth, async (user) => {
                 }
             });
 
-            const classSearchInput = document.getElementById('classSearch');
-            const classList = document.getElementById('classList');
-            let items = Array.from(classList.getElementsByClassName('list-item'));
+        };
+        if (typeof on_login == 'undefined') {
+            basicNotif("Logged in", `Welcome ${user.displayName}`, 5000);
 
-            const filterClasses = () => {
-                const searchTerm = classSearchInput.value.toLowerCase();
-                console.log('Search term:', searchTerm);
-                items.forEach(item => {
-                    const h3Text = item.querySelector('h3').textContent.toLowerCase();
-                    if (h3Text.includes(searchTerm)) {
-                        item.classList.remove('hidden');
-                    } else {
-                        item.classList.add('hidden');
-                    }
-                });
-            };
-
-            classSearchInput.addEventListener('keyup', () => {
-                filterClasses();
+            updateProfile(user.displayName, user.email, user.uid, user.photoURL);
+            const qrcode = `${user.uid}`
+            const parts = qrcode.split('/');
+            console.log(parts);
+            console.log(qrcode);
+            generateQRCode(qrcode);
+            document.getElementById('signout').addEventListener('click', async function (event) {
+                signOutAccount();
             });
 
-            const observer = new MutationObserver(mutations => {
-                mutations.forEach(mutation => {
-                    if (mutation.addedNodes.length) {
-                        items = Array.from(classList.getElementsByClassName('list-item'));
-                        filterClasses();
+            document.getElementById('faceForm').addEventListener('submit', async function (event) {
+                event.preventDefault(); // Prevent the default form submission
+
+                console.log('Form submitted'); // Check if form submission is captured
+
+                try {
+                    const fileInput = document.getElementById('imageUpload');
+                    const file = fileInput.files[0];
+
+                    if (!file) {
+                        console.log('No file selected.');
+                        return;
                     }
-                });
+
+                    console.log('File selected:', file); // Log selected file
+
+                    const detections = await facerecognition.handleImageUpload(file);
+                    const descriptors = detections.map(detection => Array.from(detection.descriptor)); // Convert Float32Array to Array
+                    saveDescriptorsToFirebase(descriptors);
+                    console.log('Returned Detections:', detections);
+                    console.log('Returned Descriptors:', descriptors);
+                    // Do something with the detections, like processing or displaying them
+                } catch (error) {
+                    console.error('Error during image upload and processing:', error);
+                }
             });
 
-            observer.observe(classList, { childList: true });
 
-            filterClasses();
         }
         const account = document.getElementById('account');
         account.innerHTML = `<img id="accountImg" src="${user.photoURL || 'Images/gear.png'}"></img>`;
@@ -302,12 +420,22 @@ export async function fetchUserLikes(userId) {
 // Add a post to the user's liked posts
 export async function addToLikedPosts(userId, postId) {
     const userLikesRef = doc(db, 'users', userId, 'likedPosts', postId);
+    const postRef = doc(db, 'posts', postId);
+
     await setDoc(userLikesRef, { postId }); // Store an empty document with the postId as a reference
+
+    await updateDoc(postRef, {
+        likes: increment(1) // Increment the likes count by 1
+    });
 }
 
 // Remove a post from the user's liked posts
 export async function removeFromLikedPosts(userId, postId) {
     const userLikesRef = doc(db, 'users', userId, 'likedPosts', postId);
+    const postRef = doc(db, 'posts', postId);
+    await updateDoc(postRef, {
+        likes: increment(-1) // Increment the likes count by 1
+    });
     await deleteDoc(userLikesRef);
 }
 
@@ -587,7 +715,7 @@ function generateRandomSyntax() {
     return result;
 }
 
-export async function addClass(className, schoolName, syntax, classcode, timeIn, lat, long, rad, timezone) {
+export async function addClass(className, syntax, classcode, timeIn, lat, long, rad, timezone) {
     const auth = getAuth();
     const user = auth.currentUser;
 
@@ -595,20 +723,28 @@ export async function addClass(className, schoolName, syntax, classcode, timeIn,
         console.error('No user is authenticated.');
         return;
     }
+    function getRandomBrightColor() {
+        const hue = Math.floor(Math.random() * 360); // Random hue between 0 and 360
+        const saturation = 80 + Math.random() * 20; // Saturation between 80% and 100%
+        const lightness = 50 + Math.random() * 10; // Lightness between 50% and 60%
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    }
+
+    const classColor = getRandomBrightColor(); // Get random color
 
     try {
         const classRef = doc(db, 'classes', syntax);
 
         await setDoc(classRef, {
             name: className,
-            school: schoolName,
             syntax: syntax,
             code: classcode,
             timeIn: timeIn,
             lat: lat,
             long: long,
             rad: rad,
-            timezone: timezone
+            timezone: timezone,
+            color: classColor // Assign the random bright color to the class
         });
 
         const membersRef = collection(classRef, 'members');
@@ -845,11 +981,9 @@ export async function displayUserClasses() {
         return;
     }
 
-    // Clear existing content
-    classListElement.innerHTML = '';
 
     // Create and append skeleton loaders
-    const skeletonCount = 1; // Number of skeleton items to display
+    const skeletonCount = 0; // Number of skeleton items to display
     for (let i = 0; i < skeletonCount; i++) {
         const skeletonItem = document.createElement('div');
         skeletonItem.classList.add('skeleton');
@@ -859,8 +993,6 @@ export async function displayUserClasses() {
     try {
         const userClasses = await getUserClasses();
 
-        // Remove skeleton loaders once the data is ready
-        classListElement.innerHTML = '';
 
         // Add each class to the list
         for (const classItem of userClasses) {
@@ -871,12 +1003,10 @@ export async function displayUserClasses() {
                 listItem.classList.add('list-item');
                 listItem.innerHTML = `
                     <div>
-                        <h3>${classItem.name}</h3>
-                        <p>School: ${classItem.school}</p>
-                        <p id="uid">${classItem.id}</p>
-                    </div>
-                    ${currentmember.role === 'owner' ? '<button class="remove-btn"><i id="i" class="fa-solid fa-square-minus"></i> Remove</button>' : ''}
-                    ${currentmember.role === 'admin' || currentmember.role === 'student' ? '<button class="leave-btn"><i id="i" class="fa-solid fa-arrow-right-from-bracket"></i> Leave</button>' : ''}
+                        <p style="background-color: ${classItem.color};" id="classPfp">${classItem.name[0]}</p>
+                        <p>${classItem.name}</p>
+                        <p id="uid">${classItem.syntax}</p>
+                    </div> 
                 `;
 
                 // Append with a slight delay for each item for a staggered effect
@@ -1346,4 +1476,107 @@ async function uploadImageToStorage(base64Image, syntax, postSyntax) {
     await uploadString(storageRef, base64Image, 'data_url'); // Upload base64 string
     const downloadURL = await getDownloadURL(storageRef); // Get URL
     return downloadURL;
+}
+
+export async function sendCommentToPost(postId, userId, comment) {
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    const commentRef = collection(db, 'posts', postId, 'comments');
+    const currentDate = new Date().toLocaleDateString('en-US', options);
+    const currentTime = new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true, // Ensures AM/PM format
+    });
+    await addDoc(commentRef, {
+        userId: userId,
+        comment: comment,
+        timestamp: `${currentDate} ${currentTime}`,
+    });
+}
+
+export async function fetchComments(postId) {
+    try {
+        // Reference to the comments subcollection of the specified post
+        const commentsRef = collection(db, 'posts', postId, 'comments');
+
+        // Get the comments documents
+        const commentSnapshot = await getDocs(commentsRef);
+
+        // Extract comments from the snapshot
+        const comments = commentSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(), // Spread the document data
+        }));
+
+        return comments;
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        return []; // Return an empty array in case of an error
+    }
+};
+
+export async function displayComments(postId) {
+    const commentsContainer = document.getElementById(`commentsContainer${postId}`);
+    commentsContainer.innerHTML = ''; // Clear previous comments
+
+    try {
+        const comments = await fetchComments(postId); // Fetch comments from the database
+
+        for (const comment of comments) {
+            const user = await fetchProfile(comment.userId); // Fetch user profile using userId
+
+            const commentElement = document.createElement('div');
+            commentElement.classList.add('commentBlock');
+
+            // Format the timestamp using your existing function
+            const timeDisplay = formatTimeDifference(comment.timestamp); // Use existing formatTimeDifference function
+
+            // Create the structure for displaying comment
+            commentElement.innerHTML = `
+            <input style="display:none;" class="like" type="checkbox" id="like${comment.id}">
+            <div>
+                <img class="commentPfp" src="${user.photoUrl}" alt="User Photo">
+                <div>
+                    <p>${comment.comment}</p>
+                    <p class="timestamp">${timeDisplay} <i class="fa-solid fa-ellipsis"></i></p>
+                </div>
+                </div>
+                <label id="heartUncheck" for="like${comment.id}"><i class="fa-regular fa-heart"></i></label>
+            <label id="heartCheck" for="like${comment.id}"><i class="fa-solid fa-heart"></i></label>
+            `;
+
+            commentsContainer.appendChild(commentElement);
+        }
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+    }
+}
+
+function formatTimeDifference(dateTime) {
+    const postDate = new Date(dateTime); // Parse the date string
+    const currentDate = new Date(); // Get the current date/time
+    const timeDiff = Math.abs(currentDate - postDate); // Difference in milliseconds
+
+    const seconds = Math.floor(timeDiff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+
+    if (seconds < 60) {
+        return 'Just now';
+    } else if (minutes < 60) {
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else if (hours < 24) {
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else if (days === 1) {
+        return 'Yesterday';
+    } else if (days < 7) {
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else if (weeks < 4) {
+        return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    } else {
+        const options = { month: 'long', day: 'numeric' }; // Format as "Month Day"
+        return postDate.toLocaleDateString(undefined, options);
+    }
 }

@@ -1,9 +1,12 @@
-import { fetchClass, fetchMembers, 
+import {
+    fetchClass, fetchMembers,
     changeMemberRole, fetchProfile,
-     getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance, postPost, fetchClassPosts, deletePost, generateUniquePostSyntax, 
-     addToLikedPosts,
-     removeFromLikedPosts,
-     fetchUserLikes} from './firebase.js';
+    getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance, postPost, fetchClassPosts, deletePost, generateUniquePostSyntax,
+    addToLikedPosts,
+    removeFromLikedPosts,
+    fetchUserLikes,
+    displayComments
+} from './firebase.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
@@ -135,7 +138,6 @@ const debouncedUpdateattList = debounce(updateattendanceList, 300);
 
 let classroom;
 const className = document.getElementById('className');
-const schoolName = document.getElementById('school');
 const classCode = document.getElementById('code');
 //const timeIn = document.getElementById('timeIn');
 //const lat = document.getElementById('latitude');
@@ -286,12 +288,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { email, image, dateTime, description } = post;
 
         // Call the createPostItem function for each post
-        createPostItem(email, image, dateTime, description, currentUser.email, post.id,post.userid);
+        createPostItem(email, image, dateTime, description, currentUser.email, post.id, post.userid,post.likes);
     })
-
+    debouncedUpdateattList();
+    debouncedUpdateList();
     onSnapshot(collectionRef, (snapshot) => {
-        debouncedUpdateattList();
-        debouncedUpdateList();
+
         snapshot.docChanges().forEach(async (change) => {
             const docData = await change.doc.data(); // Get the document data
             const modifiedUser = await fetchProfile(change.doc.id);
@@ -316,7 +318,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         classroom = await fetchClass(syntax);
         if (classroom) {
             className.innerHTML = classroom.name;
-            schoolName.innerHTML = classroom.school;
             //timeIn.innerHTML = `Time In: ${convertTo12Hour(classroom.timeIn)} ${classroom.timezone}`;
             classCode.innerHTML = `<i>${classroom.code}</i> <i role="button" id="clipboard" class="fa-regular fa-clipboard"></i>`;
             //lat.innerHTML = `${classroom.lat}º`;
@@ -482,7 +483,6 @@ async function handleImageUpload(event) {
         img.onload = function () {
             // Create or update the post template
             addPostTemplate(img.src);
-            console.log(img.src)
             resolve();
         };
 
@@ -529,8 +529,8 @@ async function addPostTemplate(img) {
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
-            postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax,user.uid);
-            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax,user.uid);
+            postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax, user.uid);
+            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid);
             cancelFunction(template);
         });
 
@@ -547,8 +547,8 @@ function cancelFunction(template) {
     template.remove();
 }
 
-function postFunction(email, img, currentDate, currentTime, description, syntax,userid) {
-    postToClass(email, img, currentDate, currentTime, description, syntax,userid);
+function postFunction(email, img, currentDate, currentTime, description, syntax, userid) {
+    postToClass(email, img, currentDate, currentTime, description, syntax, userid);
     console.log('Post button clicked.');
 }
 
@@ -559,34 +559,57 @@ document.getElementById('camera-button').addEventListener('click', () => {
 
 // Event listener to handle the file input change
 document.getElementById('camera-input').addEventListener('change', handleImageUpload);
-async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid) {
+async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid, likes) {
     const user = await getCurrentUser();
     const currentMemberData = await fetchMember(syntax, user.uid);
     const userdata = await fetchProfile(userid);
     const posts = document.getElementById('posts');
     const template = document.createElement('li');
     template.id = 'post';
+
+
+    const timeDisplay = formatTimeDifference(dateTime);
+
     template.innerHTML = `
         <div id="postHeader">
             <div>
                 <img class="img" src="${userdata.photoUrl}">
+                <div>
                 <p>${userdata.displayName}</p>
+                </div>
             </div>
             <label for="postOptionstoggle${postId}"><i class="fa-solid fa-ellipsis-vertical"></i></label>
         </div>
-        <input class="like" type="checkbox" id="like${postId}">
-        <img src="${img}" alt="Post Image">
+        <input style="display:none;" class="like" type="checkbox" id="like${postId}">
+        <img id="postImg" src="${img}" alt="Post Image">
         <div id="postButtons">
             <label id="heartUncheck" for="like${postId}"><i class="fa-regular fa-heart"></i></label>
             <label id="heartCheck" for="like${postId}"><i class="fa-solid fa-heart"></i></label>
+            <label for="comments${postId}"><i class="fa-regular fa-message"></i></label>
         </div>
+        <a id="likes">${likes} likes</a>
         <p id="desc">${description}</p>
-        <p>${dateTime}</p>
+        <label for="commentSectionToggle${postId}" style="display:none;" id="commentsToggleLabel${postId}">
+        Show Comments</label>
+        <p>${timeDisplay}</p>
         <input class="option" type="checkbox" id="postOptionstoggle${postId}">
+        <input style="display:none;" class="comment" type="checkbox" id="comments${postId}">
+        <input style="display:none;" class="commentToggle" type="checkbox" id="commentSectionToggle${postId}">
         <div id="postOptions">
             ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
             `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
             ''}
+        </div>
+        <div id="commentSection">
+        <div id="commentArea">
+            <img class="img" src="${user.photoURL}"><textarea id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i>
+        </div>
+        </div>
+        <div class="comments" id="commentSection${postId}">
+        <label for="commentSectionToggle${postId}" id="commentsToggleLabel${postId}">
+        Comments</label>
+            <div id="commentsContainer${postId}">
+            </div>
         </div>
     `;
 
@@ -599,19 +622,153 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     if (userLikes.includes(postId)) {
         likeCheckbox.checked = true;
     }
-
     // Toggle like status on checkbox change
     likeCheckbox.addEventListener('change', async () => {
+        const likestxt = template.querySelector('#likes')
         if (likeCheckbox.checked) {
+            likestxt.innerHTML = `${likes + 1} likes`
+            likes = likes + 1
             await addToLikedPosts(user.uid, postId); // Add post to user's liked posts
         } else {
+            likestxt.innerHTML = `${likes - 1} likes`
+            likes = likes - 1
             await removeFromLikedPosts(user.uid, postId); // Remove post from user's liked posts
         }
     });
+
+    function makeCommentSectionDraggable(postId) {
+        const commentSection = document.getElementById(`commentSection${postId}`);
+        const commentToggle = document.getElementById(`commentSectionToggle${postId}`);
+    
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+    
+        const dragThreshold = 150; // Threshold in percentage to trigger unchecking
+        const initialBottomPercent = -1
+    
+        // Function to handle the start of the drag
+        function startDrag(event) {
+            isDragging = true;
+            startY = event.touches ? event.touches[0].clientY : event.clientY; // For touch and mouse events
+            commentSection.style.transition = 'none'; // Disable smooth transition during drag
+        }
+    
+        // Function to handle dragging
+        function drag(event) {
+            if (!isDragging) return;
+    
+            currentY = event.touches ? event.touches[0].clientY : event.clientY;
+            const dragDistance = currentY - startY;
+            console.log(dragDistance,initialBottomPercent)
+            // Convert pixel drag distance to percentage of the viewport height
+    
+            if (dragDistance > 0) {
+                // Adjust the bottom property based on the drag distance in percentage
+                commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance}px)`;
+            }
+        }
+    
+        // Function to handle the end of the drag
+        function endDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            commentSection.style.transition = 'bottom 0.3s ease'; // Re-enable smooth transition
+    
+            const dragDistance = currentY - startY;
+    
+            if (dragDistance > dragThreshold) {
+                commentSection.style.bottom = ''; // Remove the bottom property
+                commentToggle.checked = false;
+            } else {
+                // Reset to the original position
+                commentSection.style.bottom = `${initialBottomPercent}%`;
+            }
+        }
+    
+        // Attach event listeners for mouse and touch events
+        commentSection.addEventListener('mousedown', startDrag);
+        commentSection.addEventListener('mousemove', drag);
+        commentSection.addEventListener('mouseup', endDrag);
+        commentSection.addEventListener('mouseleave', endDrag);
+    
+        commentSection.addEventListener('touchstart', startDrag);
+        commentSection.addEventListener('touchmove', drag);
+        commentSection.addEventListener('touchend', endDrag);
+    }
+    
+    makeCommentSectionDraggable(postId);                        
+
+    template.querySelector(`#postComment${postId}`).addEventListener('click', async () => {
+        const commentInput = template.querySelector(`#commentInput${postId}`);
+        const commentText = commentInput.value.trim();
+
+        if (commentText) {
+            await sendCommentToPost(postId, user.uid, commentText);
+            commentInput.value = ''; // Clear the input after sending
+        } else {
+            alert('Please enter a comment before sending.');
+        }
+    });
+
+    function observeComments(postId) {
+        const commentsContainer = template.querySelector(`#commentsContainer${postId}`);
+        const commentsToggleLabel = template.querySelector(`#commentsToggleLabel${postId}`);
+    
+        // Function to update the visibility of the checkbox label
+        function updateCommentsToggle() {
+            if (commentsContainer.children.length > 0) {
+                // Show the checkbox if comments exist
+                commentsToggleLabel.style.display = 'block';
+            } else {
+                // Hide the checkbox if no comments exist
+                commentsToggleLabel.style.display = 'none';
+            }
+        }
+    
+        updateCommentsToggle();
+    
+        const observer = new MutationObserver(() => {
+            updateCommentsToggle();
+        });
+    
+        observer.observe(commentsContainer, { childList: true });
+    }
+    
+    observeComments(postId);
 
     template.querySelector('#deletePost').addEventListener('click', async (event) => {
         const postId = event.target.getAttribute('data-post-id');
         await deletePost(syntax, postId); // Add deletePost function to remove the post
         cancelFunction(template);
     });
+    await displayComments(postId);
+}
+function formatTimeDifference(dateTime) {
+    const postDate = new Date(dateTime); // Parse the date string
+    const currentDate = new Date(); // Get the current date/time
+    const timeDiff = Math.abs(currentDate - postDate); // Difference in milliseconds
+
+    const seconds = Math.floor(timeDiff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+
+    if (seconds < 60) {
+        return 'Just now';
+    } else if (minutes < 60) {
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else if (hours < 24) {
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else if (days === 1) {
+        return 'Yesterday';
+    } else if (days < 7) {
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else if (weeks < 4) {
+        return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    } else {
+        const options = { month: 'long', day: 'numeric' }; // Format as "Month Day"
+        return postDate.toLocaleDateString(undefined, options);
+    }
 }
