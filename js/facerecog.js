@@ -1,6 +1,5 @@
 import * as faceapi from 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.esm.js';
-
-export async function handleImageUpload(file) {
+export async function faceDetect(file) {
     if (!file) {
         console.error('No file provided.');
         return Promise.reject('No file selected.');
@@ -11,7 +10,7 @@ export async function handleImageUpload(file) {
 
     return new Promise((resolve, reject) => {
         reader.onload = function (e) {
-            img.src = e.target.result;
+            img.src = e.target.result; // Load the image from file
         };
 
         reader.onerror = function (error) {
@@ -22,6 +21,7 @@ export async function handleImageUpload(file) {
         img.onload = async function () {
             try {
                 console.log('Loading models...');
+                // Load face detection models
                 await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
                 await faceapi.nets.faceLandmark68Net.loadFromUri('./models');
                 await faceapi.nets.faceRecognitionNet.loadFromUri('./models');
@@ -49,11 +49,12 @@ export async function handleImageUpload(file) {
 
                 faceapi.matchDimensions(canvas, displaySize);
 
-                canvas.width = displaySize.width;
-                canvas.height = displaySize.height;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                //canvas.width = displaySize.width;
+                //canvas.height = displaySize.height;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Draw the image on canvas
 
                 console.log('Detecting faces...');
+                // Detect faces in the image
                 const detections = await faceapi.detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.3 }))
                     .withFaceLandmarks()
                     .withFaceDescriptors();
@@ -63,16 +64,18 @@ export async function handleImageUpload(file) {
                     console.log(`Face ${index + 1} Descriptor:`, detection.descriptor);
                 });
 
+                // Draw detections and landmarks on the canvas
                 faceapi.draw.drawDetections(canvas, detections);
                 faceapi.draw.drawFaceLandmarks(canvas, detections);
 
-                resolve(detections);
+                resolve(detections); // Return detected faces
             } catch (error) {
                 console.error('Error loading models or processing image:', error);
                 reject('Error processing image.');
             }
         };
 
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(file); // Start reading the file
     });
 }
+

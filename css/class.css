@@ -161,6 +161,11 @@
   margin-top: 14px;
 }
 
+.comments div::-webkit-scrollbar {
+  display: none;
+  /* Hide scrollbar for webkit-based browsers */
+}
+
 .comments label:first-child::before {
   content: "";
   /* Required to create the pseudo-element */
@@ -301,6 +306,7 @@
 }
 
 #post {
+  user-select: none; /* For most browsers */
   height: auto;
   border: 1px none var(--border-color);
   display: flex;
@@ -319,7 +325,7 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   font-size: 12px;
-  white-space: normal;
+  white-space: pre-wrap;
 }
 
 #desc+p {
@@ -446,7 +452,7 @@
   color: var(--text-color-main);
   max-height: 100px; /* Adjust this height as needed */
   overflow-y: auto; /* Enable vertical scrolling if needed */
-  white-space: normal; /* Allow text to wrap */
+  white-space: pre-wrap; /* Allow text to wrap */
   word-wrap: break-word; /* Break long words if necessary */
   text-align: justify;
 }
@@ -469,6 +475,7 @@
 #post .commentBlock .timestamp label {
   margin: 0;
   color: var(--text-color-second);
+
   padding: 0;
   width: auto;
 }
@@ -584,6 +591,21 @@
 #postTab:checked~#formSwitch label[for="postTab"] {
   color: var(--active-tab-color);
   border-bottom: 2px solid var(--active-tab-color);
+}
+
+#canvass {
+  display: none;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    margin-bottom: 12px;
+    border: 2px solid var(--active-tab-color);
+}
+
+#canvass canvas{
+  display: flex;
+  flex-grow: 1;
+  width: 100px;
+  height: 100px;
 }
 
 @media (max-width: 785px) {
