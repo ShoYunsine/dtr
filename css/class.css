@@ -77,7 +77,7 @@
 
 #likes {
   color: var(--text-color-main);
-  margin-left: 10px;
+  margin-left: 8px;
   padding: 2px 2px;
   border-radius: 2px;
   font-size: 12px;
@@ -113,6 +113,7 @@
 }
 
 #postOptions,
+.commentBlock #postOptions,
 #commentSection,
 .comments {
   display: flex;
@@ -128,20 +129,31 @@
   border: 1px none var(--border-color);
   transition: 0.3s;
   box-shadow: 0 0 1px var(--text-color-main);
+  padding: 0;
 }
 
 .comments {
   height: 55%;
   bottom: -55%;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   flex-direction: column;
   touch-action: none;
   /* Disable default touch actions */
 }
 
+.comments label:first-child {
+  display: block;
+  margin: 8px auto;
+  color: var(--text-color-main);
+  font-size: 14px;
+  text-align: center;
+  padding: 8px 12px;
+  width: 70px;
+  margin-top: 14px;
+}
 .comments label {
   display: block;
-  margin: 8px 0;
+  margin: 8px auto;
   color: var(--text-color-main);
   font-size: 14px;
   text-align: center;
@@ -234,7 +246,7 @@
   }
 
   50% {
-    transform: scale(1.5);
+    transform: scale(1.1);
     /* Scale up by 20% */
   }
 
@@ -317,7 +329,7 @@
 
 #desc+label {
   color: var(--text-color-second);
-  margin-left: 12px;
+  margin-left: 10px;
   font-size: 12px;
 }
 
@@ -389,35 +401,80 @@
   gap: 10px;
 }
 
+.comments div {
+  overflow-y: auto;
+}
+
 .commentBlock {
   display: flex;
-  padding: 8px;
-  margin: 0 8px;
+  margin: auto;
   justify-content: space-between;
 }
 
 .commentBlock div {
   display: flex;
-  padding: 0;
-  margin: 0;
+  padding: 8px;
+  margin: 0 8px;
   width: 90%;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .commentBlock div div {
   display: flex;
   gap: 8px;
   width: 90%;
+  padding: 0 8px;
   margin: 0;
   flex-wrap: wrap;
   flex-direction: row;
   align-items: center;
 }
 
-.commentBlock p:first-child {
+.commentBlock label {
   display: flex;
-  padding: 8px;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 0;
+}
+
+#post .commentBlock .commentBody {
+  display: flex;
+  flex-direction: column; /* Stack any children vertically, if needed */
+  padding: 0 8px;
+  width: 90%;
   color: var(--text-color-main);
+  max-height: 100px; /* Adjust this height as needed */
+  overflow-y: auto; /* Enable vertical scrolling if needed */
+  white-space: normal; /* Allow text to wrap */
+  word-wrap: break-word; /* Break long words if necessary */
+  text-align: justify;
+}
+
+#post .commentBlock .timestamp {
+  display: flex;
+  flex-direction: row; /* Stack any children vertically, if needed */
+  padding: 0 8px;
+  width: auto;
+  color: var(--text-color-second);
+  max-height: 100px; /* Adjust this height as needed */
+  overflow-y: auto; /* Enable vertical scrolling if needed */
+  white-space: normal; /* Allow text to wrap */
+  align-items: center;
+  gap: 10px;
+  align-self: flex-end;
+  word-wrap: break-word; /* Break long words if necessary */
+  text-align: justify;
+}
+#post .commentBlock .timestamp label {
+  margin: 0;
+  color: var(--text-color-second);
+  padding: 0;
+  width: auto;
+}
+
+.commentBlock>.option:focus~#postOptions {
+  bottom: -1%;
 }
 
 .commentPfp {
@@ -539,7 +596,12 @@
     margin-top: 0;
   }
 
-  #postOptions {
+  #postOptions,
+  .commentBlock #postOptions {
+    width: 100%;
+  }
+  
+  .comments {
     width: 100%;
   }
 }
@@ -550,10 +612,6 @@
   #postButtons,
   #desc {
     width: 90%;
-  }
-
-  .comments {
-    width: 100%;
   }
 
   #postHeader div {
