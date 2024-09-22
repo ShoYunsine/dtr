@@ -147,7 +147,7 @@ onAuthStateChanged(auth, async (user) => {
                             <input style="display:none;" class="comment" type="checkbox" id="comments${postId}">
                             <input style="display:none;" class="commentToggle" type="checkbox" id="commentSectionToggle${postId}">
                             <div id="postOptions">
-                            <button class="postOptionButton" id="deletePost" data-post-id="${postId}">Save Photo <i class="fa-solid fa-image"></i></button>
+                            <button class="postOptionButton" id="savePhoto" data-post-id="${postId}">Save Photo <i class="fa-solid fa-image"></i></button>
                                 ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
                                 `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
                                 ''}
