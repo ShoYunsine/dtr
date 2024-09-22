@@ -103,6 +103,15 @@ onAuthStateChanged(auth, async (user) => {
                         const template = document.createElement('li');
                         template.id = 'post';
 
+                        description = description.replace(/(@[\w_\.]+)/g, function (match) {
+                            return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
+                        });
+
+                        // Wrap #words (allow periods within the word)
+                        description = description.replace(/(#[\w_\.]+)/g, function (match) {
+                            return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
+                        });
+
 
                         const timeDisplay = formatTimeDifference(dateTime);
 
@@ -138,6 +147,7 @@ onAuthStateChanged(auth, async (user) => {
                             <input style="display:none;" class="comment" type="checkbox" id="comments${postId}">
                             <input style="display:none;" class="commentToggle" type="checkbox" id="commentSectionToggle${postId}">
                             <div id="postOptions">
+                            <button class="postOptionButton" id="deletePost" data-post-id="${postId}">Save Photo <i class="fa-solid fa-image"></i></button>
                                 ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
                                 `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
                                 ''}
@@ -155,7 +165,7 @@ onAuthStateChanged(auth, async (user) => {
                             </div>
                         `;
 
-                        posts.appendChild(template);
+                        posts.insertBefore(template, posts.firstChild);
                         const imgElement = template.querySelector('#postImg');
                         const loader = template.querySelector('.loader');
 
@@ -244,9 +254,9 @@ onAuthStateChanged(auth, async (user) => {
                                 }
                                 if (dragDistance < 0) {
                                     dragDistance *= dragScaleFactor;
-                                    refreshMessage.style.bottom = `calc(${100}% - ${dragDistance/12}px)`; // Position above the comment section
-                                    commentSection.style.height = `calc(${50}% - ${dragDistance*2}px)`;
-                                    commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance/12}px)`;
+                                    refreshMessage.style.bottom = `calc(${100}% - ${dragDistance / 12}px)`; // Position above the comment section
+                                    commentSection.style.height = `calc(${50}% - ${dragDistance * 2}px)`;
+                                    commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance / 12}px)`;
                                 }
                             }
 
@@ -409,8 +419,6 @@ onAuthStateChanged(auth, async (user) => {
 
         };
         if (typeof on_login == 'undefined') {
-            basicNotif("Logged in", `Welcome ${user.displayName}`, 5000);
-
             updateProfile(user.displayName, user.email, user.uid, user.photoURL);
             const qrcode = `${user.uid}`
             const parts = qrcode.split('/');
@@ -1010,7 +1018,7 @@ export async function fetchClassPosts(syntax) {
         }
 
         // Sort posts by dateTime in descending order (newest to oldest)
-        posts.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+        posts.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
 
         console.log('Fetched posts:', posts);
         return posts;
@@ -1153,7 +1161,7 @@ export async function fetchMembers(syntax) {
         });
 
 
-        console.log('Fetched members:', members);
+        //console.log('Fetched members:', members);
         return members;
     } catch (error) {
         console.error('Error fetching members:', error);
@@ -1169,7 +1177,7 @@ export async function fetchMember(syntax, id) {
         const docSnap = await getDoc(memberRef);
         if (docSnap.exists()) {
             const memberData = docSnap.data();
-            console.log('Fetched member data:', memberData);
+            //console.log('Fetched member data:', memberData);
             return memberData; // Return the member data
         } else {
             console.log('No member found for syntax:', syntax);
@@ -1460,7 +1468,20 @@ function convertTo12Hour(militaryTime) {
     else if (hours > 12) hours -= 12;
 
     return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
-}
+};
+
+export async function emailTagged(taggedemail,classroomname,user,desc){
+    const emailParams = {
+        tagged_email: taggedemail,
+        classroomName: classroomname,
+        poster: user,
+        desc: desc
+    };
+
+    console.log(emailParams);
+
+    await emailjs.send("service_p3ddhzv", "template_0zh42va", emailParams)
+};
 
 export async function postPost(email, img, currentDate, currentTime, description, syntax, postSyntax, userid) {
     // Generate a unique post syntax or ID
@@ -1653,7 +1674,7 @@ async function deleteComment(commentId, postId) {
     try {
         // Your logic to delete the comment from the database
         const commentRef = doc(db, 'posts', postId, 'comments', commentId); // Reference to the specific comment
-    await deleteDoc(commentRef);// Implement this function to handle the deletion
+        await deleteDoc(commentRef);// Implement this function to handle the deletion
         console.log(`Comment ${commentId} deleted successfully.`);
     } catch (error) {
         console.error('Error deleting comment:', error);

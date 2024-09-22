@@ -6,7 +6,8 @@ import {
     removeFromLikedPosts,
     fetchUserLikes,
     displayComments,
-    sendCommentToPost
+    sendCommentToPost,
+    emailTagged
 } from './firebase.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
@@ -143,6 +144,8 @@ const debouncedUpdateList = debounce(updatememberList, 300);
 const debouncedUpdateattList = debounce(updateattendanceList, 300);
 
 let classroom;
+let members;
+const memberProfiles = [];
 const className = document.getElementById('className');
 const classCode = document.getElementById('code');
 //const timeIn = document.getElementById('timeIn');
@@ -173,7 +176,7 @@ function capitalizeFirstLetter(str) {
 async function updateattendanceList() {
     const currentUserLogged = await getCurrentUser();
     const currentMember = await fetchMember(syntax, currentUserLogged.uid);
-    const members = await fetchMembers(syntax);
+    members = await fetchMembers(syntax);
     const attendanceList = document.getElementById('attendance-List');
 
     if (!currentMember) {
@@ -186,9 +189,8 @@ async function updateattendanceList() {
     }
     attendanceList.innerHTML = '';
 
-    for (const member of members) {
+    for (const memberData of memberProfiles) {
         try {
-            const memberData = await fetchProfile(member.id);
             var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
             if (!time) {
                 time = "Not Available";
@@ -230,6 +232,20 @@ async function updatememberList() {
     const currentUserlogged = await getCurrentUser();
     const currentmember = await fetchMember(syntax, currentUserlogged.uid)
     const members = await fetchMembers(syntax);
+
+    for (const member of members) {
+        try {
+            const profile = await fetchProfile(member.id); // Fetch profile using member.id
+            if (profile) {
+                memberProfiles.push(profile); // Add profile to the array
+            } else {
+                console.log(`Profile not found for member ID: ${member.id}`);
+            }
+        } catch (error) {
+            console.error(`Error fetching profile for member ID ${member.id}:`, error);
+        }
+    }
+
     const memberList = document.getElementById('memberList');
     if (!currentmember) {
         window.location.href = `classes.html`;
@@ -283,7 +299,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     syntax = urlParams.get('syntax');
     console.log(syntax);
-    const collectionRef = collection(db, "classes", syntax, "members");
     let isInitialLoad = true;
 
     const classPosts = await fetchClassPosts(syntax);
@@ -298,41 +313,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     })
     debouncedUpdateattList();
     debouncedUpdateList();
-    onSnapshot(collectionRef, (snapshot) => {
-
-        snapshot.docChanges().forEach(async (change) => {
-            const docData = await change.doc.data(); // Get the document data
-            const modifiedUser = await fetchProfile(change.doc.id);
-            switch (change.type) {
-
-                case "added":
-                    break;
-                case "modified":
-                    //basicNotif(`User ${modifiedUser.displayName}`, `Role has been changed to <b><i>${docData.role}</i></b>.`, 5000);
-                    break;
-                case "removed":
-                    //basicNotif(`User ${modifiedUser.displayName}`, `Has been removed.`, 5000);
-                    break;
-                default:
-                    break;
-            }
-        });
-
-    });
 
     if (syntax) {
         classroom = await fetchClass(syntax);
         if (classroom) {
             className.innerHTML = classroom.name;
-            //timeIn.innerHTML = `Time In: ${convertTo12Hour(classroom.timeIn)} ${classroom.timezone}`;
             classCode.innerHTML = `<i>${classroom.code}</i> <i role="button" id="clipboard" class="fa-regular fa-clipboard"></i>`;
-            //lat.innerHTML = `${classroom.lat}º`;
-            //long.innerHTML = `${classroom.long}º`;
-            //rad.innerHTML = `${classroom.rad}m`;
             document.getElementById('clipboard').addEventListener('click', async () => {
                 console.log("Copying plain text...");
                 const textToCopy = `Join *${classroom.name}* today to get your attendance checked.\n${window.location.origin}/dtr/classes.html?classCode=${classroom.code}`;
-
                 try {
                     await navigator.clipboard.writeText(textToCopy);
                     //console.log('Copied plain text to clipboard');
@@ -467,6 +456,8 @@ observer2.observe(attendanceList, { childList: true });
 filterClasses2();
 
 async function handleImageUpload(event) {
+    const loadingBar = document.getElementById('loading-bar');
+    loadingBar.style.transform = 'translateX(-100%)';
     const file = event.target.files[0];
     if (!file) {
         console.error('No file provided.');
@@ -487,15 +478,21 @@ async function handleImageUpload(event) {
         };
 
         img.onload = async function () {
+            loadingBar.style.transform = 'translateX(-98%)';
             const canvass = document.getElementById('canvass');
-                canvass.style.display = 'flex';
+            //canvass.style.display = 'flex';
             const faces = await faceDetect(file);
-            const members = await fetchMembers(syntax);
             const labeledDescriptors = [];
             const matchResults = [];
-            for (const member of members) {
-                const memberProfile = await fetchProfile(member.id); // Fetch profile using member.id
+            let index = 0;
+            for (const memberProfile of memberProfiles) {
 
+                index = index + 1
+                const totalMember = members.length;
+                console.log(`translateX(${-98 + (50 / (totalMember / index))}%)`)
+                console.log(90 / (totalMember / index))
+
+                loadingBar.style.transform = `translateX(${-98 + (50 / (totalMember / index))}%)`;
                 // Ensure the profile has face descriptors
                 if (memberProfile && Array.isArray(memberProfile.faceDescriptors)) {
                     console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
@@ -530,7 +527,7 @@ async function handleImageUpload(event) {
 
             // Only create the FaceMatcher if there are labeled descriptors
             if (labeledDescriptors.length > 0) {
-                
+
                 const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
                 const facesCanvas = document.getElementById('faces'); // Ensure this canvas exists in your HTML
                 const facesCtx = facesCanvas.getContext('2d');
@@ -545,7 +542,10 @@ async function handleImageUpload(event) {
                     const bestMatch = faceMatcher.findBestMatch(face.descriptor);
                     const label = bestMatch.label !== 'unknown' ? bestMatch.label : 'Unknown';
                     const box = face.detection.box;
-
+                    const totalfaces = faces.length;
+                    console.log(`translateX(${-48 + (42 / (totalfaces / index))}%)`)
+                    console.log(90 / (totalfaces / index))
+                    loadingBar.style.transform = `translateX(${-48 + (42 / (totalfaces / index))}%)`;
                     // Create a temporary canvas for the cropped face
                     const temp = document.getElementById('temp');
                     temp.width = canvas.width;
@@ -562,7 +562,7 @@ async function handleImageUpload(event) {
                         box.x, box.y, box.width, box.height, // Source rectangle from the main canvas
                         0, 0, faceWidth, faceHeight // Destination rectangle on the temporary canvas
                     );
-            
+
 
                     // Store the cropped face image
                     croppedFaces.push(croppedFaceCanvas);
@@ -577,9 +577,9 @@ async function handleImageUpload(event) {
                         matchResults.push(bestMatch.label); // Store the UID of the best match
 
                         // Fetch display name
-                        const memberProfile = await fetchProfile(label);
+
                         ctx.fillStyle = 'white'; // Text color
-                        ctx.fillText(memberProfile.displayName, box.x, box.y - 20); // Draw label
+                        ctx.fillText(label, box.x, box.y - 20); // Draw label
                     } else {
                         console.log(`Face ${index + 1} did not match any member.`);
                         ctx.fillStyle = 'white'; // Text color
@@ -592,7 +592,7 @@ async function handleImageUpload(event) {
             }
 
 
-            addPostTemplate(img.src,matchResults);
+            addPostTemplate(img.src, matchResults);
             resolve();
         };
 
@@ -601,7 +601,9 @@ async function handleImageUpload(event) {
 }
 
 
-async function addPostTemplate(img,matches) {
+async function addPostTemplate(img, matches) {
+    const loadingBar = document.getElementById('loading-bar');
+    loadingBar.style.transform = 'translateX(100%)'
     const posts = document.getElementById('posts');
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     const currentDate = new Date().toLocaleDateString('en-US', options);
@@ -612,6 +614,25 @@ async function addPostTemplate(img,matches) {
     });
     // Check if a template with the class 'template' already exists
     const existingTemplate = document.querySelector('.template');
+
+    let pretags = [];
+    let preemails = [];
+
+    // Loop through matches to create tags
+    for (const match of matches) {
+        const memberProfile = await fetchProfile(match);
+        if (memberProfile && memberProfile.displayName) {
+            // Replace spaces with underscores and prepend @
+
+            const tag = '@' + memberProfile.displayName.replace(/\s+/g, '_'); // Display only the username
+            pretags.push(tag);
+            preemails.push(memberProfile.email);
+        }
+    }
+
+    // Join the tags into a string
+    const tagsString = pretags.join(' ');
+
 
     if (!existingTemplate) {
         // Create the template
@@ -626,7 +647,7 @@ async function addPostTemplate(img,matches) {
             <p>${user.displayName}</p>
         </div>
             <img id="postImg" src="${img}" alt="Post Image">
-            <textarea maxlength="1500" id="desc" placeholder="Enter description here..."></textarea>
+            <textarea maxlength="1500" id="desc" placeholder="Enter description here...">${tagsString}</textarea>
             <p>${currentDate} ${currentTime}</p>
             <div id="post-buttons">
             <button class="post-button" id="postPost">Post</button>
@@ -636,6 +657,88 @@ async function addPostTemplate(img,matches) {
         posts.insertBefore(template, posts.firstChild);
         const targetElement = template.querySelector('#postHeader');
         targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        let tags = [];
+        let emails = [];
+
+        tags = pretags;
+        emails = preemails;
+
+        template.querySelector('#desc').addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        
+            const textarea = this;
+            const value = textarea.value;
+        
+            // Regular expression to find all strings starting with '@'
+            const atMentions = value.match(/@(\w[\w_]*)/g) || [];
+        
+            let newtags = [...pretags]; // Start with pre-loaded tags
+            let newemails = [...preemails]; // Start with pre-loaded emails
+        
+            // Check for each mention
+            for (const mention of atMentions) {
+                const searchTerm = mention.slice(1); // Remove '@' to get the search term
+                const closestMatch = findClosestMember(searchTerm);
+        
+                if (closestMatch) {
+                    // Add to tags if not already present
+                    if (!newtags.includes(mention)) {
+                        newtags.push(mention); // Add the mention to tags
+                        newemails.push(closestMatch.email); // Add the member's email to emails
+                    }
+                }
+            }
+        
+            // Keep tags that are currently in the textarea mentions
+            const updatedTags = newtags.filter(tag => atMentions.includes(tag));
+            
+            // Create a new Set to ensure unique emails
+            const uniqueEmailsSet = new Set();
+        
+            // Filter emails based on the updated tags and also keep preemails that still have a tag
+            updatedTags.forEach(tag => {
+                const index = newtags.indexOf(tag);
+                if (index !== -1) {
+                    uniqueEmailsSet.add(newemails[index]); // Keep the email for this tag
+                }
+            });
+        
+            // Now add emails for any remaining preloaded tags that still exist
+            pretags.forEach((tag, index) => {
+                if (updatedTags.includes(tag)) {
+                    uniqueEmailsSet.add(preemails[index]); // Keep corresponding email if tag still exists
+                }
+            });
+        
+            // Convert the Set back to an array for unique emails
+            newemails = Array.from(uniqueEmailsSet);
+        
+            // Update the global tags and emails
+            tags = updatedTags;
+            emails = newemails;
+            
+            textarea.value = value;
+        
+            // Optional: Do something with tags and emails, like updating other elements or logging them
+            console.log('Tags:', tags);
+            console.log('Emails:', emails);
+        
+            function findClosestMember(searchTerm) {
+                // Filter members based on the search term
+                const matches = memberProfiles.filter(member =>
+                    member.displayName.replace(/\s+/g, '_').toLowerCase().includes(searchTerm.toLowerCase())
+                );
+        
+                // Return the first match, or null if no match is found
+                return matches.length > 0 ? matches[0] : null;
+            }
+        });
+        
+
+
+
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
@@ -648,6 +751,12 @@ async function addPostTemplate(img,matches) {
                 classroom.lat,
                 classroom.long
             );
+            if (emails) {
+                for (const email of emails) {
+                    await emailTagged(email, classroom.name, user.displayName, description)
+                }
+            }
+
             //basicNotif(distance,distance <= classroom.rad, 5000)
             //basicNotif(code.data,distance <= classroom.rad, 5000)
             if (distance <= classroom.rad) {
@@ -656,18 +765,19 @@ async function addPostTemplate(img,matches) {
                     for (const match of matches) {
                         console.log(match)
                         const attendance = await checkAttendance(syntax, classroom.timezone, match);
-                        updateattendanceList
+                        updateattendanceList();
                     }
                 }
-                
-            }
-            
 
-            createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid, 0);
+            }
+
+
+            await createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid, 0, matches);
             cancelFunction(template);
+            // Hide loading bar when done
         });
 
-        template.querySelector('#cancelPost').addEventListener('click', () => {
+        template.querySelector('#cancelPost').addEventListener('click', () => {// Hide loading bar when done
             cancelFunction(template);
         });
     } else {
@@ -699,6 +809,16 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     const posts = document.getElementById('posts');
     const template = document.createElement('li');
     template.id = 'post';
+
+    description = description.replace(/(@[\w_\.]+)/g, function (match) {
+        return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
+    });
+
+    // Wrap #words (allow periods within the word)
+    description = description.replace(/(#[\w_\.]+)/g, function (match) {
+        return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
+    });
+
 
 
     const timeDisplay = formatTimeDifference(dateTime);
@@ -752,7 +872,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
         </div>
     `;
 
-    posts.appendChild(template);
+    posts.insertBefore(template, posts.firstChild);
     const imgElement = template.querySelector('#postImg');
     const loader = template.querySelector('.loader');
 

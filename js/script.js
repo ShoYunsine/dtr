@@ -23,9 +23,10 @@ if ('serviceWorker' in navigator) {
 
             if ('sync' in registration) {
 
-                function startTracking() {
+                function checkLocation() {
                     if (navigator.geolocation) {
-                        navigator.geolocation.watchPosition(async position => {
+                        // Use getCurrentPosition instead of watchPosition for periodic checks
+                        navigator.geolocation.getCurrentPosition(async position => {
                             const location = {
                                 latitude: position.coords.latitude,
                                 longitude: position.coords.longitude
@@ -39,8 +40,6 @@ if ('serviceWorker' in navigator) {
                                     cls.long
                                 );
                                 
-                                 
-                                //basicNotif(`${distance}m`, "", 5000);
                                 if (distance <= cls.rad) {
                                     const { status } = await checkAttendance(cls.syntax, cls.timezone);
                                     //basicNotif(`${cls.name} inRadius`, "", 5000);
@@ -61,8 +60,8 @@ if ('serviceWorker' in navigator) {
                     }
                 }
 
-                // Start tracking
-                startTracking();
+                // Check location every 30 seconds
+                setInterval(checkLocation, 30000); // 30,000 milliseconds = 30 seconds
             }
         })
 

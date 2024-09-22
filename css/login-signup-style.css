@@ -48,7 +48,6 @@
   object-fit: cover;
   z-index: 10;
   background-blend-mode: color;
-  background: linear-gradient(45deg, #ba7eff77, #00eeff73, #ffbb0093, #ff00b371, #c300ff79);
 }
 
 #right {
@@ -188,15 +187,14 @@ iframe::-webkit-scrollbar {
 
 
 .logo a {
-  font-family: "Pacifico", cursive;
-  font-weight: 900;
-  font-style: normal;
-  color: black;
-  font-size: 50px; 
-  background: linear-gradient(45deg, #ba7eff, #00eeff, #ffbb00, #ff00b3, #c300ff);
+  margin-left: 10px;
+  text-decoration: none;
+  font-family: 'Billabong', sans-serif;
+  font-size: 550%;
+  width: 100%;
+  font-weight: 100;
   background-clip: text;
-  color: transparent;
-  display: inline;
+  color: var(--text-color-main);
 }
 
 #warning {

@@ -30,15 +30,9 @@
     <div class="logo">
 
       <label for="sidebar-toggle" class="sidebar-button">☰</label>
-      <a>Create</a><img src="Images/logo.png">
+      <a>Async</a>
     </div>
     <div class="nav-links">
-      <i id="sun" class="icon icon-sun fas fa-sun"></i>
-      <i id="moon" class="icon icon-moon fas fa-moon"></i>
-      <div class="switch">
-        <input type="checkbox" id="darkModeToggle">
-        <label for="darkModeToggle" class="switch-slider"></label>
-      </div>
       <a id="account"><img id="accountImg" src="Images/gear.png"></img>Account</a>
     </div>
   </div>
@@ -46,9 +40,7 @@
     <nav>
       <ul>
         <li>
-          <div class="logo">
-            <a style="color: transparent;" href="index.html">Daily Time Record</a>
-          </div>
+          <a href="index.html">Home</a><i class="fa-solid fa-house"></i>
         </li>
         
         <li><a href="#">QR Code</a>
@@ -66,6 +58,13 @@
             <input type="file" id="imageUpload" accept="image/*" name="faceImage">
             <button form="faceForm" type="submit" id="uploadFaceData">Save Face</button>
           </form></li>
+          <li>
+            <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
+        <div class="switch">
+          <input type="checkbox" id="darkModeToggle">
+          <label for="darkModeToggle" class="switch-slider"></label>
+        </div>
+          </li>
         <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
       </ul>
     </nav>
@@ -80,7 +79,7 @@
       <label for="addTab" class="switch-btn">Add</label>
       <label for="joinTab" class="switch-btn">Join</label>
     </div>
-    <div class="form-section">
+    <div class="form-section" style="display: block;">
       <form id="classaddForm">
         <div>
           <h3 for="className">Class Name</h3>
