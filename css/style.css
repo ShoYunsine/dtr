@@ -1,10 +1,10 @@
 
 :root {
   --main-color: linear-gradient(to right, #ba7eff, #00eeff, #ffbb00, #ff00b3, #c300ff);
-  --background-color: #fffbf7;
+  --background-color: #ffffff;
   --text-color-main: black;
   --text-color-second: rgb(88, 88, 88);
-  --border-color: #9c9c9c;
+  --border-color: #c4c4c4;
   --active-tab-color: #0990ff;
   --button-bg-color: #fff5e71a;
   --button-hover-bg-color: #fff5e7;
@@ -15,9 +15,9 @@
 }
 
 .dark-mode {
-  --background-color: rgb(2, 2, 15);
+  --background-color: rgb(29, 29, 32);
   --text-color-main: rgb(255, 255, 255);
-  --border-color: white;
+  --border-color: rgb(48, 48, 48);
   --late: rgb(158, 49, 158);
   --present: rgb(84, 228, 84);
   --absent: crimson;
@@ -40,11 +40,26 @@ body::-webkit-scrollbar {
   display: none;
 }
 
+.tag {
+  color: var(--active-tab-color);
+}
+
+#loading-bar {
+  width: 100%; 
+  height: 5px; 
+  background: var(--active-tab-color); 
+  position: fixed; 
+  bottom: 0; 
+  left: 0; 
+  transform: translateX(-100%); 
+  transition: transform 0.5s ease;
+  z-index: 100000;
+}
+
 .switch {
   position: relative; /* Positioning the switch relative to its container */
   display: inline-block;
-  width: 50px; /* Adjusted width */
-  height: 28px; /* Adjusted height */
+  height: 12px; /* Adjusted height */
 }
 
 .switch input {
@@ -56,8 +71,8 @@ body::-webkit-scrollbar {
   cursor: pointer;
   top: 0;
   left: 0;
-  width: 50px; /* Adjusted width */
-  height: 28px; /* Adjusted height */
+  width: 25px; /* Adjusted width */
+  height: 14px; /* Adjusted height */
   background-color: var(--text-color-second); /* Background color of the slider */
   transition: background-color 0.4s; /* Smooth transition for color change */
   border-radius: 28px; /* Rounded corners for the slider */
@@ -68,8 +83,8 @@ body::-webkit-scrollbar {
   position: absolute; /* Positioned relative to the slider */
   top: 0;
   left: 0;
-  width: 50px; /* Adjusted width */
-  height: 28px; /* Adjusted height */
+  width: 27px; /* Adjusted width */
+  height: 16px; /* Adjusted height */
   background-color: var(--text-color-second); /* Background color of the slider */
   transition: .4s; /* Smooth transition for color change */
   border-radius: 28px; /* Rounded corners for the slider */
@@ -80,15 +95,15 @@ body::-webkit-scrollbar {
   position: absolute; /* Positioned inside the slider */
   top: 2px; /* Adjusted vertical position */
   left: 2px; /* Adjusted horizontal position */
-  width: 24px; /* Adjusted size of the dot */
-  height: 24px; /* Adjusted size of the dot */
+  width: 12px; /* Adjusted size of the dot */
+  height: 12px; /* Adjusted size of the dot */
   border-radius: 50%; /* Circular shape for the dot */
   background-color: var(--background-color); /* Background color of the dot */
   transition: .4s; /* Smooth transition for the dot movement */
 }
 
 #darkModeToggle:checked + .switch-slider:after {
-  transform: translateX(22px); /* Adjusted translation distance for the dot */
+  transform: translateX(11px); /* Adjusted translation distance for the dot */
 }
 
 .icon {
@@ -96,14 +111,6 @@ body::-webkit-scrollbar {
   color: var(--text-color-second); /* Icon color */
   transition: opacity 0.4s; /* Smooth transition for icon visibility */
   margin: 4px;
-}
-
-#sun {
-  display: none; /* Default display for sun icon */
-}
-
-#moon {
-  display: block; /* Default hidden for moon icon */
 }
 
 /* Show moon icon and hide sun icon when checkbox is checked */
@@ -140,19 +147,22 @@ body::-webkit-scrollbar {
 .top-bar .logo img {
   width: 35px;
 }
-
+@font-face {
+  font-family: 'Billabong';
+  src: url('/fonts/Billabong.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+}
 .top-bar .logo a {
   margin-left: 10px;
   text-decoration: none;
-  font-family: "Pacifico", cursive;
-  font-weight: 900;
-  font-style: normal;
-  font-size: 150%;
+  font-family: 'Billabong', sans-serif;
+  font-size: 250%;
   width: 100%;
-  font-weight: bold;
-  background: linear-gradient(45deg, #ba7eff, #00eeff, #ffbb00, #ff00b3, #c300ff);
+  font-weight: 100;
+  
   background-clip: text;
-  color: transparent;
+  color: var(--text-color-main);
 }
 
 .logo a {

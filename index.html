@@ -25,15 +25,10 @@
     <div class="logo">
 
       <label for="sidebar-toggle" class="sidebar-button">☰</label>
-      <a>DTR</a><img src="Images/logo.png">
+      <a>Async</a>
     </div>
     <div class="nav-links">
-      <i id="sun" class="icon icon-sun fas fa-sun"></i>
-      <i id="moon" class="icon icon-moon fas fa-moon"></i>
-      <div class="switch">
-        <input type="checkbox" id="darkModeToggle">
-        <label for="darkModeToggle" class="switch-slider"></label>
-      </div>
+      
       <a id="account"><img id="accountImg" src="Images/gear.png"></img></a>
     </div>
   </div>
@@ -56,6 +51,14 @@
             <button form="faceForm" type="submit" id="uploadFaceData">Save Face</button>
           </form>
         </li>
+        <li>
+          <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
+      <div class="switch">
+        <input type="checkbox" id="darkModeToggle">
+        <label for="darkModeToggle" class="switch-slider"></label>
+      </div>
+        </li>
+        
         <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
       </ul>
     </nav>
@@ -72,7 +75,7 @@
       </ul>
     </div>
     <div class="form-section" style="padding:0;">
-      <div id="postList" class="attendanceList" style="margin:0; display:block;">
+      <div id="postList" class="attendanceList" style="display:block;">
         <ul id="posts">
           
         </ul>

@@ -11,11 +11,23 @@
   align-self: center;
 }
 
+#classInfo {
+  display: flex;
+  padding: 10px;
+  border-radius: 5px;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  flex-direction: row;
+}
+
+#className {
+  margin: 0;
+}
+
 #code {
   font-size: 12px;
-  border: 1px solid var(--border-color);
   border-radius: 5px;
-  margin: auto;
   font-weight: bold;
   gap: 10px;
   justify-content: center;
@@ -41,13 +53,17 @@
 
 #buttonsdown {
   display: flex;
-  position: fixed;
-  flex-direction: row-reverse;
-  bottom: 20px;
-  right: 12px;
-  padding: 4px;
+  position: sticky;
+  flex-direction: row;
+  bottom: 0;
+  width: 100%;
+  padding: 12px 0;
   gap: 10px;
   z-index: 10000;
+  justify-content: space-evenly;
+  background-color: var(--background-color);
+  border-top: 1px solid var(--border-color);
+  flex-wrap: nowrap;
 }
 
 #posts {
@@ -68,7 +84,7 @@
   display: flex;
   width: 97%;
   align-self: center;
-  padding: 4px 12px;
+  padding: 4px 0;
   white-space: wrap;
   flex-direction: row;
   align-items: center;
@@ -85,7 +101,7 @@
 
 #postHeader div {
   display: flex;
-  width: 50%;
+  width: 90%;
   flex-direction: row;
   align-items: center;
   align-self: start;
@@ -121,6 +137,7 @@
   align-self: center;
   margin: auto;
   position: fixed;
+  flex-direction: column;
   bottom: -50%;
   background-color: var(--background-color);
   height: auto;
@@ -151,6 +168,7 @@
   width: 70px;
   margin-top: 14px;
 }
+
 .comments label {
   display: block;
   margin: 8px auto;
@@ -210,7 +228,7 @@
 
 #postOptions .postOptionButton:hover {
   color: var(--text-color-main);
-  background-color: var(--button-hover-bg-color);
+  background-color: transparent;
   text-align: left;
   margin-left: 14px;
   outline-style: none;
@@ -306,7 +324,8 @@
 }
 
 #post {
-  user-select: none; /* For most browsers */
+  user-select: none;
+  /* For most browsers */
   height: auto;
   border: 1px none var(--border-color);
   display: flex;
@@ -349,15 +368,24 @@
 
 #postImg {
   width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
 }
 
 #post textarea {
   width: 98%;
   height: auto;
+  max-height: 2200px;
   margin: auto;
   color: var(--text-color-main);
   background-color: transparent;
   border: 1px none var(--border-color);
+  resize: none;
+  user-select: text;
+}
+
+#post textarea:focus-visible {
+  outline: none;
 }
 
 #commentArea {
@@ -367,7 +395,6 @@
   border: 1px none var(--border-color);
   border-radius: 40px;
   height: 30px;
-  padding: 8px;
   gap: 4px;
   align-items: center;
   width: 100%;
@@ -446,32 +473,43 @@
 
 #post .commentBlock .commentBody {
   display: flex;
-  flex-direction: column; /* Stack any children vertically, if needed */
+  flex-direction: column;
+  /* Stack any children vertically, if needed */
   padding: 0 8px;
   width: 90%;
   color: var(--text-color-main);
-  max-height: 100px; /* Adjust this height as needed */
-  overflow-y: auto; /* Enable vertical scrolling if needed */
-  white-space: pre-wrap; /* Allow text to wrap */
-  word-wrap: break-word; /* Break long words if necessary */
+  max-height: 100px;
+  /* Adjust this height as needed */
+  overflow-y: auto;
+  /* Enable vertical scrolling if needed */
+  white-space: pre-wrap;
+  /* Allow text to wrap */
+  word-wrap: break-word;
+  /* Break long words if necessary */
   text-align: justify;
 }
 
 #post .commentBlock .timestamp {
   display: flex;
-  flex-direction: row; /* Stack any children vertically, if needed */
+  flex-direction: row;
+  /* Stack any children vertically, if needed */
   padding: 0 8px;
   width: auto;
   color: var(--text-color-second);
-  max-height: 100px; /* Adjust this height as needed */
-  overflow-y: auto; /* Enable vertical scrolling if needed */
-  white-space: normal; /* Allow text to wrap */
+  max-height: 100px;
+  /* Adjust this height as needed */
+  overflow-y: auto;
+  /* Enable vertical scrolling if needed */
+  white-space: normal;
+  /* Allow text to wrap */
   align-items: center;
   gap: 10px;
   align-self: flex-end;
-  word-wrap: break-word; /* Break long words if necessary */
+  word-wrap: break-word;
+  /* Break long words if necessary */
   text-align: justify;
 }
+
 #post .commentBlock .timestamp label {
   margin: 0;
   color: var(--text-color-second);
@@ -495,31 +533,19 @@
 
 #camera-button,
 #qr-code-reader {
-  background-color: var(--button-bg-color);
-  /* Button background color */
+  background-color: transparent;
   color: var(--text-color-main);
   /* Icon color */
   border: none;
   border-radius: 50%;
-  width: 45px;
-  height: 45px;
+  width: 25px;
+  height: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 20px;
   cursor: pointer;
-  box-shadow: 0 4px 4px var(--text-color-main);
-  opacity: 0.5;
   transition: all 0.3s ease;
-}
-
-#camera-button:hover,
-#qr-code-reader:hover {
-  transform: scale(1.15);
-  background-color: var(--button-hover-bg-color);
-  opacity: 1;
-  filter: invert();
-  /* Darker button background on hover */
 }
 
 .attendanceList nav {
@@ -595,13 +621,13 @@
 
 #canvass {
   display: none;
-    flex-wrap: nowrap;
-    flex-direction: row;
-    margin-bottom: 12px;
-    border: 2px solid var(--active-tab-color);
+  flex-wrap: nowrap;
+  flex-direction: row;
+  margin-bottom: 12px;
+  border: 2px solid var(--active-tab-color);
 }
 
-#canvass canvas{
+#canvass canvas {
   display: flex;
   flex-grow: 1;
   width: 100px;
@@ -622,9 +648,14 @@
   .commentBlock #postOptions {
     width: 100%;
   }
-  
+
   .comments {
     width: 100%;
+  }
+
+  #postImg {
+    border: 1px none var(--border-color);
+    border-radius: 0;
   }
 }
 

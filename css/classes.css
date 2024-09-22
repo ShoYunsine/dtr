@@ -19,7 +19,6 @@
   margin: 0%;
   margin-bottom: 12px;
   padding: 8px 0%;
-  border-bottom: 1px solid var(--text-color-second);
 }
 
 #classList li:first-child {
@@ -86,6 +85,7 @@ margin:  0 12px;
 
 .form-section,
 .list-section {
+  display: block;
   padding: 10px;
   border-radius: 5px;
 }
@@ -343,6 +343,11 @@ width: auto;
   gap: 4px;
 }
 
+#postList {
+  width: 90%;
+  margin: auto;
+}
+
 .userOptions button,
 .list-item button,
 .post-button,
@@ -403,7 +408,7 @@ width: auto;
 #attendance-List {
   border: none;
   display: flex;
-  gap: 0 10px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
@@ -412,7 +417,7 @@ width: auto;
 }
 
 #attendance-List .list-item {
-  border: 1px solid var(--text-color-main);
+  border: 1px solid var(--border-color);
   display: flex;
   width: 100%;
   padding: 4px;
@@ -556,5 +561,9 @@ input[type="radio"] {
   #attendance-List .list-item{
     flex-grow:1;
     justify-content: flex-start;
+  }
+
+  #postList {
+    width: 100%;
   }
 }
