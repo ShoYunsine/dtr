@@ -189,8 +189,9 @@ async function updateattendanceList() {
     }
     attendanceList.innerHTML = '';
 
-    for (const memberData of memberProfiles) {
+    for (const member of members) {
         try {
+            const memberData = await fetchProfile(member.id);
             var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
             if (!time) {
                 time = "Not Available";
