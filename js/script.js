@@ -82,7 +82,7 @@ if ('serviceWorker' in navigator) {
 
                                  
 
-                                basicNotif(`${distance}m`, "", 5000);
+                                //basicNotif(`${distance}m`, "", 5000);
 
                                 if (distance <= cls.rad) {
 
