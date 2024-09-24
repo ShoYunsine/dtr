@@ -31,7 +31,7 @@ let currentStream = null; // Variable to hold the current video stream
 
 export function startCamera() {
     console.log(currentStream)
-    qrreader.style.display = "none"
+    qrreader.style.display = "block"
     if (currentStream) {
         console.log('Using existing camera stream.');
         video.srcObject = currentStream; // Use the current stream
@@ -45,7 +45,7 @@ export function startCamera() {
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
         .then(stream => {
             // Assign the video stream to the video element and to the currentStream variable
-            currentStream = stream; 
+            currentStream = stream;
             video.srcObject = stream;
             video.setAttribute('playsinline', true);
             video.play();
@@ -688,21 +688,21 @@ async function addPostTemplate(img, matches) {
         template.querySelector('#desc').addEventListener('input', function () {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
-        
+
             const textarea = this;
             const value = textarea.value;
-        
+
             // Regular expression to find all strings starting with '@'
             const atMentions = value.match(/@(\w[\w_]*)/g) || [];
-        
+
             let newtags = [...pretags]; // Start with pre-loaded tags
             let newemails = [...preemails]; // Start with pre-loaded emails
-        
+
             // Check for each mention
             for (const mention of atMentions) {
                 const searchTerm = mention.slice(1); // Remove '@' to get the search term
                 const closestMatch = findClosestMember(searchTerm);
-        
+
                 if (closestMatch) {
                     // Add to tags if not already present
                     if (!newtags.includes(mention)) {
@@ -711,13 +711,13 @@ async function addPostTemplate(img, matches) {
                     }
                 }
             }
-        
+
             // Keep tags that are currently in the textarea mentions
             const updatedTags = newtags.filter(tag => atMentions.includes(tag));
-            
+
             // Create a new Set to ensure unique emails
             const uniqueEmailsSet = new Set();
-        
+
             // Filter emails based on the updated tags and also keep preemails that still have a tag
             updatedTags.forEach(tag => {
                 const index = newtags.indexOf(tag);
@@ -725,44 +725,48 @@ async function addPostTemplate(img, matches) {
                     uniqueEmailsSet.add(newemails[index]); // Keep the email for this tag
                 }
             });
-        
+
             // Now add emails for any remaining preloaded tags that still exist
             pretags.forEach((tag, index) => {
                 if (updatedTags.includes(tag)) {
                     uniqueEmailsSet.add(preemails[index]); // Keep corresponding email if tag still exists
                 }
             });
-        
+
             // Convert the Set back to an array for unique emails
             newemails = Array.from(uniqueEmailsSet);
-        
+
             // Update the global tags and emails
             tags = updatedTags;
             emails = newemails;
-            
+
             textarea.value = value;
-        
+
             // Optional: Do something with tags and emails, like updating other elements or logging them
             console.log('Tags:', tags);
             console.log('Emails:', emails);
-        
+
             function findClosestMember(searchTerm) {
                 // Filter members based on the search term
                 const matches = memberProfiles.filter(member =>
                     member.displayName.replace(/\s+/g, '_').toLowerCase().includes(searchTerm.toLowerCase())
                 );
-        
+
                 // Return the first match, or null if no match is found
                 return matches.length > 0 ? matches[0] : null;
             }
         });
-        
+
 
 
 
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
+            const buttons =  template.querySelector('#post-buttons');
+            buttons.innerHTML = "<p>Posting...<p>"
+
+            loadingBar.style.transform = 'translateX(-100%)'
             await postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax, user.uid);
 
             const location = await getCurrentLocation();
@@ -792,8 +796,9 @@ async function addPostTemplate(img, matches) {
 
             }
 
-
+           
             await createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid, 0, matches);
+            loadingBar.style.transform = 'translateX(100%)'
             cancelFunction(template);
             // Hide loading bar when done
         });
