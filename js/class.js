@@ -27,26 +27,74 @@ const video = document.getElementById('camera');
 const canvas = document.createElement('canvas');
 const canvasContext = canvas.getContext('2d', { willReadFrequently: true });
 
-function startCamera() {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }) // Use back camera for better focus
+let currentStream = null; // Variable to hold the current video stream
+
+export function startCamera() {
+    console.log(currentStream)
+    qrreader.style.display = "none"
+    if (currentStream) {
+        console.log('Using existing camera stream.');
+        video.srcObject = currentStream; // Use the current stream
+        video.setAttribute('playsinline', true);
+        video.play();
+        setTimeout(scanQRCode, 500); // Start scanning for QR codes after a short delay
+        return; // Exit the function
+    }
+
+    // Request access to the front-facing camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
         .then(stream => {
+            // Assign the video stream to the video element and to the currentStream variable
+            currentStream = stream; 
             video.srcObject = stream;
             video.setAttribute('playsinline', true);
             video.play();
+
+            // Start scanning for QR codes after a short delay
             setTimeout(scanQRCode, 500);
         })
         .catch(err => {
-            console.error('Error accessing camera:', err);
+            handleCameraError(err); // Handle camera errors
         });
 }
 
-function stopCamera() {
-    const stream = video.srcObject;
-    const tracks = stream.getTracks();
-
-    tracks.forEach(track => track.stop()); // Stop all tracks (video and/or audio)
-    video.srcObject = null; // Clear the video element's source
+export function stopCamera() {
+    if (currentStream) {
+        const tracks = currentStream.getTracks();
+        tracks.forEach(track => track.stop()); // Stop all tracks (video and/or audio)
+        currentStream = null; // Clear the current stream
+        video.srcObject = null; // Clear the video element's source
+    } else {
+        console.warn('No stream to stop. Video source is null.');
+    }
 }
+
+// Event listener for starting the camera when the QR code reader button is clicked
+document.getElementById('qr-code-reader').addEventListener('click', function (event) {
+    startCamera();
+});
+
+function handleCameraError(err) {
+    switch (err.name) {
+        case 'NotReadableError':
+            console.error('Camera is already in use:', err);
+            basicNotif('Camera is already in use. Please close other applications using the camera.', "", 5000);
+            break;
+        case 'NotAllowedError':
+            console.error('Permission to access the camera was denied:', err);
+            basicNotif('Permission to access the camera was denied. Please allow camera access in your settings.', "", 5000);
+            break;
+        case 'NotFoundError':
+            console.error('No camera was found on this device:', err);
+            basicNotif('No camera found. Please ensure your device has a camera.', "", 5000);
+            break;
+        default:
+            console.error('Error accessing camera:', err);
+            basicNotif('Error accessing camera: ' + err.message, "", 5000);
+            break;
+    }
+}
+
 
 async function getCurrentLocation() {
     return new Promise((resolve, reject) => {
@@ -114,20 +162,6 @@ async function scanQRCode() {
     }
     requestAnimationFrame(scanQRCode);
 }
-
-async function requestVideoPermission() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        console.log('Video permission granted');
-        const videoElement = document.getElementById('camera');
-        videoElement.srcObject = stream;
-        videoElement.play();
-    } catch (err) {
-    }
-}
-
-// Example usage
-requestVideoPermission();
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Radius of the Earth in meters
@@ -369,19 +403,6 @@ document.getElementById('memberList').addEventListener('click', async function (
     }
 });
 
-document.getElementById('qr-code-reader').addEventListener('click', function (event) {
-    if (qrreader) { // Check if the element exists
-        if (qrreader.style.display === 'block') {
-            qrreader.style.display = 'none';
-            startCamera();
-        } else {
-            qrreader.style.display = 'block';
-            stopCamera();
-        }
-    } else {
-        console.error('Element with ID "qrreader" not found.');
-    }
-});
 
 const classSearchInput = document.getElementById('memberSearch');
 const classList = document.getElementById('memberList');
@@ -426,7 +447,6 @@ const filterClasses2 = () => {
     const searchTerm = attendanceSearchInput.value.toLowerCase();
     console.log('Search term:', searchTerm);
     items2.forEach(item => {
-        console.log(item)
         const h3Text = item.querySelector('h3').textContent.toLowerCase();
         if (h3Text.includes(searchTerm)) {
             item.classList.remove('hidden');
@@ -928,7 +948,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
         refreshMessage.style.fontSize = '12px';
         refreshMessage.style.padding = '5px 10px';
         refreshMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        refreshMessage.style.color = 'var(--text-color-main)';
+        refreshMessage.style.color = 'white';
         refreshMessage.style.borderRadius = '15px';
         refreshMessage.style.display = 'none'; // Hidden by default
         commentSection.appendChild(refreshMessage);

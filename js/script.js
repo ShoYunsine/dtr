@@ -40,99 +40,50 @@ if ('serviceWorker' in navigator) {
 
     navigator.serviceWorker.register('./js/sw.js')
 
-        .then(registration => {
+        .then(async registration => {
 
 
 
             if ('sync' in registration) {
-
-
+                let classes = await getUserClasses();
 
                 function startTracking() {
-
                     if (navigator.geolocation) {
-
                         navigator.geolocation.watchPosition(async position => {
-
                             const location = {
-
                                 latitude: position.coords.latitude,
-
                                 longitude: position.coords.longitude
-
                             };
 
-                            const classes = await getUserClasses();
-
-                            for (const cls of classes) {
-
-                                const distance = calculateDistance(
-
-                                    location.latitude,
-
-                                    location.longitude,
-
-                                    cls.lat,
-
-                                    cls.long
-
-                                );
-
-                                
-
-                                 
-
-                                //basicNotif(`${distance}m`, "", 5000);
-
-                                if (distance <= cls.rad) {
-
-                                    const { status } = await checkAttendance(cls.syntax, cls.timezone);
-
-                                    //basicNotif(`${cls.name} inRadius`, "", 5000);
-
-                                } else {
-
-                                    const attendance = await getAttendance(cls.syntax, cls.timezone);
-
-                                    if (attendance.status === "Absent") {
-
-                                        await markAbsent(cls.syntax);
-
-                                    }
-
-                                }
-
-                                await deleteAllAttendanceRecords(cls.timezone, cls.syntax);
-
+                            // Ensure classes is defined and an array
+                            if (!classes || !Array.isArray(classes)) {
+                                console.log("Refetching classes");
+                                classes = await getUserClasses();
                             }
 
-                
-
-                        }, error => {
-
-                            console.error(`Error getting location: ${error.message}`);
-
+                            if (classes && Array.isArray(classes)) {
+                                for (const cls of classes) {
+                                    const distance = calculateDistance(
+                                        location.latitude,
+                                        location.longitude,
+                                        cls.lat,
+                                        cls.long
+                                    );
+                                    // Add more logic based on distance here
+                                }
+                            } else {
+                                console.error('No valid classes to iterate over.');
+                            }
                         });
-
                     } else {
-
-                        console.error("Geolocation is not supported by this browser.");
-
+                        console.error('Geolocation is not supported by this browser.');
                     }
-
                 }
-
-
-
-                // Start tracking
-
                 startTracking();
 
             }
 
         })
-
-
 
         .catch(error => {
 
@@ -180,8 +131,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 }
 
-
-
 function getCurrentLocation() {
 
     if (navigator.geolocation) {
@@ -204,10 +153,6 @@ function getCurrentLocation() {
 
 }
 
-
-
-
-
 if (Notification.permission === 'granted') {
 
     navigator.serviceWorker.ready.then((registration) => {
@@ -224,8 +169,6 @@ if (Notification.permission === 'granted') {
 
 }
 
-
-
 function applyDarkMode(isDarkMode) {
 
     if (isDarkMode) {
@@ -240,10 +183,6 @@ function applyDarkMode(isDarkMode) {
 
 }
 
-
-
-// Function to handle toggle switch change
-
 function handleToggleChange(event) {
 
     const isChecked = event.target.checked;
@@ -253,10 +192,6 @@ function handleToggleChange(event) {
     applyDarkMode(isChecked);
 
 }
-
-
-
-// Load user preference on page load
 
 function loadUserPreference() {
 
@@ -268,15 +203,6 @@ function loadUserPreference() {
 
 }
 
-
-
-// Add event listener to the switch
-
 document.getElementById('darkModeToggle').addEventListener('change', handleToggleChange);
 
-
-
-// Load user preference when page loads
-
 window.addEventListener('load', loadUserPreference);
-

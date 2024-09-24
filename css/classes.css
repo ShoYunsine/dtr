@@ -60,9 +60,11 @@ margin:  0 12px;
   flex-grow: 1;
   margin-left: 250px;
   display: flex;
+  height: 100vh; /* Adjust based on the container's max height */
+  overflow-y: auto;  /* Enable scrolling */
   overflow-x: hidden;
   flex-direction: column;
-  justify-content: center;
+
   align-items: stretch;
 }
 
