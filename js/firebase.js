@@ -964,6 +964,9 @@ export async function getUserClasses() {
         const userClassesRef = collection(db, 'users', user.uid, 'classes');
         const userClassesSnapshot = await getDocs(userClassesRef);
 
+        // Log the snapshot size
+        console.log(`User classes snapshot size: ${userClassesSnapshot.size}`);
+
         const classList = [];
         for (const docu of userClassesSnapshot.docs) {
             const classSyntax = docu.id;
@@ -977,7 +980,13 @@ export async function getUserClasses() {
                     id: classSyntax,
                     ...classDoc.data()
                 });
+            } else {
+                console.warn(`Class document does not exist for: ${classSyntax}`);
             }
+        }
+
+        if (classList.length === 0) {
+            console.warn('No valid classes found.');
         }
 
         return classList;
@@ -986,6 +995,7 @@ export async function getUserClasses() {
         return [];
     }
 }
+
 
 export async function fetchClassPosts(syntax) {
     const classPostsRef = collection(db, 'classes', syntax, 'posts'); // Reference to class posts subcollection

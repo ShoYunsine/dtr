@@ -60,7 +60,7 @@
   padding: 12px 0;
   gap: 10px;
   z-index: 10000;
-  justify-content: space-evenly;
+  justify-content: flex-end;
   background-color: var(--background-color);
   border-top: 1px solid var(--border-color);
   flex-wrap: nowrap;
@@ -656,6 +656,9 @@
   #postImg {
     border: 1px none var(--border-color);
     border-radius: 0;
+  }
+  #buttonsdown {
+    justify-content: space-evenly;
   }
 }
 
