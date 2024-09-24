@@ -73,7 +73,11 @@ export function stopCamera() {
 
 // Event listener for starting the camera when the QR code reader button is clicked
 document.getElementById('qr-code-reader').addEventListener('click', function (event) {
+    if (currentStream) {
+        stopCamera();
+    } else {
     startCamera();
+    };
 });
 
 function handleCameraError(err) {
