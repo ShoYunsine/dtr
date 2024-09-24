@@ -54,11 +54,13 @@ export function startCamera() {
             setTimeout(scanQRCode, 500);
         })
         .catch(err => {
+            qrreader.style.display = "none"
             handleCameraError(err); // Handle camera errors
         });
 }
 
 export function stopCamera() {
+    qrreader.style.display = "none"
     if (currentStream) {
         const tracks = currentStream.getTracks();
         tracks.forEach(track => track.stop()); // Stop all tracks (video and/or audio)
@@ -904,7 +906,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
 
     // Load the image
     imgElement.src = img;
-
+    imgElement.style.display = 'none';
     // Show loader until the image loads
     imgElement.onload = () => {
         loader.style.display = 'none'; // Hide loader

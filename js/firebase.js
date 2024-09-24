@@ -147,7 +147,6 @@ onAuthStateChanged(auth, async (user) => {
                             <input style="display:none;" class="comment" type="checkbox" id="comments${postId}">
                             <input style="display:none;" class="commentToggle" type="checkbox" id="commentSectionToggle${postId}">
                             <div id="postOptions">
-                            <button class="postOptionButton" id="savePhoto" data-post-id="${postId}">Save Photo <i class="fa-solid fa-image"></i></button>
                                 ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
                                 `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
                                 ''}
@@ -171,7 +170,7 @@ onAuthStateChanged(auth, async (user) => {
 
                         // Load the image
                         imgElement.src = img;
-
+                        imgElement.style.display = 'none';
                         // Show loader until the image loads
                         imgElement.onload = () => {
                             loader.style.display = 'none'; // Hide loader
@@ -345,7 +344,7 @@ onAuthStateChanged(auth, async (user) => {
                         }
 
                         observeComments(postId);
-
+                        
                         if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
                             template.querySelector('#deletePost').addEventListener('click', async (event) => {
                                 const postId = event.target.getAttribute('data-post-id');
