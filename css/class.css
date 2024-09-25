@@ -532,7 +532,8 @@
 
 
 #camera-button,
-#qr-code-reader {
+#qr-code-reader,
+#facescan-button {
   background-color: transparent;
   color: var(--text-color-main);
   /* Icon color */
@@ -658,6 +659,7 @@
     border-radius: 0;
   }
   #buttonsdown {
+    width: 100%;
     justify-content: space-evenly;
   }
 }

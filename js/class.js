@@ -12,7 +12,7 @@ import {
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
-import { faceDetect } from './facerecog.js';
+import { faceDetect, matchFacesFromVideo } from './facerecog.js';
 import * as faceapi from 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.esm.js';
 // Debounce function
 function debounce(func, wait) {
@@ -59,6 +59,57 @@ export function startCamera() {
         });
 }
 
+export async function startCamera2() {
+    console.log(currentStream);
+    qrreader.style.display = "block";
+    for (const memberProfile of memberProfiles) {
+        // Ensure the profile has face descriptors
+        if (memberProfile && Array.isArray(memberProfile.faceDescriptors)) {
+            console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
+
+            // Check if the whole faceDescriptors array has a length of 128
+            if (memberProfile.faceDescriptors.length === 128) {
+                labeledDescriptors.push(
+                    new faceapi.LabeledFaceDescriptors(
+                        String(memberProfile.uid), // Member's name as label
+                        [new Float32Array(memberProfile.faceDescriptors)] // Wrap it in an array
+                    )
+                );
+            } else {
+                console.log(`Invalid face descriptor length for member: ${memberProfile.displayName}. Expected 128, got ${memberProfile.faceDescriptors.length}.`);
+            }
+        } else {
+            console.log(`No face descriptors found for member: ${memberProfile.displayName}`);
+        }
+    }
+    if (currentStream) {
+        console.log('Using existing camera stream.');
+        video.srcObject = currentStream; // Use the current stream
+        video.setAttribute('playsinline', true);
+        video.play();
+        setTimeout(() => matchFacesFromVideo(videolabeledDescriptors), 1000); // Detect faces after a delay
+        return; // Exit the function
+    }
+
+    // Request access to the front-facing camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+            // Assign the video stream to the video element and to the currentStream variable
+            currentStream = stream;
+            video.srcObject = stream;
+            video.setAttribute('playsinline', true);
+            video.play();
+
+            // Start scanning for QR codes after a short delay
+
+            // Start face detection after a short delay
+            setTimeout(() => matchFacesFromVideo(video,labeledDescriptors), 1000);
+        })
+        .catch(err => {
+            qrreader.style.display = "none";
+            handleCameraError(err); // Handle camera errors
+        });
+}
 export function stopCamera() {
     qrreader.style.display = "none"
     if (currentStream) {
@@ -76,7 +127,15 @@ document.getElementById('qr-code-reader').addEventListener('click', function (ev
     if (currentStream) {
         stopCamera();
     } else {
-    startCamera();
+        startCamera();
+    };
+});
+
+document.getElementById('facescan-button').addEventListener('click', function (event) {
+    if (currentStream) {
+        stopCamera();
+    } else {
+        startCamera2();
     };
 });
 
@@ -141,7 +200,7 @@ async function scanQRCode() {
                 basicNotif('Checking attandance...', "Please wait...", 5000)
                 if (mememberData) {
                     basicNotif('Member fetched', "", 5000)
-                    video.style.border = "1px solid green"; // Optional: change border color to indicate success
+                    //video.style.border = "1px solid green"; // Optional: change border color to indicate success
 
                     const location = await getCurrentLocation();
                     const distance = calculateDistance(
@@ -162,7 +221,7 @@ async function scanQRCode() {
             }
 
         } else {
-            video.style.border = "1px solid red"; // Optional: change border color to indicate failure
+            //video.style.border = "1px solid red"; // Optional: change border color to indicate failure
             console.log('No QR code detected.');
         }
     }
@@ -482,6 +541,8 @@ observer2.observe(attendanceList, { childList: true });
 // Initial filter
 filterClasses2();
 
+let labeledDescriptors = [];
+
 async function handleImageUpload(event) {
     const loadingBar = document.getElementById('loading-bar');
     loadingBar.style.transform = 'translateX(-100%)';
@@ -509,7 +570,7 @@ async function handleImageUpload(event) {
             const canvass = document.getElementById('canvass');
             //canvass.style.display = 'flex';
             const faces = await faceDetect(file);
-            const labeledDescriptors = [];
+
             const matchResults = [];
             let index = 0;
             for (const memberProfile of memberProfiles) {
@@ -769,7 +830,7 @@ async function addPostTemplate(img, matches) {
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
-            const buttons =  template.querySelector('#post-buttons');
+            const buttons = template.querySelector('#post-buttons');
             buttons.innerHTML = "<p>Posting...<p>"
 
             loadingBar.style.transform = 'translateX(-100%)'
@@ -802,7 +863,7 @@ async function addPostTemplate(img, matches) {
 
             }
 
-           
+
             await createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid, 0, matches);
             loadingBar.style.transform = 'translateX(100%)'
             cancelFunction(template);
