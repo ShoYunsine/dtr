@@ -73,7 +73,7 @@ export async function startCamera2() {
     }
 
     // Request access to the front-facing camera
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
         .then(stream => {
             // Assign the video stream to the video element and to the currentStream variable
             currentStream = stream;
