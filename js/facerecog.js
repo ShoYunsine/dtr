@@ -42,9 +42,9 @@ export async function faceDetect(file) {
                 // Set the desired canvas height
                 const desiredHeight = 480; // Set your desired height here
                 const aspectRatio = img.width / img.height;
-                const displaySize = { 
-                    width: desiredHeight * aspectRatio, 
-                    height: desiredHeight 
+                const displaySize = {
+                    width: desiredHeight * aspectRatio,
+                    height: desiredHeight
                 };
 
                 faceapi.matchDimensions(canvas, displaySize);
@@ -79,3 +79,82 @@ export async function faceDetect(file) {
     });
 }
 
+export async function matchFacesFromVideo(videoElement, knownDescriptorsArray) {
+    if (!videoElement || !knownDescriptorsArray || knownDescriptorsArray.length === 0) {
+        console.error('Video element or known descriptors array missing or empty.');
+        return;
+    }
+
+    // Wait until video metadata is loaded to get video dimensions
+    videoElement.addEventListener('loadedmetadata', async () => {
+        const displaySize = { width: videoElement.videoWidth, height: videoElement.videoHeight };
+        faceapi.matchDimensions(videoElement, displaySize);
+
+        // Create FaceMatcher for matching detected faces against known descriptors
+        const faceMatcher = new faceapi.FaceMatcher(knownDescriptorsArray, 0.6); // 0.6 is the distance threshold
+
+        // Load face detection models
+        await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+        await faceapi.nets.faceLandmark68Net.loadFromUri('./models');
+        await faceapi.nets.faceRecognitionNet.loadFromUri('./models');
+
+        async function detectFaces() {
+            try {
+                const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptors();
+
+                if (detections.length > 0) {
+                    console.log(`Detected ${detections.length} face(s).`);
+
+                    // Resize detections for better matching
+                    const resizedDetections = faceapi.resizeResults(detections, displaySize);
+
+                    // Process each detection to find the best match
+                    resizedDetections.forEach((detection, index) => {
+                        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+                        console.log(`Face ${index + 1}: ${bestMatch.toString()}`);
+
+                        // Optionally display match results on the video (can be customized)
+                        displayMatchOnVideo(videoElement, bestMatch);
+                    });
+                } else {
+                    console.log('No faces detected.');
+                }
+            } catch (error) {
+                console.error('Error detecting faces:', error);
+            }
+
+            // Continue the detection loop using requestAnimationFrame for smoother execution
+            requestAnimationFrame(detectFaces);
+        }
+
+        // Start detection once video starts playing
+        videoElement.play().then(() => {
+            detectFaces(); // Start face detection loop
+        }).catch(err => {
+            console.error('Error playing video:', err);
+        });
+    });
+}
+// Example function to display match on the video or UI
+function displayMatchOnVideo(videoElement, bestMatch) {
+    const matchText = bestMatch.label !== 'unknown' ? `Matched: ${bestMatch.label}` : 'No match found';
+
+    // Display match result on top of the video element (can be improved as per UI needs)
+    const matchLabel = document.createElement('div');
+    matchLabel.innerText = matchText;
+    matchLabel.style.position = 'absolute';
+    matchLabel.style.color = 'white';
+    matchLabel.style.top = '10px';
+    matchLabel.style.left = '10px';
+    matchLabel.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    matchLabel.style.padding = '5px';
+
+    videoElement.parentNode.appendChild(matchLabel);
+
+    // Optionally, remove the label after a few seconds
+    setTimeout(() => {
+        matchLabel.remove();
+    }, 3000);
+}
