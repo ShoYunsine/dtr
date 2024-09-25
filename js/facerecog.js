@@ -79,12 +79,33 @@ export async function faceDetect(file) {
     });
 }
 
-export async function matchFacesFromVideo(videoElement, knownDescriptorsArray) {
+export async function matchFacesFromVideo(videoElement, profiles) {
+    let knownDescriptorsArray = [];
+    for (const memberProfile of profiles) {
+        // Ensure the profile has face descriptors
+        if (memberProfile && Array.isArray(memberProfile.faceDescriptors)) {
+            console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
+
+            // Check if the whole faceDescriptors array has a length of 128
+            if (memberProfile.faceDescriptors.length === 128) {
+                knownDescriptorsArray.push(
+                    new faceapi.LabeledFaceDescriptors(
+                        String(memberProfile.uid), // Member's name as label
+                        [new Float32Array(memberProfile.faceDescriptors)] // Wrap it in an array
+                    )
+                );
+            } else {
+                console.log(`Invalid face descriptor length for member: ${memberProfile.displayName}. Expected 128, got ${memberProfile.faceDescriptors.length}.`);
+            }
+        } else {
+            console.log(`No face descriptors found for member: ${memberProfile.displayName}`);
+        }
+    }
     if (!videoElement || !knownDescriptorsArray || knownDescriptorsArray.length === 0) {
         console.error('Video element or known descriptors array missing or empty.');
         return;
     }
-
+    
     // Wait until video metadata is loaded to get video dimensions
     videoElement.addEventListener('loadedmetadata', async () => {
         const displaySize = { width: videoElement.videoWidth, height: videoElement.videoHeight };

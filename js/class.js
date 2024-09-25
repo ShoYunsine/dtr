@@ -62,37 +62,18 @@ export function startCamera() {
 export async function startCamera2() {
     console.log(currentStream);
     qrreader.style.display = "block";
-    for (const memberProfile of memberProfiles) {
-        // Ensure the profile has face descriptors
-        if (memberProfile && Array.isArray(memberProfile.faceDescriptors)) {
-            console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
-
-            // Check if the whole faceDescriptors array has a length of 128
-            if (memberProfile.faceDescriptors.length === 128) {
-                labeledDescriptors.push(
-                    new faceapi.LabeledFaceDescriptors(
-                        String(memberProfile.uid), // Member's name as label
-                        [new Float32Array(memberProfile.faceDescriptors)] // Wrap it in an array
-                    )
-                );
-            } else {
-                console.log(`Invalid face descriptor length for member: ${memberProfile.displayName}. Expected 128, got ${memberProfile.faceDescriptors.length}.`);
-            }
-        } else {
-            console.log(`No face descriptors found for member: ${memberProfile.displayName}`);
-        }
-    }
+    
     if (currentStream) {
         console.log('Using existing camera stream.');
         video.srcObject = currentStream; // Use the current stream
         video.setAttribute('playsinline', true);
         video.play();
-        setTimeout(() => matchFacesFromVideo(videolabeledDescriptors), 1000); // Detect faces after a delay
+        setTimeout(() => matchFacesFromVideo(video,memberProfiles), 1000); // Detect faces after a delay
         return; // Exit the function
     }
 
     // Request access to the front-facing camera
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
         .then(stream => {
             // Assign the video stream to the video element and to the currentStream variable
             currentStream = stream;
@@ -103,7 +84,7 @@ export async function startCamera2() {
             // Start scanning for QR codes after a short delay
 
             // Start face detection after a short delay
-            setTimeout(() => matchFacesFromVideo(video,labeledDescriptors), 1000);
+            setTimeout(() => matchFacesFromVideo(video,memberProfiles), 1000);
         })
         .catch(err => {
             qrreader.style.display = "none";
