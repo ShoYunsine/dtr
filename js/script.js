@@ -58,6 +58,7 @@ if ('serviceWorker' in navigator) {
                             // Ensure classes is defined and an array
                             if (!classes || !Array.isArray(classes)) {
                                 console.log("Refetching classes");
+                                basicNotif("Refetching classes","",5000):
                                 classes = await getUserClasses();
                             }
 
