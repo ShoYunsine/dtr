@@ -46,6 +46,7 @@ if ('serviceWorker' in navigator) {
 
             if ('sync' in registration) {
                 let classes = await getUserClasses();
+                
 
                 function startTracking() {
                     if (navigator.geolocation) {
@@ -54,15 +55,13 @@ if ('serviceWorker' in navigator) {
                                 latitude: position.coords.latitude,
                                 longitude: position.coords.longitude
                             };
-
+                            console.log(classes.length);
                             // Ensure classes is defined and an array
-                            if (!classes || !Array.isArray(classes)) {
-                                console.log("Refetching classes");
-                                basicNotif("Refetching classes","",5000):
+                            if (classes.length === 0) {
+                                //basicNotif("Refetching classes","",5000);
                                 classes = await getUserClasses();
-                            }
-
-                            if (classes && Array.isArray(classes)) {
+                            } else {
+                                //basicNotif("Classes fetched","",5000);
                                 for (const cls of classes) {
                                     const distance = calculateDistance(
                                         location.latitude,
@@ -70,14 +69,20 @@ if ('serviceWorker' in navigator) {
                                         cls.lat,
                                         cls.long
                                     );
-                                    // Add more logic based on distance here
+                                    //basicNotif(`${cls.name}`, "", 5000);
+                                    if (distance <= cls.rad) {
+                                        const { status } = await checkAttendance(cls.syntax, cls.timezone);
+                                        basicNotif(`${cls.name} inRadius`, "", 5000);
+                                    } else {
+                                        const attendance = await getAttendance(cls.syntax, cls.timezone);
+                                        if (attendance.status === "Absent") {
+                                            await markAbsent(cls.syntax);
+                                        }
+                                    }
+                                    await deleteAllAttendanceRecords(cls.timezone, cls.syntax);
                                 }
-                            } else {
-                                console.error('No valid classes to iterate over.');
                             }
                         });
-                    } else {
-                        console.error('Geolocation is not supported by this browser.');
                     }
                 }
                 startTracking();

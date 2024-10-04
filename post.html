@@ -15,11 +15,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-  <title>Async</title>
+  <title>Home</title>
 </head>
 
 <body>
-  <div id="loading-bar"></div>
   <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle">
   <label for="sidebar-toggle" class="backdrop"></label>
   <div class="top-bar">
@@ -28,6 +27,7 @@
       <label for="sidebar-toggle" class="sidebar-button">☰</label>
     </div>
     <div class="nav-links">
+      
       <a id="account"><img id="accountImg" src="Images/gear.png"></img></a>
     </div>
   </div>
@@ -37,12 +37,9 @@
         <li>
           <a href="index.html">Home</a><i class="fa-solid fa-house"></i>
         </li>
-        <li><a>Members</a><input id="memberSearch" placeholder="Search ">
-          <ul id="memberList"></ul>
-        </li>
         <li><a href="#">QR Code</a>
           <div><canvas id="qrcode"></canvas></div>
-          <button id="downloadQR">Download QR Code</button>
+          <button id="downloadQR">Save QR Code</button>
           <div id="accountDetails">
             <div id="bg"><img id="accountImg" src="Images/gear.png"></img></div>
             <div id="accountName">Not currently logged in</div>
@@ -51,7 +48,7 @@
         </li>
         <li><a>Save Face</a>
           <form id="faceForm">
-
+            <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
             <input type="file" id="imageUpload" accept="image/*" name="faceImage">
             <button form="faceForm" type="submit" id="uploadFaceData">Save Face</button>
           </form>
@@ -63,69 +60,28 @@
         <label for="darkModeToggle" class="switch-slider"></label>
       </div>
         </li>
+        
         <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
       </ul>
     </nav>
   </aside>
-  <div id="notifs">
-
-  </div>
-  <div id="qrscanner-container">
-    <video id="camera" autoplay></video>
-  </div>
   <div class="main-container">
-    <div id="classInfo" class="form-section">
-      <h2 id="className">.</h2>
-      <p id="code"><i>.</i></p>
-    </div>
-    <input type="radio" id="attendanceTab" name="formToggle" >
-    <input type="radio" id="postTab" checked name="formToggle">
-    <div id="formSwitch">
-      <label for="attendanceTab" class="switch-btn">Attendance</label>
-      <label for="postTab" class="switch-btn">Posts</label>
-    </div>
-    <div class="form-section" style="padding:0; width: 100%;">
-      <div id="attendanceList" class="attendanceList">
-        <nav>
-          <div id="search"><i class="fa-solid fa-magnifying-glass"></i><input id="attendanceSearch"
-              placeholder="Search"></div>
-          <i class="fa-solid fa-arrow-down-wide-short"></i>
-        </nav>
-        <ul id="attendance-List">
-
-        </ul>
-      </div>
-
-      <div id="postList" class="attendanceList">
-        <div id="canvass">
-          <canvas id="canvas" style="display: block;"></canvas>
-          <canvas id="temp" style="display: none;"></canvas>
-          <canvas id="faces" style="display: block;"></canvas>
-        </div>
+    <div class="form-section" style="padding:0;">
+      <div id="postList" class="attendanceList" style="display:block;">
         <ul id="posts">
+          
         </ul>
       </div>
     </div>
   </div>
-  <input type="file" id="camera-input" accept="image/*" style="display: none;">
-  <div id="buttonsdown">
-    <button id="facescan-button">
-    <i class="fa-regular fa-id-badge"></i>
-    </button>
-    <button id="camera-button">
-      <i class="fa-regular fa-square-plus"></i>
-    </button>
-    <button id="qr-code-reader">
-      <i class="fas fa-qrcode"></i>
-    </button>
+  <div id="notifs">   
   </div>
-
   <script type="module" src="js/firebase.js"></script>
-  <script type="module" src="js/class.js"></script>
-  <script type="text/javascript">
-    on_class = true;
-  </script>
+  <script type="module" src="js/index.js"></script>
   <script type="module" src="js/script.js"></script>
+  <script type="text/javascript">
+    on_post = true;
+  </script>
 </body>
 
 </html>

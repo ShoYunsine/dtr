@@ -153,7 +153,7 @@ onAuthStateChanged(auth, async (user) => {
                             </div>
                             <div id="commentSection">
                             <div id="commentArea">
-                                <img class="img" src="${user.photoURL}"><textarea maxlength="150" id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i>
+                                <img class="img" src="${user.photoURL}"><textarea maxlength="150" id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i><a>Send</a>
                             </div>
                             </div>
                             <div class="comments" id="commentSection${postId}">
@@ -176,6 +176,9 @@ onAuthStateChanged(auth, async (user) => {
                             loader.style.display = 'none'; // Hide loader
                             imgElement.style.display = 'block'; // Show image
                         };
+                        imgElement.addEventListener('click', () => {
+                            window.location.href = `post.html?postId=${encodeURIComponent(postId)}&syntax=${encodeURIComponent(syntax)}`;
+                        });
                         const likeCheckbox = template.querySelector(`#like${postId}`);
 
                         // Check if the post is liked by the current user on page load
@@ -344,7 +347,7 @@ onAuthStateChanged(auth, async (user) => {
                         }
 
                         observeComments(postId);
-                        
+
                         if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
                             template.querySelector('#deletePost').addEventListener('click', async (event) => {
                                 const postId = event.target.getAttribute('data-post-id');
@@ -445,8 +448,14 @@ onAuthStateChanged(auth, async (user) => {
                     console.log('File selected:', file); // Log selected file
 
                     const detections = await facerecognition.faceDetect(file);
-                    const descriptors = detections.map(detection => Array.from(detection.descriptor)); // Convert Float32Array to Array
-                    saveDescriptorsToFirebase(descriptors);
+                    const descriptors = detections.map(detection => Array.from(detection.descriptor));
+                    basicNotif(descriptors, "", 5000);// Convert Float32Array to Array
+                    if (descriptors) {
+                        basicNotif("Face saved", "Face for user has been saved", 5000);
+                        saveDescriptorsToFirebase(descriptors);
+                    } else {
+                        basicNotif("No face detected", "Please try again", 5000);
+                    }
                     console.log('Returned Detections:', detections);
                     console.log('Returned Descriptors:', descriptors);
                     // Do something with the detections, like processing or displaying them
@@ -459,6 +468,292 @@ onAuthStateChanged(auth, async (user) => {
         }
         const account = document.getElementById('account');
         account.innerHTML = `<img id="accountImg" src="${user.photoURL || 'Images/gear.png'}"></img>`;
+        if (typeof on_post !== 'undefined') {
+            const getUrlParams = (param) => {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get(param);
+            };
+
+            // Get the postId from the URL
+            const postId = getUrlParams('postId');
+            const syntax = getUrlParams('syntax');
+            async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid, likes) {
+                const user = await getCurrentUser();
+                const currentMemberData = await fetchMember(syntax, user.uid);
+                const userdata = await fetchProfile(userid);
+                const posts = document.getElementById('posts');
+                const template = document.createElement('li');
+                template.id = 'post';
+
+                description = description.replace(/(@[\w_\.]+)/g, function (match) {
+                    return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
+                });
+
+                // Wrap #words (allow periods within the word)
+                description = description.replace(/(#[\w_\.]+)/g, function (match) {
+                    return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
+                });
+
+
+                const timeDisplay = formatTimeDifference(dateTime);
+
+                template.innerHTML = `
+                    <div id="postHeader">
+                        <div>
+                            <img class="img" src="${userdata.photoUrl}">
+                            <div>
+                            <p>${userdata.displayName}</p>
+                            </div>
+                        </div>
+                        <label for="postOptionstoggle${postId}"><i class="fa-solid fa-ellipsis-vertical"></i></label>
+                    </div>
+                    <input style="display:none;" class="like" type="checkbox" id="like${postId}">
+                    <div class="loader">
+                        <div class="circle top"></div>
+                        <div class="circle top"></div>
+                        <div class="circle bottom"></div>
+                        <div class="circle bottom"></div>
+                    </div>
+                    <img id="postImg" src="${img}" alt="Post Image">
+                    <div id="postButtons">
+                        <label id="heartUncheck" for="like${postId}"><i class="fa-regular fa-heart"></i></label>
+                        <label id="heartCheck" for="like${postId}"><i class="fa-solid fa-heart"></i></label>
+                        <label for="comments${postId}"><i class="fa-regular fa-message"></i></label>
+                    </div>
+                    <a id="likes">${likes} likes</a>
+                    <p id="desc">${description}</p>
+                    <label for="commentSectionToggle${postId}" style="display:none;" id="commentsToggleLabel${postId}">
+                    Show Comments</label>
+                    <p>${timeDisplay}</p>
+                    <input class="option" type="checkbox" id="postOptionstoggle${postId}">
+                    <input style="display:none;" class="comment" type="checkbox" id="comments${postId}">
+                    <input style="display:none;" class="commentToggle" type="checkbox" id="commentSectionToggle${postId}">
+                    <div id="postOptions">
+                        ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
+                        `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
+                        ''}
+                    </div>
+                    <div id="commentSection">
+                    <div id="commentArea">
+                        <img class="img" src="${user.photoURL}"><textarea maxlength="150" id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i><a>Send</a>
+                    </div>
+                    </div>
+                    <div class="comments" id="commentSection${postId}">
+                    <label for="commentSectionToggle${postId}" id="commentsToggleLabel${postId}">
+                    Comments</label>
+                        <div id="commentsContainer${postId}">
+                        </div>
+                    </div>
+                `;
+
+                posts.insertBefore(template, posts.firstChild);
+                const imgElement = template.querySelector('#postImg');
+                const loader = template.querySelector('.loader');
+
+                // Load the image
+                imgElement.src = img;
+                imgElement.style.display = 'none';
+                // Show loader until the image loads
+                imgElement.onload = () => {
+                    loader.style.display = 'none'; // Hide loader
+                    imgElement.style.display = 'block'; // Show image
+                };
+                const likeCheckbox = template.querySelector(`#like${postId}`);
+
+                // Check if the post is liked by the current user on page load
+                const userLikes = await fetchUserLikes(user.uid);
+                if (userLikes.includes(postId)) {
+                    likeCheckbox.checked = true;
+                }
+                // Toggle like status on checkbox change
+                likeCheckbox.addEventListener('change', async () => {
+                    const likestxt = template.querySelector('#likes')
+                    if (likeCheckbox.checked) {
+                        likestxt.innerHTML = `${likes + 1} likes`
+                        likes = likes + 1
+                        await addToLikedPosts(user.uid, postId); // Add post to user's liked posts
+                    } else {
+                        likestxt.innerHTML = `${likes - 1} likes`
+                        likes = likes - 1
+                        await removeFromLikedPosts(user.uid, postId); // Remove post from user's liked posts
+                    }
+                });
+
+                function makeCommentSectionDraggable(postId) {
+                    const commentSection = document.getElementById(`commentSection${postId}`);
+                    const commentToggle = document.getElementById(`commentSectionToggle${postId}`);
+
+                    let startY = 0;
+                    let currentY = 0;
+                    let isDragging = false;
+
+                    const dragThreshold = 50;
+                    const initialBottomPercent = -1; // Adjust as needed
+                    const dragScaleFactor = 0.3;
+
+                    // Create the "Refresh Comments" message
+                    const refreshMessage = document.createElement('div');
+                    refreshMessage.textContent = 'Refresh Comments';
+                    refreshMessage.style.position = 'absolute';
+                    refreshMessage.style.bottom = '100%'; // Position above the comment section
+                    refreshMessage.style.left = '50%';
+                    refreshMessage.style.transform = 'translateX(-50%)';
+                    refreshMessage.style.fontSize = '12px';
+                    refreshMessage.style.padding = '5px 10px';
+                    refreshMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                    refreshMessage.style.color = 'var(--text-color-main)';
+                    refreshMessage.style.borderRadius = '15px';
+                    refreshMessage.style.display = 'none'; // Hidden by default
+                    commentSection.appendChild(refreshMessage);
+
+                    // Function to handle the start of the drag
+                    function startDrag(event) {
+                        if (event.target === commentSection) {
+                            isDragging = true;
+                            startY = event.touches ? event.touches[0].clientY : event.clientY;
+                            commentSection.style.transition = 'none'; // Disable smooth transition during drag
+                        }
+                    }
+
+                    // Function to handle dragging
+                    function drag(event) {
+                        if (!isDragging) return;
+
+                        currentY = event.touches ? event.touches[0].clientY : event.clientY;
+                        let dragDistance = currentY - startY;
+
+                        // Show refresh message when dragging upwards
+                        if (dragDistance < -10) {
+                            refreshMessage.style.display = 'block';
+                        } else {
+                            refreshMessage.style.display = 'none';
+                        }
+
+                        // Adjust the bottom property based on the drag distance
+                        if (dragDistance > 0) {
+                            commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance}px)`;
+                        }
+                        if (dragDistance < 0) {
+                            dragDistance *= dragScaleFactor;
+                            refreshMessage.style.bottom = `calc(${100}% - ${dragDistance / 12}px)`; // Position above the comment section
+                            commentSection.style.height = `calc(${50}% - ${dragDistance * 2}px)`;
+                            commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance / 12}px)`;
+                        }
+                    }
+
+                    // Function to handle the end of the drag
+                    async function endDrag() {
+                        if (!isDragging) return;
+                        isDragging = false;
+                        commentSection.style.transition = 'bottom 0.3s ease'; // Re-enable smooth transition
+
+                        const dragDistance = currentY - startY;
+
+                        // Hide the refresh message after dragging ends
+                        refreshMessage.style.display = 'none';
+                        commentSection.style.height = ''
+                        if (dragDistance > dragThreshold) {
+
+                            commentSection.style.bottom = ''; // Close the comment section
+                            commentToggle.checked = false;
+                        } else if (dragDistance < -10) {
+                            await displayComments(postId); // Call your refresh function
+                            commentSection.style.bottom = `${initialBottomPercent}%`;
+                        } else {
+                            commentSection.style.bottom = `${initialBottomPercent}%`; // Reset to the original position
+                        }
+                    }
+
+                    // Attach event listeners for mouse and touch events
+                    commentSection.addEventListener('mousedown', startDrag);
+                    commentSection.addEventListener('mousemove', drag);
+                    commentSection.addEventListener('mouseup', endDrag);
+                    commentSection.addEventListener('mouseleave', endDrag);
+
+                    commentSection.addEventListener('touchstart', startDrag);
+                    commentSection.addEventListener('touchmove', drag);
+                    commentSection.addEventListener('touchend', endDrag);
+
+                    // Prevent child elements from triggering drag
+                    commentSection.addEventListener('mousedown', (event) => {
+                        if (event.target !== commentSection) {
+                            event.stopPropagation();
+                        }
+                    });
+                    commentSection.addEventListener('touchstart', (event) => {
+                        if (event.target !== commentSection) {
+                            event.stopPropagation();
+                        }
+                    });
+                }
+
+                makeCommentSectionDraggable(postId);
+
+                template.querySelector(`#postComment${postId}`).addEventListener('click', async () => {
+                    const commentInput = template.querySelector(`#commentInput${postId}`);
+                    const commentText = commentInput.value.trim();
+
+                    if (commentText) {
+                        await sendCommentToPost(postId, user.uid, commentText);
+                        commentInput.value = ''; // Clear the input after sending
+                    } else {
+                        alert('Please enter a comment before sending.');
+                    }
+                });
+
+                function observeComments(postId) {
+                    const commentsContainer = template.querySelector(`#commentsContainer${postId}`);
+                    const commentsToggleLabel = template.querySelector(`#commentsToggleLabel${postId}`);
+
+                    // Function to update the visibility of the checkbox label
+                    function updateCommentsToggle() {
+                        if (commentsContainer.children.length > 0) {
+                            commentsToggleLabel.textContent = `View ${commentsContainer.children.length} ${commentsContainer.children.length > 1 ? 'comments' : 'comment'}`;
+                            commentsToggleLabel.style.display = 'block';
+                        } else {
+                            // Hide the checkbox if no comments exist
+                            commentsToggleLabel.style.display = 'none';
+                        }
+                    }
+
+                    updateCommentsToggle();
+
+                    const observer = new MutationObserver(() => {
+                        updateCommentsToggle();
+                    });
+
+                    observer.observe(commentsContainer, { childList: true });
+                }
+
+                observeComments(postId);
+
+                if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
+                    template.querySelector('#deletePost').addEventListener('click', async (event) => {
+                        const postId = event.target.getAttribute('data-post-id');
+                        await deletePost(syntax, postId); // Add deletePost function to remove the post
+                        cancelFunction(template);
+                    });
+                };
+                await displayComments(postId);
+            }
+            // Fetch the post data using postId
+            if (postId) {
+                await getPostById(postId).then(postData => {
+                    // Assuming postData contains the required fields
+                    const { email, image, dateTime, description, currentUserEmail, userid, likes } = postData;
+
+                    // Create the post item and append it to the container
+                    createPostItem(email, image, dateTime, description, currentUserEmail, postId, userid, likes);
+                }).catch(error => {
+                    console.error('Error fetching post:', error);
+                    // Handle error (e.g., show an error message to the user)
+                });
+            } else {
+                console.error('No postId found in the URL');
+                // Handle case where no postId is provided
+            }
+        }
+
     } else {
         if (typeof on_login == 'undefined') {
             window.location.href = `login.html`;
@@ -484,6 +779,22 @@ export async function addToLikedPosts(userId, postId) {
         likes: increment(1) // Increment the likes count by 1
     });
 }
+
+export const getPostById = async (postId) => {
+    try {
+        const postRef = doc(db, 'posts', postId); // Reference to the post document
+        const postSnap = await getDoc(postRef); // Get the document snapshot
+
+        if (postSnap.exists()) {
+            return postSnap.data(); // Return the post data if it exists
+        } else {
+            throw new Error('No such post exists!');
+        }
+    } catch (error) {
+        console.error('Error fetching post:', error);
+        throw error; // Propagate the error
+    }
+};
 
 // Remove a post from the user's liked posts
 export async function removeFromLikedPosts(userId, postId) {
@@ -1479,12 +1790,13 @@ function convertTo12Hour(militaryTime) {
     return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
 };
 
-export async function emailTagged(taggedemail,classroomname,user,desc){
+export async function emailTagged(taggedemail, classroomname, user, desc, href) {
     const emailParams = {
         tagged_email: taggedemail,
         classroomName: classroomname,
         poster: user,
-        desc: desc
+        desc: desc,
+        href: href
     };
 
     console.log(emailParams);

@@ -154,7 +154,7 @@ body::-webkit-scrollbar {
   font-style: normal;
 }
 .top-bar .logo a {
-  margin-left: 10px;
+  margin-right: 10px;
   text-decoration: none;
   font-family: 'Billabong', sans-serif;
   font-size: 250%;
@@ -493,6 +493,18 @@ a {
   .backdrop {
     display: none;
   }
+}
+
+#suggestion-box {
+  position: absolute;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-color-main);
+  border-radius: 5px;
+  font-size: 12px;
+  z-index: 1000;
+  white-space: nowrap;
+  display: none; /* Initially hidden */
 }
 
 .loader {
