@@ -1057,7 +1057,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     };
 
     imgElement.addEventListener('click', () => {
-        window.location.href = `post.html?postId=${postId}`;
+        window.location.href = `post.html?postId=${encodeURIComponent(postId)}&syntax=${encodeURIComponent(syntax)}`;
     });
 
     const likeCheckbox = template.querySelector(`#like${postId}`);
