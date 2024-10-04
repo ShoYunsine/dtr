@@ -81,19 +81,22 @@ export async function faceDetect(file) {
 
 export async function matchFacesFromVideo(videoElement, profiles) {
     let knownDescriptorsArray = [];
+    const uidToDisplayNameMap = {}; // Map to store UID to displayName mapping
+
     for (const memberProfile of profiles) {
         // Ensure the profile has face descriptors
         if (memberProfile && Array.isArray(memberProfile.faceDescriptors)) {
-            console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
-
             // Check if the whole faceDescriptors array has a length of 128
             if (memberProfile.faceDescriptors.length === 128) {
                 knownDescriptorsArray.push(
                     new faceapi.LabeledFaceDescriptors(
-                        String(memberProfile.uid), // Member's name as label
+                        String(memberProfile.uid), // Member's UID as label
                         [new Float32Array(memberProfile.faceDescriptors)] // Wrap it in an array
                     )
                 );
+
+                // Store UID to displayName mapping
+                uidToDisplayNameMap[memberProfile.uid] = memberProfile.displayName;
             } else {
                 console.log(`Invalid face descriptor length for member: ${memberProfile.displayName}. Expected 128, got ${memberProfile.faceDescriptors.length}.`);
             }
@@ -101,66 +104,87 @@ export async function matchFacesFromVideo(videoElement, profiles) {
             console.log(`No face descriptors found for member: ${memberProfile.displayName}`);
         }
     }
+
     if (!videoElement || !knownDescriptorsArray || knownDescriptorsArray.length === 0) {
         console.error('Video element or known descriptors array missing or empty.');
-        return;
+        return [];
     }
-    
-    // Wait until video metadata is loaded to get video dimensions
-    videoElement.addEventListener('loadedmetadata', async () => {
-        const displaySize = { width: videoElement.videoWidth, height: videoElement.videoHeight };
-        faceapi.matchDimensions(videoElement, displaySize);
 
-        // Create FaceMatcher for matching detected faces against known descriptors
-        const faceMatcher = new faceapi.FaceMatcher(knownDescriptorsArray, 0.6); // 0.6 is the distance threshold
+    // Load face detection models
+    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('./models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('./models');
 
-        // Load face detection models
-        await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-        await faceapi.nets.faceLandmark68Net.loadFromUri('./models');
-        await faceapi.nets.faceRecognitionNet.loadFromUri('./models');
+    // Create FaceMatcher for matching detected faces against known descriptors
+    const faceMatcher = new faceapi.FaceMatcher(knownDescriptorsArray, 0.75); // Adjusted threshold
 
-        async function detectFaces() {
-            try {
-                const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptors();
+    return new Promise((resolve) => {
+        // Wait until video metadata is loaded to get video dimensions
+        videoElement.addEventListener('loadedmetadata', () => {
+            const displaySize = { width: videoElement.videoWidth, height: videoElement.videoHeight };
+            faceapi.matchDimensions(videoElement, displaySize);
 
-                if (detections.length > 0) {
-                    console.log(`Detected ${detections.length} face(s).`);
+            // Start continuous detection loop
+            const detectionInterval = 1000; // 1 second interval
+            const intervalId = setInterval(async () => {
+                let matches = [];
+                try {
+                    const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions({
+                        inputSize: 32, // Increase this value for better accuracy
+                        scoreThreshold: 0.1 // Lower this threshold if needed
+                    })).withFaceLandmarks().withFaceDescriptors();
+            
 
-                    // Resize detections for better matching
-                    const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                    if (detections.length > 0) {
+                        console.log(`Detected ${detections.length} face(s).`);
 
-                    // Process each detection to find the best match
-                    resizedDetections.forEach((detection, index) => {
-                        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-                        console.log(`Face ${index + 1}: ${bestMatch.toString()}`);
+                        // Resize detections for better matching
+                        const resizedDetections = faceapi.resizeResults(detections, displaySize);
 
-                        // Optionally display match results on the video (can be customized)
-                        displayMatchOnVideo(videoElement, bestMatch);
-                    });
-                } else {
-                    console.log('No faces detected.');
+                        resizedDetections.forEach((detection) => {
+                            // Find best match for each detected face
+                            const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+                            const uid = bestMatch.label;
+
+                            // Map UID to displayName, fallback to 'Unknown' if no match
+                            const displayName = uid !== 'unknown' ? uidToDisplayNameMap[uid] || 'Unknown' : 'No match found';
+
+                            console.log(`Matched with: ${displayName}`);
+
+                            // Collect match results
+                            matches.push(displayName);
+
+                            // Optionally display match results on the video (can be customized)
+                            displayMatchOnVideo(videoElement, displayName);
+                        });
+                    } else {
+                        console.log('No faces detected.');
+                    }
+
+                } catch (error) {
+                    console.error('Error detecting faces:', error);
                 }
-            } catch (error) {
-                console.error('Error detecting faces:', error);
-            }
 
-            // Continue the detection loop using requestAnimationFrame for smoother execution
-            requestAnimationFrame(detectFaces);
-        }
+                // Resolve with matches after detection
+                if (matches.length > 0) {
+                    console.log('Matches found:', matches);
+                    resolve(matches);
+                }
+            }, detectionInterval);
 
-        // Start detection once video starts playing
-        videoElement.play().then(() => {
-            detectFaces(); // Start face detection loop
-        }).catch(err => {
-            console.error('Error playing video:', err);
+            // Start playing the video
+            videoElement.play().catch(err => {
+                console.error('Error playing video:', err);
+                clearInterval(intervalId); // Clear the interval on error
+                resolve([]); // Resolve with an empty array on error
+            });
         });
     });
 }
+
 // Example function to display match on the video or UI
-function displayMatchOnVideo(videoElement, bestMatch) {
-    const matchText = bestMatch.label !== 'unknown' ? `Matched: ${bestMatch.label}` : 'No match found';
+function displayMatchOnVideo(videoElement, displayName) {
+    const matchText = displayName !== 'Unknown' ? `Matched: ${displayName}` : 'No match found';
 
     // Display match result on top of the video element (can be improved as per UI needs)
     const matchLabel = document.createElement('div');
@@ -177,5 +201,5 @@ function displayMatchOnVideo(videoElement, bestMatch) {
     // Optionally, remove the label after a few seconds
     setTimeout(() => {
         matchLabel.remove();
-    }, 3000);
+    }, 1000);
 }

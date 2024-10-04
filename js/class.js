@@ -62,18 +62,21 @@ export function startCamera() {
 export async function startCamera2() {
     console.log(currentStream);
     qrreader.style.display = "block";
-    
+
     if (currentStream) {
         console.log('Using existing camera stream.');
         video.srcObject = currentStream; // Use the current stream
         video.setAttribute('playsinline', true);
         video.play();
-        setTimeout(() => matchFacesFromVideo(video,memberProfiles), 1000); // Detect faces after a delay
+        setTimeout(async () => {
+            const matches = await matchFacesFromVideo(video, memberProfiles);
+            console.log('Matches found:', matches); // Log all matched UIDs
+        }, 1000); // Detect faces after a delay
         return; // Exit the function
     }
 
     // Request access to the front-facing camera
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
         .then(stream => {
             // Assign the video stream to the video element and to the currentStream variable
             currentStream = stream;
@@ -81,10 +84,11 @@ export async function startCamera2() {
             video.setAttribute('playsinline', true);
             video.play();
 
-            // Start scanning for QR codes after a short delay
-
             // Start face detection after a short delay
-            setTimeout(() => matchFacesFromVideo(video,memberProfiles), 1000);
+            setTimeout(async () => {
+                const matches = await matchFacesFromVideo(video, memberProfiles);
+                console.log('Matches found:', matches); // Log all matched UIDs
+            }, 1000);
         })
         .catch(err => {
             qrreader.style.display = "none";
@@ -716,6 +720,7 @@ async function addPostTemplate(img, matches) {
             <p>${user.displayName}</p>
         </div>
             <img id="postImg" src="${img}" alt="Post Image">
+            <div id="suggestion-box"></div>
             <textarea maxlength="1500" id="desc" placeholder="Enter description here...">${tagsString}</textarea>
             <p>${currentDate} ${currentTime}</p>
             <div id="post-buttons">
@@ -733,39 +738,57 @@ async function addPostTemplate(img, matches) {
         tags = pretags;
         emails = preemails;
 
-        template.querySelector('#desc').addEventListener('input', function () {
+        template.querySelector('#desc').addEventListener('input', function (e) {
+            const textarea = this;
+            let previousScrollHeight = textarea.scrollHeight;
+            // Automatically adjust height based on content
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
-
-            const textarea = this;
+        
             const value = textarea.value;
-
+            if (textarea.scrollHeight > previousScrollHeight) {
+                //addNewLineToTextarea(textarea);
+            }
+            
+            console.log(value);
+            // Measure the current width of the text and apply a line break if neede
+        
+            // Check for @mentions
+            const words = value.split(/\s+/);
+            const currentWord = words[words.length - 1]; // Get the current word being typed
+        
             // Regular expression to find all strings starting with '@'
             const atMentions = value.match(/@(\w[\w_]*)/g) || [];
-
+        
             let newtags = [...pretags]; // Start with pre-loaded tags
             let newemails = [...preemails]; // Start with pre-loaded emails
-
+        
             // Check for each mention
             for (const mention of atMentions) {
                 const searchTerm = mention.slice(1); // Remove '@' to get the search term
                 const closestMatch = findClosestMember(searchTerm);
-
+        
                 if (closestMatch) {
-                    // Add to tags if not already present
+                    showSuggestion(closestMatch.displayName);
+                    // Check if the mention is already in newtags
                     if (!newtags.includes(mention)) {
                         newtags.push(mention); // Add the mention to tags
                         newemails.push(closestMatch.email); // Add the member's email to emails
                     }
+                } else {
+                    hideSuggestion();
                 }
             }
-
-            // Keep tags that are currently in the textarea mentions
+        
+            // Hide suggestion if no mentions
+            if (atMentions.length === 0) {
+                hideSuggestion();
+            }
+        
             const updatedTags = newtags.filter(tag => atMentions.includes(tag));
-
-            // Create a new Set to ensure unique emails
+        
             const uniqueEmailsSet = new Set();
-
+        
             // Filter emails based on the updated tags and also keep preemails that still have a tag
             updatedTags.forEach(tag => {
                 const index = newtags.indexOf(tag);
@@ -773,41 +796,114 @@ async function addPostTemplate(img, matches) {
                     uniqueEmailsSet.add(newemails[index]); // Keep the email for this tag
                 }
             });
-
+        
             // Now add emails for any remaining preloaded tags that still exist
             pretags.forEach((tag, index) => {
                 if (updatedTags.includes(tag)) {
                     uniqueEmailsSet.add(preemails[index]); // Keep corresponding email if tag still exists
                 }
             });
-
+        
             // Convert the Set back to an array for unique emails
             newemails = Array.from(uniqueEmailsSet);
-
+        
             // Update the global tags and emails
             tags = updatedTags;
             emails = newemails;
-
-            textarea.value = value;
-
-            // Optional: Do something with tags and emails, like updating other elements or logging them
-            console.log('Tags:', tags);
-            console.log('Emails:', emails);
-
+        
+            // Check if the current word contains '@' and show/hide suggestions
+            if (currentWord.startsWith('@')) {
+                const searchTerm = currentWord.slice(1); // Remove '@' to get the search term
+                if (searchTerm.length > 0) {
+                    const closestMatch = findClosestMember(searchTerm);
+                    if (closestMatch) {
+                        showSuggestion(closestMatch.displayName); // Show suggestion if match found
+                    }
+                }
+            } else {
+                hideSuggestion(); // Hide suggestions if no '@' in the current word
+            }
+        
+            // Helper function to find the closest member
             function findClosestMember(searchTerm) {
-                // Filter members based on the search term
                 const matches = memberProfiles.filter(member =>
                     member.displayName.replace(/\s+/g, '_').toLowerCase().includes(searchTerm.toLowerCase())
                 );
-
-                // Return the first match, or null if no match is found
+        
                 return matches.length > 0 ? matches[0] : null;
             }
+        
+            // Function to display the suggestion box
+            function showSuggestion(text) {
+                const suggestionBox = template.querySelector('#suggestion-box');
+                const caretPos = getCaretCoordinates(textarea);
+            
+                suggestionBox.textContent = text;
+                suggestionBox.style.top = caretPos.top + 'px';
+                suggestionBox.style.left = caretPos.left + 'px';
+                suggestionBox.style.display = 'block'; // Show the suggestion box
+            
+                // Check for overflow after displaying the suggestion box
+                checkOverflow(suggestionBox);
+            }
+            
+            // Function to check if the suggestion box is overflowing the viewport
+            function checkOverflow(suggestionBox) {
+                const boxRect = suggestionBox.getBoundingClientRect();
+                
+                // Check if suggestion box overflows the right or bottom of the viewport
+                const isOverflowingRight = boxRect.right > window.innerWidth;
+                const isOverflowingBottom = boxRect.bottom > window.innerHeight;
+            
+                // Adjust position if it's overflowing the right
+                if (isOverflowingRight) {
+                    suggestionBox.style.left = (window.innerWidth - boxRect.width) + 'px'; // Adjust to stay within the right boundary
+                }
+            
+                // Adjust position if it's overflowing the bottom
+                if (isOverflowingBottom) {
+                    suggestionBox.style.top = (window.innerHeight - boxRect.height) + 'px'; // Adjust to stay within the bottom boundary
+                }
+            }
+        
+            // Function to hide the suggestion box
+            function hideSuggestion() {
+                const suggestionBox = document.querySelector('#suggestion-box');
+                suggestionBox.style.display = 'none'; // Hide the suggestion box
+            }
+        
+            // Function to check for overflow and add new line breaks
+            function addNewLineToTextarea(textarea) {
+                const value = textarea.value;
+                textarea.value = value + '\n'; // Add a new line at the end
+            }
+        
+            // Function to calculate the caret's coordinates within the textarea
+            function getCaretCoordinates(textarea) {
+                const text = textarea.value.substr(0, textarea.selectionStart);
+                const textLines = text.split("\n");
+        
+                const currentLine = textLines[textLines.length - 1]; // Text in the current line
+                const fontSize = parseInt(window.getComputedStyle(textarea).fontSize);
+                const lineHeight = fontSize * 1.2; // Adjust based on font size
+        
+                const { top, left } = textarea.getBoundingClientRect(); // Get the textarea position
+        
+                const lineNumber = textLines.length; // Current line number
+                const columnNumber = currentLine.length; // Caret position in the current line
+        
+                // Calculate the caret's position relative to the textarea
+                const caretTop = top + lineHeight * (lineNumber - 1); // Adjust for the line number
+                const caretLeft = left + columnNumber * fontSize * 0.6; // Approximate caret position horizontally
+        
+                return {
+                    top: caretTop + window.scrollY,
+                    left: caretLeft + window.scrollX
+                };
+            }
         });
-
-
-
-
+        
+        
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
@@ -825,8 +921,9 @@ async function addPostTemplate(img, matches) {
                 classroom.long
             );
             if (emails) {
+                const href = `https://shoyunsine.github.io/dtr/post.html?postId=${postSyntax}&syntax=${syntax}`;
                 for (const email of emails) {
-                    await emailTagged(email, classroom.name, user.displayName, description)
+                    await emailTagged(email, classroom.name, user.displayName, description,href)
                 }
             }
 
@@ -935,7 +1032,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
         </div>
         <div id="commentSection">
         <div id="commentArea">
-            <img class="img" src="${user.photoURL}"><textarea maxlength="150" id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i>
+            <img class="img" src="${user.photoURL}"><textarea maxlength="150" id="commentInput${postId}" placeholder="Comment here"></textarea><i id="postComment${postId}" class="fa-solid fa-paper-plane"></i><a>Send</a>
         </div>
         </div>
         <div class="comments" id="commentSection${postId}">
@@ -958,6 +1055,11 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
         loader.style.display = 'none'; // Hide loader
         imgElement.style.display = 'block'; // Show image
     };
+
+    imgElement.addEventListener('click', () => {
+        window.location.href = `post.html?postId=${postId}`;
+    });
+
     const likeCheckbox = template.querySelector(`#like${postId}`);
 
     // Check if the post is liked by the current user on page load
