@@ -12,6 +12,7 @@ import {
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+import "https://cdn.jsdelivr.net/npm/chart.js";
 import { faceDetect, matchFacesFromVideo } from './facerecog.js';
 import * as faceapi from 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.esm.js';
 // Debounce function
@@ -276,6 +277,12 @@ async function updateattendanceList() {
     for (const member of members) {
         try {
             const memberData = await fetchProfile(member.id);
+            if (memberData) {
+                memberProfiles.push(memberData); // Add profile to the array
+            } else {
+                console.log(`Profile not found for member ID: ${member.id}`);
+            }
+            console.log(member)
             var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
             if (!time) {
                 time = "Not Available";
@@ -311,6 +318,162 @@ async function updateattendanceList() {
             console.error(`Failed to fetch profile for member with ID ${member.id}:`, error);
         }
     }
+
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    let attendanceChart;
+    // Function to get the dates based on the selected range
+    function getFilteredData(range, selectedMonth) {
+        const today = new Date();
+        const filteredDates = {};
+
+        members.forEach(member => {
+            const attendance = member.attendance;
+
+            for (const date in attendance) {
+                const attendanceDate = new Date(date);
+
+                // Determine if the date falls within the selected range
+                let withinRange = false;
+
+                switch (range) {
+                    case 'week':
+                        withinRange = (today - attendanceDate <= 7 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'month':
+                        withinRange = (today - attendanceDate <= 30 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'year':
+                        withinRange = (today - attendanceDate <= 365 * 24 * 60 * 60 * 1000);
+                        break;
+                    case 'custom':
+                        if (selectedMonth !== "") {
+                            withinRange = (attendanceDate.getMonth() === parseInt(selectedMonth) && attendanceDate.getFullYear() === today.getFullYear());
+                        }
+                        break;
+                    default:
+                        withinRange = false;
+                }
+
+                if (withinRange) {
+                    if (!filteredDates[date]) {
+                        filteredDates[date] = { present: 0, late: 0, absent: 0, names: { present: [], late: [], absent: [] } };
+                    }
+                    // Increment counts and store names based on attendance status
+                    if (attendance[date].status === 'present') {
+                        filteredDates[date].present++;
+                        filteredDates[date].names.present.push(memberProfiles.find(profile => profile.uid === member.id).displayName);
+                    } else if (attendance[date].status === 'late') {
+                        filteredDates[date].late++;
+                        filteredDates[date].names.late.push(memberProfiles.find(profile => profile.uid === member.id).displayName);
+                    } else if (attendance[date].status === 'absent') {
+                        filteredDates[date].absent++;
+                        filteredDates[date].names.absent.push(memberProfiles.find(profile => profile.uid === member.id).displayName);
+                    }
+                }
+            }
+        });
+        return filteredDates;
+    }
+
+    // Function to update the chart with filtered data
+    function updateChart(range, selectedMonth) {
+        const filteredData = getFilteredData(range, selectedMonth);
+        const dates = Object.keys(filteredData);
+        const presentData = dates.map(date => filteredData[date].present);
+        const lateData = dates.map(date => filteredData[date].late);
+        const absentData = dates.map(date => filteredData[date].absent);
+
+        // Destroy the previous chart instance if it exists
+        if (attendanceChart) {
+            attendanceChart.destroy();
+        }
+
+        // Create new chart with filtered data
+        attendanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Present',
+                        data: presentData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        stack: 'Stack 0',
+                        barThickness: 20,
+                    },
+                    {
+                        label: 'Late',
+                        data: lateData,
+                        backgroundColor: 'rgba(255, 206, 86, 0.6)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 1,
+                        stack: 'Stack 0',
+                        barThickness: 20,
+                    },
+                    {
+                        label: 'Absent',
+                        data: absentData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        stack: 'Stack 0',
+                        barThickness: 20,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        stacked: true,
+                    },
+                    y: {
+                        beginAtZero: true,
+                        stacked: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function (tooltipItem) {
+                                const date = tooltipItem.label;
+                                const status = tooltipItem.dataset.label.toLowerCase();
+                                const names = filteredData[date].names[status];
+                                return [
+                                    tooltipItem.dataset.label + ': ' + tooltipItem.raw,
+                                    'Names: ' + (names.length ? names.join(', ') : 'None')
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Show/hide month selector based on the selected date range
+    document.getElementById('dateRange').addEventListener('change', (event) => {
+        const monthSelector = document.getElementById('monthSelector');
+        const monthLabel = document.querySelector('label[for="monthSelector"]');
+
+        if (event.target.value === 'custom') {
+            monthSelector.style.display = 'block';
+            monthLabel.style.display = 'inline';
+        } else {
+            monthSelector.style.display = 'none';
+            monthLabel.style.display = 'none';
+        }
+    });
+
+    // Event listener for the Apply button
+    document.getElementById('applyDateRange').addEventListener('click', () => {
+        const selectedRange = document.getElementById('dateRange').value;
+        const selectedMonth = document.getElementById('monthSelector').value;
+        updateChart(selectedRange, selectedMonth);
+    });
+
 }
 
 async function updatememberList() {
@@ -321,11 +484,7 @@ async function updatememberList() {
     for (const member of members) {
         try {
             const profile = await fetchProfile(member.id); // Fetch profile using member.id
-            if (profile) {
-                memberProfiles.push(profile); // Add profile to the array
-            } else {
-                console.log(`Profile not found for member ID: ${member.id}`);
-            }
+
         } catch (error) {
             console.error(`Error fetching profile for member ID ${member.id}:`, error);
         }
@@ -813,7 +972,7 @@ async function addPostTemplate(img, matches) {
             tags = updatedTags;
             emails = newemails;
 
-            console.log(tags,emails)
+            console.log(tags, emails)
             // Check if the current word contains '@' and show/hide suggestions
             if (currentWord.startsWith('@')) {
                 const searchTerm = currentWord.slice(1); // Remove '@' to get the search term
@@ -987,17 +1146,17 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     description = description.replace(/(@[\w_\.]+)/g, function (match) {
         return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
     });
-    
+
     // Wrap #hashtags with <span> tags
     description = description.replace(/(#[\w_\.]+)/g, function (match) {
         return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
     });
-    
+
     // Make text between * bold
     description = description.replace(/\*(.*?)\*/g, function (match, content) {
         return `<strong>${content}</strong>`;
     });
-    
+
     // Make text between *^ very bold
     description = description.replace(/\+\+(.*?)\+\+/g, function (match, content) {
         return `<b style="font-weight: bold; font-size: 1.1em;">${content}</b>`; // Using <b> for very bold
@@ -1006,7 +1165,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     description = description.replace(/\/\/(.*?)\/\//g, function (match, content) {
         return `<i>${content}</i>`;
     });
-    
+
     // Change font size using ^n (e.g., ^2(text))
     description = description.replace(/\^(\d+)\((.*?)\)/g, function (match, size, content) {
         return `<span style="font-size: ${size}em;">${content}</span>`;
@@ -1085,29 +1244,29 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
 
     const likeCheckbox = template.querySelector(`#like${postId}`);
     const desc = template.querySelector('#desc');
-                    const toggleText = template.querySelector('#toggleText');
-                    const toggleTextShow = template.querySelector('#toggleTextShow');
-                    console.log(desc.scrollHeight > 110);
-                    if (desc.scrollHeight > 110) {
-                        desc.style.height = '110px';
-                        toggleText.style.display = 'inline';
-                        toggleTextShow.style.display = 'none'; // Hide "Show Less" by default
-                    } else {
-                        // Hide the toggle buttons if content doesn't overflow
-                        toggleText.style.display = 'none';
-                        toggleTextShow.style.display = 'none';
-                    }
-                    template.querySelector('#toggle').addEventListener('change', function () {
-                        if (this.checked) {
-                            desc.style.height = `${desc.scrollHeight}px`;
-                            toggleText.style.display = 'none';
-                            toggleTextShow.style.display = 'inline';
-                        } else {
-                            desc.style.height = '110px';
-                            toggleText.style.display = 'inline';
-                            toggleTextShow.style.display = 'none';
-                        }
-                    });
+    const toggleText = template.querySelector('#toggleText');
+    const toggleTextShow = template.querySelector('#toggleTextShow');
+    console.log(desc.scrollHeight > 110);
+    if (desc.scrollHeight > 110) {
+        desc.style.height = '110px';
+        toggleText.style.display = 'inline';
+        toggleTextShow.style.display = 'none'; // Hide "Show Less" by default
+    } else {
+        // Hide the toggle buttons if content doesn't overflow
+        toggleText.style.display = 'none';
+        toggleTextShow.style.display = 'none';
+    }
+    template.querySelector('#toggle').addEventListener('change', function () {
+        if (this.checked) {
+            desc.style.height = `${desc.scrollHeight}px`;
+            toggleText.style.display = 'none';
+            toggleTextShow.style.display = 'inline';
+        } else {
+            desc.style.height = '110px';
+            toggleText.style.display = 'inline';
+            toggleTextShow.style.display = 'none';
+        }
+    });
 
     // Check if the post is liked by the current user on page load
     const userLikes = await fetchUserLikes(user.uid);
@@ -1278,7 +1437,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
         template.querySelector('#deletePost').addEventListener('click', async (event) => {
             const postId = event.target.getAttribute('data-post-id');
-            await deletePost(postId); // Add deletePost function to remove the post
+            await deletePost(postId, syntax); // Add deletePost function to remove the post
             cancelFunction(template);
         });
     };

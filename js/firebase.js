@@ -402,7 +402,7 @@ onAuthStateChanged(auth, async (user) => {
                     if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
                         template.querySelector('#deletePost').addEventListener('click', async (event) => {
                             const postId = event.target.getAttribute('data-post-id');
-                            await deletePost(postId); // Add deletePost function to remove the post
+                            await deletePost(postId,syntax); // Add deletePost function to remove the post
                             cancelFunction(template);
                         });
                     };
@@ -865,7 +865,7 @@ onAuthStateChanged(auth, async (user) => {
                 if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
                     template.querySelector('#deletePost').addEventListener('click', async (event) => {
                         const postId = event.target.getAttribute('data-post-id');
-                        await deletePost(postId); // Add deletePost function to remove the post
+                        await deletePost(postId,syntax); // Add deletePost function to remove the post
                         cancelFunction(template);
                     });
                 };
@@ -1995,7 +1995,7 @@ export async function postPost(email, img, currentDate, currentTime, description
     }
 }
 
-export async function deletePost(postId) {
+export async function deletePost(postId,syntax) {
     try {
         const postDocRef = doc(db, 'posts', postId);
         const postSnapshot = await getDoc(postDocRef);
@@ -2034,7 +2034,10 @@ export async function deletePost(postId) {
         const classPostRef = doc(db, 'classes', syntax, 'posts', postId); // Reference to the specific post in the class's subcollection
         await deleteDoc(classPostRef);
         console.log(`Post document deleted successfully from class ${syntax}`);
-
+        const storage = getStorage();
+        const imgRef = ref(storage, 'images/' + syntax + '/' + postId); // Unique path
+        await deleteObject(imgRef);
+        console.log('Image deleted successfully from Firebase Storage');
         // Optionally, remove the post item from the DOM
         const postItem = document.getElementById(postId);
         if (postItem) {
