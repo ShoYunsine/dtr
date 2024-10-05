@@ -385,6 +385,7 @@ async function updateattendanceList() {
         const presentData = dates.map(date => filteredData[date].present);
         const lateData = dates.map(date => filteredData[date].late);
         const absentData = dates.map(date => filteredData[date].absent);
+        const chartType = document.getElementById('chartType').value;
     
         // Destroy the previous chart instance if it exists
         if (attendanceChart) {
@@ -393,7 +394,7 @@ async function updateattendanceList() {
     
         // Create new chart with filtered data
         attendanceChart = new Chart(ctx, {
-            type: 'line',
+            type: chartType, // Use the selected chart type
             data: {
                 labels: dates,
                 datasets: [
@@ -404,7 +405,7 @@ async function updateattendanceList() {
                         borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 1,
                         stack: 'Stack 0',
-                        barThickness: 20,
+                        barThickness: chartType === 'bar' ? 30 : undefined, // Only apply thickness for bar charts
                     },
                     {
                         label: 'Late',
@@ -413,7 +414,7 @@ async function updateattendanceList() {
                         borderColor: 'rgba(255, 206, 86, 1)',
                         borderWidth: 1,
                         stack: 'Stack 0',
-                        barThickness: 20,
+                        barThickness: chartType === 'bar' ? 30 : undefined,
                     },
                     {
                         label: 'Absent',
@@ -422,7 +423,7 @@ async function updateattendanceList() {
                         borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 1,
                         stack: 'Stack 0',
-                        barThickness: 20,
+                        barThickness: chartType === 'bar' ? 30 : undefined,
                     }
                 ]
             },
@@ -431,11 +432,11 @@ async function updateattendanceList() {
                 maintainAspectRatio: false,
                 scales: {
                     x: {
-                        stacked: true,
+                        stacked: chartType === 'bar', // Stack only for bar charts
                     },
                     y: {
                         beginAtZero: true,
-                        stacked: true
+                        stacked: chartType === 'bar', // Stack only for bar charts
                     }
                 },
                 plugins: {

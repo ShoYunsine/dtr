@@ -79,8 +79,8 @@
       <h2 id="className">.</h2>
       <p id="code"><i>.</i></p>
     </div>
-    <input type="radio" id="attendanceTab" name="formToggle">
-    <input type="radio" id="postTab" checked name="formToggle">
+    <input type="radio" id="attendanceTab" name="formToggle" checked>
+    <input type="radio" id="postTab"  name="formToggle">
     <div id="formSwitch">
       <label for="attendanceTab" class="switch-btn">Attendance</label>
       <label for="postTab" class="switch-btn">Posts</label>
@@ -107,6 +107,14 @@
       
           <button id="applyDateRange">Apply</button>
       </div>
+      <div id="chartOptions">
+        <label for="chartType">Chart Type:</label>
+        <select id="chartType">
+            <option value="line">Line</option>
+            <option value="bar">Bar</option>
+        </select>
+    </div>
+    
         <div class="chart-container">
           <canvas id="attendanceChart" height="0"></canvas>
         </div>
