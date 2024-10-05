@@ -1,7 +1,7 @@
 {
     "lang": "en-us",
-    "name": "Async",
-    "short_name": "Async",
+    "name": "Logbook",
+    "short_name": "Logbook",
     "description": "Track your attendance here and there",
     "start_url": "https://shoyunsine.github.io/dtr/index.html",
     "background_color": "#000001",

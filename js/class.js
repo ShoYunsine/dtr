@@ -744,30 +744,32 @@ async function addPostTemplate(img, matches) {
             // Automatically adjust height based on content
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
-        
+
             const value = textarea.value;
             if (textarea.scrollHeight > previousScrollHeight) {
                 //addNewLineToTextarea(textarea);
             }
-            
-            console.log(value);
             // Measure the current width of the text and apply a line break if neede
-        
+
             // Check for @mentions
-            const words = value.split(/\s+/);
-            const currentWord = words[words.length - 1]; // Get the current word being typed
-        
+            const caretPosition = textarea.selectionStart; // Get caret position
+            const beforeCaretText = value.slice(0, caretPosition); // Get text before the caret
+
+            // Find the word before the caret by splitting at spaces
+            const wordsBeforeCaret = beforeCaretText.split(/\s+/);
+            const currentWord = wordsBeforeCaret[wordsBeforeCaret.length - 1];
+
             // Regular expression to find all strings starting with '@'
             const atMentions = value.match(/@(\w[\w_]*)/g) || [];
-        
+
             let newtags = [...pretags]; // Start with pre-loaded tags
             let newemails = [...preemails]; // Start with pre-loaded emails
-        
+
             // Check for each mention
             for (const mention of atMentions) {
                 const searchTerm = mention.slice(1); // Remove '@' to get the search term
                 const closestMatch = findClosestMember(searchTerm);
-        
+
                 if (closestMatch) {
                     showSuggestion(closestMatch.displayName);
                     // Check if the mention is already in newtags
@@ -779,16 +781,16 @@ async function addPostTemplate(img, matches) {
                     hideSuggestion();
                 }
             }
-        
+
             // Hide suggestion if no mentions
             if (atMentions.length === 0) {
                 hideSuggestion();
             }
-        
+
             const updatedTags = newtags.filter(tag => atMentions.includes(tag));
-        
+
             const uniqueEmailsSet = new Set();
-        
+
             // Filter emails based on the updated tags and also keep preemails that still have a tag
             updatedTags.forEach(tag => {
                 const index = newtags.indexOf(tag);
@@ -796,21 +798,22 @@ async function addPostTemplate(img, matches) {
                     uniqueEmailsSet.add(newemails[index]); // Keep the email for this tag
                 }
             });
-        
+
             // Now add emails for any remaining preloaded tags that still exist
             pretags.forEach((tag, index) => {
                 if (updatedTags.includes(tag)) {
                     uniqueEmailsSet.add(preemails[index]); // Keep corresponding email if tag still exists
                 }
             });
-        
+
             // Convert the Set back to an array for unique emails
             newemails = Array.from(uniqueEmailsSet);
-        
+
             // Update the global tags and emails
             tags = updatedTags;
             emails = newemails;
-        
+
+            console.log(tags,emails)
             // Check if the current word contains '@' and show/hide suggestions
             if (currentWord.startsWith('@')) {
                 const searchTerm = currentWord.slice(1); // Remove '@' to get the search term
@@ -823,87 +826,87 @@ async function addPostTemplate(img, matches) {
             } else {
                 hideSuggestion(); // Hide suggestions if no '@' in the current word
             }
-        
+
             // Helper function to find the closest member
             function findClosestMember(searchTerm) {
                 const matches = memberProfiles.filter(member =>
                     member.displayName.replace(/\s+/g, '_').toLowerCase().includes(searchTerm.toLowerCase())
                 );
-        
+
                 return matches.length > 0 ? matches[0] : null;
             }
-        
+
             // Function to display the suggestion box
             function showSuggestion(text) {
                 const suggestionBox = template.querySelector('#suggestion-box');
                 const caretPos = getCaretCoordinates(textarea);
-            
+
                 suggestionBox.textContent = text;
                 suggestionBox.style.top = caretPos.top + 'px';
                 suggestionBox.style.left = caretPos.left + 'px';
                 suggestionBox.style.display = 'block'; // Show the suggestion box
-            
+
                 // Check for overflow after displaying the suggestion box
                 checkOverflow(suggestionBox);
             }
-            
+
             // Function to check if the suggestion box is overflowing the viewport
             function checkOverflow(suggestionBox) {
                 const boxRect = suggestionBox.getBoundingClientRect();
-                
+
                 // Check if suggestion box overflows the right or bottom of the viewport
                 const isOverflowingRight = boxRect.right > window.innerWidth;
                 const isOverflowingBottom = boxRect.bottom > window.innerHeight;
-            
+
                 // Adjust position if it's overflowing the right
                 if (isOverflowingRight) {
                     suggestionBox.style.left = (window.innerWidth - boxRect.width) + 'px'; // Adjust to stay within the right boundary
                 }
-            
+
                 // Adjust position if it's overflowing the bottom
                 if (isOverflowingBottom) {
                     suggestionBox.style.top = (window.innerHeight - boxRect.height) + 'px'; // Adjust to stay within the bottom boundary
                 }
             }
-        
+
             // Function to hide the suggestion box
             function hideSuggestion() {
                 const suggestionBox = document.querySelector('#suggestion-box');
                 suggestionBox.style.display = 'none'; // Hide the suggestion box
             }
-        
+
             // Function to check for overflow and add new line breaks
             function addNewLineToTextarea(textarea) {
                 const value = textarea.value;
                 textarea.value = value + '\n'; // Add a new line at the end
             }
-        
+
             // Function to calculate the caret's coordinates within the textarea
             function getCaretCoordinates(textarea) {
                 const text = textarea.value.substr(0, textarea.selectionStart);
                 const textLines = text.split("\n");
-        
+
                 const currentLine = textLines[textLines.length - 1]; // Text in the current line
                 const fontSize = parseInt(window.getComputedStyle(textarea).fontSize);
                 const lineHeight = fontSize * 1.2; // Adjust based on font size
-        
+
                 const { top, left } = textarea.getBoundingClientRect(); // Get the textarea position
-        
+
                 const lineNumber = textLines.length; // Current line number
                 const columnNumber = currentLine.length; // Caret position in the current line
-        
+
                 // Calculate the caret's position relative to the textarea
                 const caretTop = top + lineHeight * (lineNumber - 1); // Adjust for the line number
                 const caretLeft = left + columnNumber * fontSize * 0.6; // Approximate caret position horizontally
-        
+
                 return {
                     top: caretTop + window.scrollY,
                     left: caretLeft + window.scrollX
                 };
             }
         });
-        
-        
+
+
         template.querySelector('#postPost').addEventListener('click', async () => {
             const description = template.querySelector('#desc').value;
             const postSyntax = await generateUniquePostSyntax(syntax);
@@ -923,7 +926,7 @@ async function addPostTemplate(img, matches) {
             if (emails) {
                 const href = `https://shoyunsine.github.io/dtr/post.html?postId=${postSyntax}&syntax=${syntax}`;
                 for (const email of emails) {
-                    await emailTagged(email, classroom.name, user.displayName, description,href)
+                    await emailTagged(email, classroom.name, user.displayName, description, href)
                 }
             }
 
@@ -984,13 +987,30 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     description = description.replace(/(@[\w_\.]+)/g, function (match) {
         return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
     });
-
-    // Wrap #words (allow periods within the word)
+    
+    // Wrap #hashtags with <span> tags
     description = description.replace(/(#[\w_\.]+)/g, function (match) {
         return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
     });
-
-
+    
+    // Make text between * bold
+    description = description.replace(/\*(.*?)\*/g, function (match, content) {
+        return `<strong>${content}</strong>`;
+    });
+    
+    // Make text between *^ very bold
+    description = description.replace(/\+\+(.*?)\+\+/g, function (match, content) {
+        return `<b style="font-weight: bold; font-size: 1.1em;">${content}</b>`; // Using <b> for very bold
+    });
+    // Italicize text between //
+    description = description.replace(/\/\/(.*?)\/\//g, function (match, content) {
+        return `<i>${content}</i>`;
+    });
+    
+    // Change font size using ^n (e.g., ^2(text))
+    description = description.replace(/\^(\d+)\((.*?)\)/g, function (match, size, content) {
+        return `<span style="font-size: ${size}em;">${content}</span>`;
+    });
 
     const timeDisplay = formatTimeDifference(dateTime);
 
@@ -1018,7 +1038,10 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
             <label for="comments${postId}"><i class="fa-regular fa-message"></i></label>
         </div>
         <a id="likes">${likes} likes</a>
-        <p id="desc">${description}</p>
+        <input type="checkbox" id="toggle">
+                        <p id="desc">${description}</p>
+                        <label for="toggle" id="toggleText">... Read More</label>
+                        <label for="toggle" id="toggleTextShow">... Show Less</label>
         <label for="commentSectionToggle${postId}" style="display:none;" id="commentsToggleLabel${postId}">
         Show Comments</label>
         <p>${timeDisplay}</p>
@@ -1061,6 +1084,30 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     });
 
     const likeCheckbox = template.querySelector(`#like${postId}`);
+    const desc = template.querySelector('#desc');
+                    const toggleText = template.querySelector('#toggleText');
+                    const toggleTextShow = template.querySelector('#toggleTextShow');
+                    console.log(desc.scrollHeight > 110);
+                    if (desc.scrollHeight > 110) {
+                        desc.style.height = '110px';
+                        toggleText.style.display = 'inline';
+                        toggleTextShow.style.display = 'none'; // Hide "Show Less" by default
+                    } else {
+                        // Hide the toggle buttons if content doesn't overflow
+                        toggleText.style.display = 'none';
+                        toggleTextShow.style.display = 'none';
+                    }
+                    template.querySelector('#toggle').addEventListener('change', function () {
+                        if (this.checked) {
+                            desc.style.height = `${desc.scrollHeight}px`;
+                            toggleText.style.display = 'none';
+                            toggleTextShow.style.display = 'inline';
+                        } else {
+                            desc.style.height = '110px';
+                            toggleText.style.display = 'inline';
+                            toggleTextShow.style.display = 'none';
+                        }
+                    });
 
     // Check if the post is liked by the current user on page load
     const userLikes = await fetchUserLikes(user.uid);
@@ -1231,7 +1278,7 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
         template.querySelector('#deletePost').addEventListener('click', async (event) => {
             const postId = event.target.getAttribute('data-post-id');
-            await deletePost(syntax, postId); // Add deletePost function to remove the post
+            await deletePost(postId); // Add deletePost function to remove the post
             cancelFunction(template);
         });
     };
