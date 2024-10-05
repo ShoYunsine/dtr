@@ -55,12 +55,12 @@ if ('serviceWorker' in navigator) {
                                 latitude: position.coords.latitude,
                                 longitude: position.coords.longitude
                             };
-                            console.log(classes.length);
+                            console.log(classes);
                             // Ensure classes is defined and an array
                             if (classes.length === 0 && classes != "None") {
                                 //basicNotif("Refetching classes","",5000);
                                 classes = await getUserClasses();
-                            } else if (classes.length === 0 && classes != "None"){
+                            } else if (classes.length != 0 && classes != "None"){
                                 //basicNotif("Classes fetched","",5000);
                                 for (const cls of classes) {
                                     const distance = calculateDistance(
@@ -72,7 +72,7 @@ if ('serviceWorker' in navigator) {
                                     //basicNotif(`${cls.name}`, "", 5000);
                                     if (distance <= cls.rad) {
                                         const { status } = await checkAttendance(cls.syntax, cls.timezone);
-                                        basicNotif(`${cls.name} inRadius`, "", 5000);
+                                        //basicNotif(`${cls.name} inRadius`, "", 5000);
                                     } else {
                                         const attendance = await getAttendance(cls.syntax, cls.timezone);
                                         if (attendance.status === "Absent") {
