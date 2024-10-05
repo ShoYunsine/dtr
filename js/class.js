@@ -322,19 +322,19 @@ async function updateattendanceList() {
     const ctx = document.getElementById('attendanceChart').getContext('2d');
     let attendanceChart;
     // Function to get the dates based on the selected range
-    function getFilteredData(range, selectedMonth) {
+    function getFilteredData(range, customRange = null) {
         const today = new Date();
         const filteredDates = {};
-
+    
         members.forEach(member => {
             const attendance = member.attendance;
-
+    
             for (const date in attendance) {
                 const attendanceDate = new Date(date);
-
+    
                 // Determine if the date falls within the selected range
                 let withinRange = false;
-
+    
                 switch (range) {
                     case 'week':
                         withinRange = (today - attendanceDate <= 7 * 24 * 60 * 60 * 1000);
@@ -346,14 +346,16 @@ async function updateattendanceList() {
                         withinRange = (today - attendanceDate <= 365 * 24 * 60 * 60 * 1000);
                         break;
                     case 'custom':
-                        if (selectedMonth !== "") {
-                            withinRange = (attendanceDate.getMonth() === parseInt(selectedMonth) && attendanceDate.getFullYear() === today.getFullYear());
+                        if (customRange && customRange.startDate && customRange.endDate) {
+                            const startDate = new Date(customRange.startDate);
+                            const endDate = new Date(customRange.endDate);
+                            withinRange = (attendanceDate >= startDate && attendanceDate <= endDate);
                         }
                         break;
                     default:
                         withinRange = false;
                 }
-
+    
                 if (withinRange) {
                     if (!filteredDates[date]) {
                         filteredDates[date] = { present: 0, late: 0, absent: 0, names: { present: [], late: [], absent: [] } };
@@ -374,23 +376,24 @@ async function updateattendanceList() {
         });
         return filteredDates;
     }
+    
 
     // Function to update the chart with filtered data
-    function updateChart(range, selectedMonth) {
-        const filteredData = getFilteredData(range, selectedMonth);
-        const dates = Object.keys(filteredData);
+    function updateChart(range, customRange = null) {
+        const filteredData = getFilteredData(range, customRange);
+        const dates = Object.keys(filteredData).sort((a, b) => new Date(a) - new Date(b));
         const presentData = dates.map(date => filteredData[date].present);
         const lateData = dates.map(date => filteredData[date].late);
         const absentData = dates.map(date => filteredData[date].absent);
-
+    
         // Destroy the previous chart instance if it exists
         if (attendanceChart) {
             attendanceChart.destroy();
         }
-
+    
         // Create new chart with filtered data
         attendanceChart = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: dates,
                 datasets: [
@@ -425,6 +428,7 @@ async function updateattendanceList() {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     x: {
                         stacked: true,
@@ -452,27 +456,40 @@ async function updateattendanceList() {
             }
         });
     }
-
+    
     // Show/hide month selector based on the selected date range
-    document.getElementById('dateRange').addEventListener('change', (event) => {
-        const monthSelector = document.getElementById('monthSelector');
-        const monthLabel = document.querySelector('label[for="monthSelector"]');
-
-        if (event.target.value === 'custom') {
-            monthSelector.style.display = 'block';
-            monthLabel.style.display = 'inline';
+    document.getElementById('dateRange').addEventListener('change', function () {
+        const selectedRange = this.value;
+        const customRangeSelector = document.getElementById('customRangeSelector');
+        
+        // Show or hide the custom range selectors based on the option selected
+        if (selectedRange === 'custom') {
+            customRangeSelector.style.display = 'block';
         } else {
-            monthSelector.style.display = 'none';
-            monthLabel.style.display = 'none';
+            customRangeSelector.style.display = 'none';
         }
     });
-
     // Event listener for the Apply button
-    document.getElementById('applyDateRange').addEventListener('click', () => {
-        const selectedRange = document.getElementById('dateRange').value;
-        const selectedMonth = document.getElementById('monthSelector').value;
-        updateChart(selectedRange, selectedMonth);
+    document.getElementById('applyDateRange').addEventListener('click', function () {
+        const range = document.getElementById('dateRange').value;
+    
+        if (range === 'custom') {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+    
+            if (!startDate || !endDate) {
+                alert('Please select both a start and an end date.');
+                return;
+            }
+    
+            // Call your chart update function with custom range
+            updateChart(range, { startDate, endDate });
+        } else {
+            // Call your chart update function with predefined range
+            updateChart(range);
+        }
     });
+    
 
 }
 

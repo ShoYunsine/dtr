@@ -375,9 +375,16 @@
   box-shadow: inset 10px 10px var(--background-color);
 }
 
-.attendanceChart {
+#chartContainer {
   width: 100%;
-  height: auto;
+  height: 500px; /* Adjust the height as needed */
+  overflow-y: scroll; /* Enable vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+#attendanceChart {
+  width: 100%;
+  height: auto; /* Allow the chart to expand vertically */
 }
 
 /* Style for the toggle links */
