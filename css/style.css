@@ -157,10 +157,9 @@ body::-webkit-scrollbar {
   margin-right: 10px;
   text-decoration: none;
   font-family: 'Billabong', sans-serif;
-  font-size: 250%;
+  font-size: 230%;
   width: 100%;
-  font-weight: 100;
-  
+  font-weight: 100;  
   background-clip: text;
   color: var(--text-color-main);
 }

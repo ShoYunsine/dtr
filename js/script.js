@@ -57,10 +57,10 @@ if ('serviceWorker' in navigator) {
                             };
                             console.log(classes.length);
                             // Ensure classes is defined and an array
-                            if (classes.length === 0) {
+                            if (classes.length === 0 && classes != "None") {
                                 //basicNotif("Refetching classes","",5000);
                                 classes = await getUserClasses();
-                            } else {
+                            } else if (classes.length === 0 && classes != "None"){
                                 //basicNotif("Classes fetched","",5000);
                                 for (const cls of classes) {
                                     const distance = calculateDistance(
