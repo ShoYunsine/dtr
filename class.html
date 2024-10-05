@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-  <title>Async</title>
+  <title>Class</title>
 </head>
 
 <body>
@@ -58,15 +58,16 @@
         </li>
         <li>
           <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
-      <div class="switch">
-        <input type="checkbox" id="darkModeToggle">
-        <label for="darkModeToggle" class="switch-slider"></label>
-      </div>
+          <div class="switch">
+            <input type="checkbox" id="darkModeToggle">
+            <label for="darkModeToggle" class="switch-slider"></label>
+          </div>
         </li>
         <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
       </ul>
     </nav>
   </aside>
+
   <div id="notifs">
 
   </div>
@@ -78,7 +79,7 @@
       <h2 id="className">.</h2>
       <p id="code"><i>.</i></p>
     </div>
-    <input type="radio" id="attendanceTab" name="formToggle" >
+    <input type="radio" id="attendanceTab" name="formToggle">
     <input type="radio" id="postTab" checked name="formToggle">
     <div id="formSwitch">
       <label for="attendanceTab" class="switch-btn">Attendance</label>
@@ -86,6 +87,36 @@
     </div>
     <div class="form-section" style="padding:0; width: 100%;">
       <div id="attendanceList" class="attendanceList">
+        <div id="dateRangeSelector">
+          <label for="dateRange">Select Date Range:</label>
+          <select id="dateRange">
+              <option value="week">1 Week Ago</option>
+              <option value="month">1 Month Ago</option>
+              <option value="year">1 Year Ago</option>
+              <option value="custom">Custom Month</option>
+          </select>
+          <label for="monthSelector" style="display: none;">Select Month:</label>
+          <select id="monthSelector" style="display: none;">
+              <option value="">--Select Month--</option>
+              <option value="0">January</option>
+              <option value="1">February</option>
+              <option value="2">March</option>
+              <option value="3">April</option>
+              <option value="4">May</option>
+              <option value="5">June</option>
+              <option value="6">July</option>
+              <option value="7">August</option>
+              <option value="8">September</option>
+              <option value="9">October</option>
+              <option value="10">November</option>
+              <option value="11">December</option>
+          </select>
+          
+          <button id="applyDateRange">Apply</button>
+      </div>
+        <div class="chart-container">
+          <canvas id="attendanceChart"></canvas>
+        </div>
         <nav>
           <div id="search"><i class="fa-solid fa-magnifying-glass"></i><input id="attendanceSearch"
               placeholder="Search"></div>
@@ -110,7 +141,7 @@
   <input type="file" id="camera-input" accept="image/*" style="display: none;">
   <div id="buttonsdown">
     <button id="facescan-button">
-    <i class="fa-regular fa-id-badge"></i>
+      <i class="fa-regular fa-id-badge"></i>
     </button>
     <button id="camera-button">
       <i class="fa-regular fa-square-plus"></i>
