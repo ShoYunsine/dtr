@@ -9,6 +9,17 @@ import {
     sendCommentToPost,
     emailTagged
 } from './firebase.js';
+
+const luxonScript = document.createElement('script');
+luxonScript.src = 'https://cdn.jsdelivr.net/npm/luxon@3.2.0/build/global/luxon.min.js';
+document.head.appendChild(luxonScript);
+
+let DateTime;
+
+luxonScript.onload = function () {
+    DateTime = window.luxon.DateTime;
+}
+
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
@@ -274,6 +285,10 @@ async function updateattendanceList() {
     }
     attendanceList.innerHTML = '';
 
+    const now = DateTime.now();
+    const currentHour = now.hour;
+    const isMorning = currentHour < 12; // Define "morning" as before 12:00
+
     for (const member of members) {
         try {
             const memberData = await fetchProfile(member.id);
@@ -282,8 +297,19 @@ async function updateattendanceList() {
             } else {
                 console.log(`Profile not found for member ID: ${member.id}`);
             }
-            console.log(member)
-            var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
+
+            var { morningStatus, morningTime, afternoonStatus, afternoonTime } = await getAttendance(syntax, classroom.timezone, member.id);
+
+            let status, time;
+
+            if (isMorning) {
+                status = morningStatus;
+                time = morningTime;
+            } else {
+                status = afternoonStatus;
+                time = afternoonTime;
+            }
+
             if (!time) {
                 time = "Not Available";
             } else {
@@ -292,7 +318,7 @@ async function updateattendanceList() {
 
             // Determine the color class based on status
             let statusClass = '';
-            switch (status.toLowerCase()) {
+            switch (status?.toLowerCase()) {
                 case 'present':
                     statusClass = 'status-present'; // Green
                     break;
@@ -311,7 +337,7 @@ async function updateattendanceList() {
             listItem.innerHTML = `
                 <div class="${statusClass}">
                     <h3>${memberData.displayName}</h3>
-                    <p>${capitalizeFirstLetter(status)}<br>${time}</p>
+                    <p>${capitalizeFirstLetter(status || 'Absent')}<br>${time}</p>
                 </div>`;
             attendanceList.appendChild(listItem);
         } catch (error) {
@@ -319,22 +345,18 @@ async function updateattendanceList() {
         }
     }
 
-    const ctx = document.getElementById('attendanceChart').getContext('2d');
-    let attendanceChart;
-    // Function to get the dates based on the selected range
     function getFilteredData(range, customRange = null) {
         const today = new Date();
-        const filteredDates = {};
-    
+        const filteredData = {};
+
         members.forEach(member => {
             const attendance = member.attendance;
-    
+
             for (const date in attendance) {
                 const attendanceDate = new Date(date);
-    
-                // Determine if the date falls within the selected range
                 let withinRange = false;
-    
+
+                // Check if the attendance date is within the specified range
                 switch (range) {
                     case 'week':
                         withinRange = (today - attendanceDate <= 7 * 24 * 60 * 60 * 1000);
@@ -355,36 +377,63 @@ async function updateattendanceList() {
                     default:
                         withinRange = false;
                 }
-    
+
+                // If the date is within the selected range, process the attendance data
                 if (withinRange) {
-                    if (!filteredDates[date]) {
-                        filteredDates[date] = { present: 0, late: 0, absent: 0, names: { present: [], late: [], absent: [] } };
+                    // Initialize the date entry if it doesn't exist
+                    if (!filteredData[date]) {
+                        filteredData[date] = {
+                            morning: {
+                                present: { count: 0, names: [] },
+                                late: { count: 0, names: [] },
+                                absent: { count: 0, names: [] }
+                            },
+                            afternoon: {
+                                present: { count: 0, names: [] },
+                                late: { count: 0, names: [] },
+                                absent: { count: 0, names: [] }
+                            }
+                        };
                     }
-                    // Increment counts and store names based on attendance status
-                    if (attendance[date].status === 'present') {
-                        filteredDates[date].present++;
-                        filteredDates[date].names.present.push(memberProfiles.find(profile => profile.uid === member.id).displayName);
-                    } else if (attendance[date].status === 'late') {
-                        filteredDates[date].late++;
-                        filteredDates[date].names.late.push(memberProfiles.find(profile => profile.uid === member.id).displayName);
-                    } else if (attendance[date].status === 'absent') {
-                        filteredDates[date].absent++;
-                        filteredDates[date].names.absent.push(memberProfiles.find(profile => profile.uid === member.id).displayName);
+
+                    // Process morning attendance
+                    if (attendance[date].morning) {
+                        const morningStatus = attendance[date].morning.status;
+                        filteredData[date].morning[morningStatus].count++;
+                        filteredData[date].morning[morningStatus].names.push(memberProfiles.find(profile => profile.uid === member.id).displayName); // Store the member's name
+                    }
+
+                    // Process afternoon attendance
+                    if (attendance[date].afternoon) {
+                        const afternoonStatus = attendance[date].afternoon.status;
+                        filteredData[date].afternoon[afternoonStatus].count++;
+                        filteredData[date].afternoon[afternoonStatus].names.push(memberProfiles.find(profile => profile.uid === member.id).displayName); // Store the member's name
                     }
                 }
             }
         });
-        return filteredDates;
+
+        return filteredData;
     }
-    
 
     // Function to update the chart with filtered data
+    let attendanceChart;
+
+
     function updateChart(range, customRange = null) {
         const filteredData = getFilteredData(range, customRange);
         const dates = Object.keys(filteredData).sort((a, b) => new Date(a) - new Date(b));
-        const presentData = dates.map(date => filteredData[date].present);
-        const lateData = dates.map(date => filteredData[date].late);
-        const absentData = dates.map(date => filteredData[date].absent);
+    
+        // Extract data for morning
+        const morningPresentData = dates.map(date => filteredData[date]?.morning?.present.count || 0);
+        const morningLateData = dates.map(date => filteredData[date]?.morning?.late.count || 0);
+        const morningAbsentData = dates.map(date => filteredData[date]?.morning?.absent.count || 0);
+    
+        // Extract data for afternoon
+        const afternoonPresentData = dates.map(date => filteredData[date]?.afternoon?.present.count || 0);
+        const afternoonLateData = dates.map(date => filteredData[date]?.afternoon?.late.count || 0);
+        const afternoonAbsentData = dates.map(date => filteredData[date]?.afternoon?.absent.count || 0);
+    
         const chartType = document.getElementById('chartType').value;
     
         // Destroy the previous chart instance if it exists
@@ -392,51 +441,79 @@ async function updateattendanceList() {
             attendanceChart.destroy();
         }
     
-        // Create new chart with filtered data
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
         attendanceChart = new Chart(ctx, {
             type: chartType, // Use the selected chart type
             data: {
                 labels: dates,
                 datasets: [
                     {
-                        label: 'Present',
-                        data: presentData,
+                        label: 'Morning Present',
+                        data: morningPresentData,
                         backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 1,
-                        stack: 'Stack 0',
-                        barThickness: chartType === 'bar' ? 30 : undefined, // Only apply thickness for bar charts
+                        stack: 'morning', // Specify stack group
+                        barThickness: chartType === 'bar' ? 20 : undefined,
                     },
                     {
-                        label: 'Late',
-                        data: lateData,
+                        label: 'Morning Late',
+                        data: morningLateData,
                         backgroundColor: 'rgba(255, 206, 86, 0.6)',
-                        borderColor: 'rgba(255, 206, 86, 1)',
                         borderWidth: 1,
-                        stack: 'Stack 0',
-                        barThickness: chartType === 'bar' ? 30 : undefined,
+                        stack: 'morning', // Specify stack group
+                        barThickness: chartType === 'bar' ? 20 : undefined,
                     },
                     {
-                        label: 'Absent',
-                        data: absentData,
+                        label: 'Morning Absent',
+                        data: morningAbsentData,
                         backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 1,
-                        stack: 'Stack 0',
-                        barThickness: chartType === 'bar' ? 30 : undefined,
+                        stack: 'morning', // Specify stack group
+                        barThickness: chartType === 'bar' ? 20 : undefined,
+                    },
+                    {
+                        label: 'Afternoon Present',
+                        data: afternoonPresentData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderWidth: 1,
+                        stack: 'afternoon', // Specify stack group',
+                        barThickness: chartType === 'bar' ? 20 : undefined,
+                    },
+                    {
+                        label: 'Afternoon Late',
+                        data: afternoonLateData,
+                        backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                        borderWidth: 1,
+                        stack: 'afternoon',
+                        barThickness: chartType === 'bar' ? 20 : undefined,
+                    },
+                    {
+                        label: 'Afternoon Absent',
+                        data: afternoonAbsentData,
+                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                        borderWidth: 1,
+                        stack: 'afternoon',
+                        barThickness: chartType === 'bar' ? 20 : undefined,
                     }
                 ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
                 scales: {
                     x: {
-                        stacked: chartType === 'bar', // Stack only for bar charts
+                        stacked: true, // Set to true for stacked bars, false for grouped
+                        title: {
+                            display: true,
+                            text: 'Dates' // Add a title for the x-axis
+                        }
                     },
                     y: {
                         beginAtZero: true,
-                        stacked: chartType === 'bar', // Stack only for bar charts
+                        title: {
+                            display: true,
+                            text: 'Attendance Count' // Add a title for the y-axis
+                        }
                     }
                 },
                 plugins: {
@@ -444,11 +521,12 @@ async function updateattendanceList() {
                         callbacks: {
                             label: function (tooltipItem) {
                                 const date = tooltipItem.label;
-                                const status = tooltipItem.dataset.label.toLowerCase();
-                                const names = filteredData[date].names[status];
+                                const status = tooltipItem.dataset.label.toLowerCase().split(' ')[1]; // 'present', 'late', or 'absent'
+                                const session = tooltipItem.dataset.label.toLowerCase().split(' ')[0]; // 'morning' or 'afternoon'
+                                const names = filteredData[date]?.[session]?.[status]?.names || []; // Ensure names is defined
                                 return [
-                                    tooltipItem.dataset.label + ': ' + tooltipItem.raw,
-                                    'Names: ' + (names.length ? names.join(', ') : 'None')
+                                    `${tooltipItem.dataset.label}: ${tooltipItem.raw}`,
+                                    `Names: ${names.length ? names.join(', ') : 'None'}`
                                 ];
                             }
                         }
@@ -458,41 +536,39 @@ async function updateattendanceList() {
         });
     }
     
-    // Show/hide month selector based on the selected date range
+    
+
     document.getElementById('dateRange').addEventListener('change', function () {
         const selectedRange = this.value;
         const customRangeSelector = document.getElementById('customRangeSelector');
-        
-        // Show or hide the custom range selectors based on the option selected
+
         if (selectedRange === 'custom') {
             customRangeSelector.style.display = 'block';
         } else {
             customRangeSelector.style.display = 'none';
         }
     });
-    // Event listener for the Apply button
+
     document.getElementById('applyDateRange').addEventListener('click', function () {
         const range = document.getElementById('dateRange').value;
-    
+
         if (range === 'custom') {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-    
+
             if (!startDate || !endDate) {
                 alert('Please select both a start and an end date.');
                 return;
             }
-    
-            // Call your chart update function with custom range
+
             updateChart(range, { startDate, endDate });
         } else {
-            // Call your chart update function with predefined range
             updateChart(range);
         }
     });
-    
-
+    updateChart("week");
 }
+
 
 async function updatememberList() {
     const currentUserlogged = await getCurrentUser();

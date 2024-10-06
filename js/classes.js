@@ -43,8 +43,8 @@ document.getElementById('classaddForm').addEventListener('submit', async functio
     event.preventDefault(); // Prevent the form from submitting the traditional way
 
     var className = document.getElementById('className').value;
-    var school = document.getElementById('school').value;
-    var timeIn = document.getElementById('timeIn').value;
+    var timeInMor = document.getElementById('timeInMor').value;
+    var timeInAft = document.getElementById('timeInAft').value;
     var lat = parseFloat(document.getElementById('lat').value);
     var long = parseFloat(document.getElementById('long').value);
     var rad = document.getElementById('radius').value;
@@ -66,7 +66,7 @@ document.getElementById('classaddForm').addEventListener('submit', async functio
         const classcode = await generateClassCode();
 
         // Add the class to Firestore (or your database)
-        await addClass(className, uid, classcode, timeIn, lat, long, rad, timezone);
+        await addClass(className, uid, classcode, timeInMor, timeInAft, lat, long, rad, timezone);
 
         // Add the new class to the DOM
         document.getElementById('classaddForm').reset();

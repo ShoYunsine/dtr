@@ -60,7 +60,7 @@ if ('serviceWorker' in navigator) {
                             if (classes.length === 0 && classes != "None") {
                                 //basicNotif("Refetching classes","",5000);
                                 classes = await getUserClasses();
-                            } else if (classes.length != 0 && classes != "None"){
+                            } else if (classes.length >= 1 && classes != "None"){
                                 //basicNotif("Classes fetched","",5000);
                                 for (const cls of classes) {
                                     const distance = calculateDistance(
@@ -79,7 +79,7 @@ if ('serviceWorker' in navigator) {
                                             await markAbsent(cls.syntax);
                                         }
                                     }
-                                    await deleteAllAttendanceRecords(cls.timezone, cls.syntax);
+                                    //await deleteAllAttendanceRecords(cls.timezone, cls.syntax);
                                 }
                             }
                         });

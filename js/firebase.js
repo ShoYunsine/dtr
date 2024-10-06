@@ -1216,7 +1216,7 @@ function generateRandomSyntax() {
     return result;
 }
 
-export async function addClass(className, syntax, classcode, timeIn, lat, long, rad, timezone) {
+export async function addClass(className, syntax, classcode, timeInMor, timeInAft, lat, long, rad, timezone) {
     const auth = getAuth();
     const user = auth.currentUser;
 
@@ -1240,7 +1240,8 @@ export async function addClass(className, syntax, classcode, timeIn, lat, long, 
             name: className,
             syntax: syntax,
             code: classcode,
-            timeIn: timeIn,
+            timeInMor: timeInMor,
+            timeInAft: timeInAft,
             lat: lat,
             long: long,
             rad: rad,
@@ -1776,42 +1777,69 @@ export async function checkAttendance(syntax, timezone, id) {
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
 
         const classTimezone = classdata.timezone;
-        const classTimeIn = classdata.timeIn;
+        const classTimeInMor = classdata.timeInMor; // Morning class time (e.g., 08:00)
+        const classTimeInAft = classdata.timeInAft; // Afternoon class time (e.g., 14:00)
 
         const currentTime = DateTime.now().setZone(timezone);
-        const classTime = DateTime.fromFormat(classTimeIn, 'HH:mm', { zone: classTimezone });
-        const classDateTime = classTime.set({ year: currentTime.year, month: currentTime.month, day: currentTime.day });
 
-        let status;
-        if (currentTime <= classDateTime) {
-            status = 'present';
+        // Check for both morning and afternoon attendance
+        const morningTime = DateTime.fromFormat(classTimeInMor, 'HH:mm', { zone: classTimezone });
+        const morningDateTime = morningTime.set({ year: currentTime.year, month: currentTime.month, day: currentTime.day });
+
+        const afternoonTime = DateTime.fromFormat(classTimeInAft, 'HH:mm', { zone: classTimezone });
+        const afternoonDateTime = afternoonTime.set({ year: currentTime.year, month: currentTime.month, day: currentTime.day });
+
+        let morningStatus, afternoonStatus;
+
+        // Determine morning status
+        if (currentTime <= morningDateTime) {
+            morningStatus = 'present';
         } else {
-            status = 'late';
+            morningStatus = 'late';
         }
 
-        const timeChecked = currentTime.toFormat('HH:mm');
+        // Determine afternoon status
+        if (currentTime <= afternoonDateTime) {
+            afternoonStatus = 'present';
+        } else {
+            afternoonStatus = 'late';
+        }
+
+        const morningTimeChecked = currentTime.toFormat('HH:mm');
+        const afternoonTimeChecked = currentTime.toFormat('HH:mm');
 
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
-        // Update if there's no record for today or if the status was "absent"
-        if (!existingAttendance[currentDate] || existingAttendance[currentDate].status === 'absent') {
-            const updatedAttendance = {
-                ...existingAttendance,
-                [currentDate]: { status: status, timeChecked: timeChecked }
-            };
+        // Update if there's no record for today or if the status was "absent" for either morning or afternoon
+        const updatedAttendance = {
+            ...existingAttendance,
+            [currentDate]: {
+                morning: existingAttendance[currentDate]?.morning || {
+                    status: morningStatus,
+                    timeChecked: morningTimeChecked
+                },
+                afternoon: existingAttendance[currentDate]?.afternoon || {
+                    status: afternoonStatus,
+                    timeChecked: afternoonTimeChecked
+                }
+            }
+        };
 
-            await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
+        // Save the updated attendance
+        await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
 
-            return { status: status, time: timeChecked };
-        } else {
-            // If the record already exists and was not "absent", return existing status and time
-            return { status: existingAttendance[currentDate].status, time: existingAttendance[currentDate].timeChecked };
-        }
+        return {
+            morning: { status: morningStatus, time: morningTimeChecked },
+            afternoon: { status: afternoonStatus, time: afternoonTimeChecked }
+        };
+
     } catch (error) {
         throw error;
     }
 }
+
+
 
 export async function markAbsent(syntax, id) {
     try {
@@ -1821,23 +1849,42 @@ export async function markAbsent(syntax, id) {
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
-        // If attendance is already marked as 'present' or 'late', don't overwrite it with 'absent'
-        if (existingAttendance[currentDate] && existingAttendance[currentDate].status !== 'absent') {
-            return { status: existingAttendance[currentDate].status, time: existingAttendance[currentDate].timeChecked };
-        }
+        const currentAttendance = existingAttendance[currentDate] || {};
+
+        // If morning attendance is already 'present' or 'late', don't overwrite it with 'absent'
+        const morningStatus = currentAttendance.morning && currentAttendance.morning.status !== 'absent' 
+            ? currentAttendance.morning.status 
+            : 'absent';
+
+        // If afternoon attendance is already 'present' or 'late', don't overwrite it with 'absent'
+        const afternoonStatus = currentAttendance.afternoon && currentAttendance.afternoon.status !== 'absent' 
+            ? currentAttendance.afternoon.status 
+            : 'absent';
 
         const updatedAttendance = {
             ...existingAttendance,
-            [currentDate]: { status: 'absent' }
+            [currentDate]: {
+                morning: {
+                    status: morningStatus,
+                    timeChecked: morningStatus === 'absent' ? null : currentAttendance.morning?.timeChecked || null
+                },
+                afternoon: {
+                    status: afternoonStatus,
+                    timeChecked: afternoonStatus === 'absent' ? null : currentAttendance.afternoon?.timeChecked || null
+                }
+            }
         };
 
-        basicNotif(updatedAttendance, "", 5000);
+        // Save the updated attendance with 'absent' status where appropriate
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
+
+        return updatedAttendance[currentDate];
 
     } catch (error) {
         throw error;
     }
 }
+
 
 export async function deleteAllAttendanceRecords(classTimezone, classId) {
     try {

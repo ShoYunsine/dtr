@@ -46,6 +46,12 @@
   ;
 }
 
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 #dateRangeSelector, #chartOptions {
   display: flex;
     color: var(--text-color-main);
