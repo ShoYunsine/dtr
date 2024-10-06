@@ -85,8 +85,12 @@
           <input type="text" id="className" name="className" required placeholder="Class Name">
         </div>
         <div>
-          <h3 for="timeIn">Time In</h3>
-          <input type="time" id="timeIn" name="timeIn" required>
+          <h3 for="timeIn">Time In (Morning)</h3>
+          <input type="time" id="timeInMor" name="timeIn" required>
+        </div>
+        <div>
+          <h3 for="timeIn">Time In (Afternoon)</h3>
+          <input type="time" id="timeInAft" name="timeIn" required>
         </div>
         <div>
           <h3 for="timezone">Time Zone</h3>
@@ -121,15 +125,6 @@
             <option value="UTC+14:00">Line Islands (UTC+14:00)</option>
         </datalist>
       </div>
-      
-        <div>
-          <h3 for="school-name">School</h3>
-          <input id="school" list="school-name" required placeholder="None">
-          <datalist id="school-name">
-            <option value="None">None</option>
-            <option value="Sorsogon State University, Main Campus">Sorsogon State University, Main Campus</option>
-          </datalist>
-        </div>
         <div>
           <h3 for="coordinates">Latitude</h3>
           <input type="text" id="lat" name="coordinates" required placeholder="Latitude">

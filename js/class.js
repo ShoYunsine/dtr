@@ -206,11 +206,12 @@ async function scanQRCode() {
                         classroom.lat,
                         classroom.long
                     );
-                    //basicNotif(distance,distance <= classroom.rad, 5000)
-                    //basicNotif(code.data,distance <= classroom.rad, 5000)
+                    
                     if (distance <= classroom.rad) {
                         const attendance = await checkAttendance(syntax, classroom.timezone, code.data);
-                        basicNotif(`Attandance checked ${attendance.status}  ${attendance.timeChecked} `, code.data, 5000);
+                    updateattendanceList();
+                    console.log(attendance)
+                        basicNotif(`Attandance checked`, code.data, 5000);
                     };
                 } else {
                     basicNotif('Not a member', code.data, 5000);
@@ -298,18 +299,7 @@ async function updateattendanceList() {
                 console.log(`Profile not found for member ID: ${member.id}`);
             }
 
-            var { morningStatus, morningTime, afternoonStatus, afternoonTime } = await getAttendance(syntax, classroom.timezone, member.id);
-
-            let status, time;
-
-            if (isMorning) {
-                status = morningStatus;
-                time = morningTime;
-            } else {
-                status = afternoonStatus;
-                time = afternoonTime;
-            }
-
+            var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
             if (!time) {
                 time = "Not Available";
             } else {
@@ -318,7 +308,7 @@ async function updateattendanceList() {
 
             // Determine the color class based on status
             let statusClass = '';
-            switch (status?.toLowerCase()) {
+            switch (status.toLowerCase()) {
                 case 'present':
                     statusClass = 'status-present'; // Green
                     break;
@@ -332,6 +322,7 @@ async function updateattendanceList() {
                     statusClass = ''; // Default class or leave it empty
             }
 
+            // Determine the color class based on status
             const listItem = document.createElement('li');
             listItem.classList.add('list-item');
             listItem.innerHTML = `

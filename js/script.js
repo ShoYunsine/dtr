@@ -46,7 +46,7 @@ if ('serviceWorker' in navigator) {
 
             if ('sync' in registration) {
                 let classes = await getUserClasses();
-                
+                console.log("Classes",classes);
 
                 function startTracking() {
                     if (navigator.geolocation) {
@@ -55,7 +55,7 @@ if ('serviceWorker' in navigator) {
                                 latitude: position.coords.latitude,
                                 longitude: position.coords.longitude
                             };
-                            console.log(classes);
+                            console.log("Classes",classes);
                             // Ensure classes is defined and an array
                             if (classes.length === 0 && classes != "None") {
                                 //basicNotif("Refetching classes","",5000);

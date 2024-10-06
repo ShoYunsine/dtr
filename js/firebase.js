@@ -1747,6 +1747,7 @@ export async function getAttendance(syntax, timezone, id) {
         // Fetch the class data
         const classdata = await fetchClass(syntax);
         const currentDate = DateTime.now().toISODate(); // 'YYYY-MM-DD' format
+        const currentTime = DateTime.now().setZone(timezone); // Get current time in the specified timezone
 
         // Define the document path for the attendance record
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
@@ -1754,11 +1755,25 @@ export async function getAttendance(syntax, timezone, id) {
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
+        // Check if there's attendance data for today
         if (existingAttendance[currentDate]) {
-            console.log('Attendance for today has already been recorded.');
-            return { status: existingAttendance[currentDate].status, time: existingAttendance[currentDate].timeChecked };
+            const morningData = existingAttendance[currentDate].morning;
+            const afternoonData = existingAttendance[currentDate].afternoon;
+
+            // Determine whether to return morning or afternoon data based on the current time
+            if (currentTime.hour < 12) { // Morning before noon
+                return {
+                    status: morningData?.status || "Absent",
+                    time: morningData?.timeChecked || null
+                };
+            } else { // Afternoon after noon
+                return {
+                    status: afternoonData?.status || "Absent",
+                    time: afternoonData?.timeChecked || null
+                };
+            }
         } else {
-            return { status: "Absent" };
+            return { status: "Absent" }; // No attendance data for today
         }
 
     } catch (error) {
@@ -1767,18 +1782,23 @@ export async function getAttendance(syntax, timezone, id) {
     }
 }
 
+
 export async function checkAttendance(syntax, timezone, id) {
     try {
-        await deleteAllAttendanceRecords(timezone, syntax);
-
         const classdata = await fetchClass(syntax);
-        const currentDate = DateTime.now().toISODate();
+        console.log('Class Data:', classdata); // Debugging log
 
+        const currentDate = DateTime.now().toISODate();
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
 
         const classTimezone = classdata.timezone;
         const classTimeInMor = classdata.timeInMor; // Morning class time (e.g., 08:00)
         const classTimeInAft = classdata.timeInAft; // Afternoon class time (e.g., 14:00)
+
+        // Validate class times
+        if (!classTimeInMor || !classTimeInAft) {
+            throw new Error("Invalid class times");
+        }
 
         const currentTime = DateTime.now().setZone(timezone);
 
@@ -1798,47 +1818,57 @@ export async function checkAttendance(syntax, timezone, id) {
             morningStatus = 'late';
         }
 
-        // Determine afternoon status
-        if (currentTime <= afternoonDateTime) {
-            afternoonStatus = 'present';
-        } else {
-            afternoonStatus = 'late';
-        }
-
-        const morningTimeChecked = currentTime.toFormat('HH:mm');
-        const afternoonTimeChecked = currentTime.toFormat('HH:mm');
-
+        // Initialize afternoon status as existing or absent
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
+        
+        // Check existing attendance for the current date
+        const existingMorning = existingAttendance[currentDate]?.morning;
+        const existingAfternoon = existingAttendance[currentDate]?.afternoon;
 
-        // Update if there's no record for today or if the status was "absent" for either morning or afternoon
+        // Prepare updated attendance object
         const updatedAttendance = {
             ...existingAttendance,
             [currentDate]: {
-                morning: existingAttendance[currentDate]?.morning || {
-                    status: morningStatus,
-                    timeChecked: morningTimeChecked
+                morning: {
+                    status: existingMorning?.status || morningStatus,
+                    timeChecked: null // Initialize timeChecked to null
                 },
-                afternoon: existingAttendance[currentDate]?.afternoon || {
-                    status: afternoonStatus,
-                    timeChecked: afternoonTimeChecked
+                afternoon: {
+                    status: existingAfternoon?.status || 'absent', // Default to absent if no record
+                    timeChecked: null // Initialize timeChecked to null
                 }
             }
         };
+
+        // Set timeChecked for morning if it's morning
+        if (currentTime <= morningDateTime) {
+            updatedAttendance[currentDate].morning.timeChecked = currentTime.toFormat('HH:mm');
+        }
+
+        // Set afternoon status and timeChecked only if after noon
+        if (currentTime > afternoonDateTime) {
+            if (existingAfternoon?.status === 'absent' && !existingAfternoon?.timeChecked) {
+                updatedAttendance[currentDate].afternoon.status = 'late'; // Set to late if previously absent
+                updatedAttendance[currentDate].afternoon.timeChecked = currentTime.toFormat('HH:mm'); // Set timeChecked to current time
+            } else {
+                updatedAttendance[currentDate].afternoon.timeChecked = existingAfternoon?.timeChecked; // Keep existing timeChecked
+            }
+        }
 
         // Save the updated attendance
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
 
         return {
-            morning: { status: morningStatus, time: morningTimeChecked },
-            afternoon: { status: afternoonStatus, time: afternoonTimeChecked }
+            morning: { status: updatedAttendance[currentDate].morning.status, time: updatedAttendance[currentDate].morning.timeChecked },
+            afternoon: { status: updatedAttendance[currentDate].afternoon.status, time: updatedAttendance[currentDate].afternoon.timeChecked }
         };
 
     } catch (error) {
+        console.error("Error checking attendance:", error);
         throw error;
     }
 }
-
 
 
 export async function markAbsent(syntax, id) {
