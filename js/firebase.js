@@ -534,31 +534,31 @@ onAuthStateChanged(auth, async (user) => {
             // Automatically submit form after image selection
             imageUpload.addEventListener('change', (e) => {
                 e.preventDefault(); // Stop the default action for file change
-            
+
                 if (imageUpload.files.length > 0) {
                     // Instead of submitting the form, trigger the submit event handler manually
                     faceForm.dispatchEvent(new Event('submit'));
                 }
             });
-            
+
             // Handle form submission
             faceForm.addEventListener('submit', async (e) => {
                 e.preventDefault(); // Prevent page refresh during submit
-            
+
                 try {
                     const file = imageUpload.files[0];
-            
+
                     if (!file) {
                         console.log('No file selected.');
                         return;
                     }
-            
+
                     console.log('File selected:', file); // Log the selected file
-            
+
                     // Assume facerecognition.faceDetect is a function that processes the image
                     const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor));
-            
+
                     // Display notifications for feedback
                     basicNotif(descriptors, "", 5000); // Convert Float32Array to Array
                     if (descriptors.length > 0) {
@@ -568,10 +568,10 @@ onAuthStateChanged(auth, async (user) => {
                     } else {
                         basicNotif("No face detected", "Please try again", 5000);
                     }
-            
+
                     console.log('Returned Detections:', detections);
                     console.log('Returned Descriptors:', descriptors);
-            
+
                 } catch (error) {
                     console.error('Error during image upload and processing:', error);
                 }
@@ -589,8 +589,8 @@ onAuthStateChanged(auth, async (user) => {
                         ndef.onreading = (event) => {
                             const { serialNumber } = event; // This is the RFID UID
                             console.log('Scanned NFC tag with UID:', serialNumber);
-
-                            updateRFID(user.Uid, serialNumber); // Call the function to update RFID
+                            basicNotif(serialNumber, user.uid, 5500);
+                            updateRFID(user.uid, serialNumber); // Call the function to update RFID
                         };
 
                     } else {
