@@ -591,11 +591,14 @@ onAuthStateChanged(auth, async (user) => {
                             console.log('Scanned NFC tag with UID:', serialNumber);
                             basicNotif(serialNumber, user.uid, 5500);
                             updateRFID(user.uid, serialNumber); // Call the function to update RFID
+                            ndef.onreading = null;
+                            ndef.onerror = null;
+                            console.log('NFC scan stopped.');
                         };
 
                     } else {
                         console.log('NFC is not supported in this browser.');
-                        basicNotif('NFC is not supported in this browser.','', 5500);
+                        basicNotif('NFC is not supported in this browser.', '', 5500);
                     }
                 } catch (error) {
                     console.error('Error during NFC scanning:', error);

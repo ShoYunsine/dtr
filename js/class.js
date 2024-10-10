@@ -128,13 +128,62 @@ document.getElementById('qr-code-reader').addEventListener('click', function (ev
     };
 });
 
-document.getElementById('facescan-button').addEventListener('click', function (event) {
-    if (currentStream) {
-        stopCamera();
-    } else {
-        startCamera2();
-    };
+const facescanButton = document.getElementById('facescan-button');
+
+facescanButton.addEventListener('click', async () => {
+    try {
+        // Check if NDEFReader is supported
+        if ('NDEFReader' in window) {
+            const ndef = new NDEFReader();
+            await ndef.scan(); // Start NFC scan
+            console.log('NFC scan started.');
+
+            // Set up the NFC reading event
+            ndef.onreading = async (event) => {
+                try {
+                    const { serialNumber } = event; // This is the UID of the RFID
+                    console.log('RFID UID:', serialNumber); // Log UID for debugging
+
+                    // Now check Firestore for a matching RFID in 'memberProfiles'
+                    const memberRef = collection(db, 'users');
+                    const q = query(memberRef, where('rfidUid', '==', serialNumber));
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        // If we find a matching user, proceed with attendance check
+                        querySnapshot.forEach((doc) => {
+                            const userData = doc.data();
+                            basicNotif("User found", "", 5000);
+                            console.log('User data found:', userData);
+
+                            // Call checkAttendance for the matched user
+                            checkAttendance(userData.syntax, classroom.timezone, userData.uid);
+                        });
+                    } else {
+                        // If no user is found with the scanned RFID
+                        basicNotif("No user found", "", 5000);
+                        console.log("No matching user found.");
+                    }
+                } catch (error) {
+                    console.error('Error reading NFC data:', error);
+                }
+            };
+
+            // Set up NFC error handling
+            ndef.onerror = (error) => {
+                console.error('NFC reading error:', error);
+                basicNotif("Error reading RFID", "", 5000);
+            };
+        } else {
+            console.error('NFC is not supported in this browser.');
+            basicNotif("NFC not supported", "", 5000);
+        }
+    } catch (error) {
+        console.error('Error initiating NFC scan:', error);
+        basicNotif("Failed to start NFC scan", "", 5000);
+    }
 });
+
 
 function handleCameraError(err) {
     switch (err.name) {
@@ -209,8 +258,8 @@ async function scanQRCode() {
                     console.log(distance)
                     if (distance <= classroom.rad) {
                         const attendance = await checkAttendance(syntax, classroom.timezone, code.data);
-                    updateattendanceList();
-                    console.log(attendance)
+                        updateattendanceList();
+                        console.log(attendance)
                         basicNotif(`Attandance checked`, code.data, 5000);
                     };
                 } else {
@@ -414,24 +463,24 @@ async function updateattendanceList() {
     function updateChart(range, customRange = null) {
         const filteredData = getFilteredData(range, customRange);
         const dates = Object.keys(filteredData).sort((a, b) => new Date(a) - new Date(b));
-    
+
         // Extract data for morning
         const morningPresentData = dates.map(date => filteredData[date]?.morning?.present.count || 0);
         const morningLateData = dates.map(date => filteredData[date]?.morning?.late.count || 0);
         const morningAbsentData = dates.map(date => filteredData[date]?.morning?.absent.count || 0);
-    
+
         // Extract data for afternoon
         const afternoonPresentData = dates.map(date => filteredData[date]?.afternoon?.present.count || 0);
         const afternoonLateData = dates.map(date => filteredData[date]?.afternoon?.late.count || 0);
         const afternoonAbsentData = dates.map(date => filteredData[date]?.afternoon?.absent.count || 0);
-    
+
         const chartType = document.getElementById('chartType').value;
-    
+
         // Destroy the previous chart instance if it exists
         if (attendanceChart) {
             attendanceChart.destroy();
         }
-    
+
         const ctx = document.getElementById('attendanceChart').getContext('2d');
         attendanceChart = new Chart(ctx, {
             type: chartType, // Use the selected chart type
@@ -526,8 +575,8 @@ async function updateattendanceList() {
             }
         });
     }
-    
-    
+
+
 
     document.getElementById('dateRange').addEventListener('change', function () {
         const selectedRange = this.value;
