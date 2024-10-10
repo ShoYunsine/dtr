@@ -595,6 +595,7 @@ onAuthStateChanged(auth, async (user) => {
 
                     } else {
                         console.log('NFC is not supported in this browser.');
+                        basicNotif('NFC is not supported in this browser.','', 5500);
                     }
                 } catch (error) {
                     console.error('Error during NFC scanning:', error);
