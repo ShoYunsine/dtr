@@ -27,7 +27,7 @@
       <label for="sidebar-toggle" class="sidebar-button">☰</label>
     </div>
     <div class="nav-links">
-      
+
       <a id="account"><img id="accountImg" src="Images/gear.png"></img></a>
     </div>
   </div>
@@ -43,21 +43,36 @@
             <div id="accountEmail">·</div>
           </div>
         </li>
-        <li><a>Save Face</a>
-          <form id="faceForm">
-            <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
-            <input type="file" id="imageUpload" accept="image/*" name="faceImage">
-            <button form="faceForm" type="submit" id="uploadFaceData">Save Face</button>
-          </form>
-        </li>
         <li>
-          <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
-      <div class="switch">
-        <input type="checkbox" id="darkModeToggle">
-        <label for="darkModeToggle" class="switch-slider"></label>
-      </div>
+          <a>Profile</a>
+          <ul class="classList">
+            <li class="list-item">
+              <div>
+                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                </form>
+                <a class="classPfp" id="updateFaceBtn"><i id="icon" class="fa-solid fa-user"></i></a>
+                <p>Update Face</p>
+              </div>
+            </li>
+            <li class="list-item">
+              <div>
+                <a class="classPfp" id="registerRFIDBtn"><i id="icon" class="fa-solid fa-id-card"></i></a>
+                <p>Register RFID</p>
+              </div>
+            </li>
+          </ul>
         </li>
         
+        <li>
+          <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
+          <div class="switch">
+            <input type="checkbox" id="darkModeToggle">
+            <label for="darkModeToggle" class="switch-slider"></label>
+          </div>
+        </li>
+
         <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
       </ul>
     </nav>
@@ -67,21 +82,21 @@
       <ul id="classList">
         <li class="list-item">
           <div>
-              <a href="classes.html" id="classPfp">+</a>
-              <p>Add Class</p>
-          </div> 
-      </li>
+            <a href="classes.html" id="classPfp">+</a>
+            <p>Add Class</p>
+          </div>
+        </li>
       </ul>
     </div>
     <div class="form-section" style="padding:0;">
       <div id="postList" class="attendanceList" style="display:block;">
         <ul id="posts">
-          
+
         </ul>
       </div>
     </div>
   </div>
-  <div id="notifs">   
+  <div id="notifs">
   </div>
   <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/index.js"></script>

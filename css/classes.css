@@ -11,7 +11,7 @@
   text-align: center;
 }
 
-#classList {
+#classList, .classList {
   display: flex;
   max-height: 348px;
   overflow-x: auto;
@@ -22,8 +22,20 @@
   gap: 8px;
 }
 
+.classList div p {
+  margin-top: 10px;
+}
+
+#icon {
+  margin: 0;
+  color: var(--text-color-main);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
 #classList li:first-child {
-margin:  0 8px;
+margin:  0 16px;
 }
 
 #qrscanner-container {
@@ -297,7 +309,7 @@ margin:  0 8px;
 }
 
 
-#classPfp{
+#classPfp, .classPfp{
   font-size: 20px;
   border-radius: 100%;
   padding: 15px;

@@ -51,12 +51,28 @@
             <div id="accountEmail">·</div>
           </div>
         </li>
-        <li><a>Save Face</a>
-          <form id="faceForm">
-            <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
-            <input type="file" id="imageUpload" accept="image/*" name="faceImage">
-            <button form="faceForm" type="submit" id="uploadFaceData">Save Face</button>
-          </form></li>
+        <li>
+          <a>Profile</a>
+          <ul class="classList">
+            <li class="list-item">
+              <div>
+                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                </form>
+                <a class="classPfp" id="updateFaceBtn"><i id="icon" class="fa-solid fa-user"></i></a>
+                <p>Update Face</p>
+              </div>
+            </li>
+            <li class="list-item">
+              <div>
+                <a class="classPfp" id="registerRFIDBtn"><i id="icon" class="fa-solid fa-id-card"></i></a>
+                <p>Register RFID</p>
+              </div>
+            </li>
+          </ul>
+        </li>
+        
           <li>
             <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
         <div class="switch">

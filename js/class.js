@@ -206,7 +206,7 @@ async function scanQRCode() {
                         classroom.lat,
                         classroom.long
                     );
-                    
+                    console.log(distance)
                     if (distance <= classroom.rad) {
                         const attendance = await checkAttendance(syntax, classroom.timezone, code.data);
                     updateattendanceList();

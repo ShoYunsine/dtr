@@ -108,17 +108,17 @@ onAuthStateChanged(auth, async (user) => {
                     description = description.replace(/(@[\w_\.]+)/g, function (match) {
                         return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
                     });
-                    
+
                     // Wrap #hashtags with <span> tags
                     description = description.replace(/(#[\w_\.]+)/g, function (match) {
                         return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
                     });
-                    
+
                     // Make text between * bold
                     description = description.replace(/\*(.*?)\*/g, function (match, content) {
                         return `<strong>${content}</strong>`;
                     });
-                    
+
                     // Make text between *^ very bold
                     description = description.replace(/\+\+(.*?)\+\+/g, function (match, content) {
                         return `<b style="font-weight: bold; font-size: 1.1em;">${content}</b>`; // Using <b> for very bold
@@ -127,7 +127,7 @@ onAuthStateChanged(auth, async (user) => {
                     description = description.replace(/\/\/(.*?)\/\//g, function (match, content) {
                         return `<i>${content}</i>`;
                     });
-                    
+
                     // Change font size using ^n (e.g., ^2(text))
                     description = description.replace(/\^(\d+)\((.*?)\)/g, function (match, size, content) {
                         return `<span style="font-size: ${size}em;">${content}</span>`;
@@ -402,7 +402,7 @@ onAuthStateChanged(auth, async (user) => {
                     if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
                         template.querySelector('#deletePost').addEventListener('click', async (event) => {
                             const postId = event.target.getAttribute('data-post-id');
-                            await deletePost(postId,syntax); // Add deletePost function to remove the post
+                            await deletePost(postId, syntax); // Add deletePost function to remove the post
                             cancelFunction(template);
                         });
                     };
@@ -511,7 +511,7 @@ onAuthStateChanged(auth, async (user) => {
 
         };
         if (typeof on_login == 'undefined') {
-            updateProfile(user.displayName, user.email, user.uid, user.photoURL);
+            updateProfile(user.displayName, user.email, user.uid, user.photoURL, user.rfidUid);
             const qrcode = `${user.uid}`
             const parts = qrcode.split('/');
             console.log(parts);
@@ -521,39 +521,85 @@ onAuthStateChanged(auth, async (user) => {
                 signOutAccount();
             });
 
-            document.getElementById('faceForm').addEventListener('submit', async function (event) {
-                event.preventDefault(); // Prevent the default form submission
+            // Handle face image upload and form submission
+            const imageUpload = document.getElementById('imageUpload');
+            const updateFaceBtn = document.getElementById('updateFaceBtn');
+            const faceForm = document.getElementById('faceForm');
 
-                console.log('Form submitted'); // Check if form submission is captured
+            updateFaceBtn.addEventListener('click', () => {
+                // Trigger the file input click when "Update Face" is clicked
+                imageUpload.click();
+            });
 
+            // Automatically submit form after image selection
+            imageUpload.addEventListener('change', (e) => {
+                e.preventDefault(); // Stop the default action for file change
+            
+                if (imageUpload.files.length > 0) {
+                    // Instead of submitting the form, trigger the submit event handler manually
+                    faceForm.dispatchEvent(new Event('submit'));
+                }
+            });
+            
+            // Handle form submission
+            faceForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Prevent page refresh during submit
+            
                 try {
-                    const fileInput = document.getElementById('imageUpload');
-                    const file = fileInput.files[0];
-
+                    const file = imageUpload.files[0];
+            
                     if (!file) {
                         console.log('No file selected.');
                         return;
                     }
-
-                    console.log('File selected:', file); // Log selected file
-
+            
+                    console.log('File selected:', file); // Log the selected file
+            
+                    // Assume facerecognition.faceDetect is a function that processes the image
                     const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor));
-                    basicNotif(descriptors, "", 5000);// Convert Float32Array to Array
-                    if (descriptors) {
+            
+                    // Display notifications for feedback
+                    basicNotif(descriptors, "", 5000); // Convert Float32Array to Array
+                    if (descriptors.length > 0) {
                         basicNotif("Face saved", "Face for user has been saved", 5000);
+                        // Save descriptors to Firebase
                         saveDescriptorsToFirebase(descriptors);
                     } else {
                         basicNotif("No face detected", "Please try again", 5000);
                     }
+            
                     console.log('Returned Detections:', detections);
                     console.log('Returned Descriptors:', descriptors);
-                    // Do something with the detections, like processing or displaying them
+            
                 } catch (error) {
                     console.error('Error during image upload and processing:', error);
                 }
             });
+            // Handle RFID registration and NFC scanning
+            const registerRFIDBtn = document.getElementById('registerRFIDBtn');
 
+            registerRFIDBtn.addEventListener('click', async () => {
+                try {
+                    if ('NDEFReader' in window) {
+                        const ndef = new NDEFReader();
+                        await ndef.scan();
+                        console.log('NFC scanning started...');
+
+                        ndef.onreading = (event) => {
+                            const { serialNumber } = event; // This is the RFID UID
+                            console.log('Scanned NFC tag with UID:', serialNumber);
+
+                            updateRFID(user.Uid, serialNumber); // Call the function to update RFID
+                        };
+
+                    } else {
+                        console.log('NFC is not supported in this browser.');
+                    }
+                } catch (error) {
+                    console.error('Error during NFC scanning:', error);
+                }
+            });
 
         }
         const account = document.getElementById('account');
@@ -578,17 +624,17 @@ onAuthStateChanged(auth, async (user) => {
                 description = description.replace(/(@[\w_\.]+)/g, function (match) {
                     return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
                 });
-                
+
                 // Wrap #hashtags with <span> tags
                 description = description.replace(/(#[\w_\.]+)/g, function (match) {
                     return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
                 });
-                
+
                 // Make text between * bold
                 description = description.replace(/\*(.*?)\*/g, function (match, content) {
                     return `<strong>${content}</strong>`;
                 });
-                
+
                 // Make text between *^ very bold
                 description = description.replace(/\+\+(.*?)\+\+/g, function (match, content) {
                     return `<b style="font-weight: bold; font-size: 1.1em;">${content}</b>`; // Using <b> for very bold
@@ -597,7 +643,7 @@ onAuthStateChanged(auth, async (user) => {
                 description = description.replace(/\/\/(.*?)\/\//g, function (match, content) {
                     return `<i>${content}</i>`;
                 });
-                
+
                 // Change font size using ^n (e.g., ^2(text))
                 description = description.replace(/\^(\d+)\((.*?)\)/g, function (match, size, content) {
                     return `<span style="font-size: ${size}em;">${content}</span>`;
@@ -676,29 +722,29 @@ onAuthStateChanged(auth, async (user) => {
                     likeCheckbox.checked = true;
                 }
                 const desc = template.querySelector('#desc');
-                    const toggleText = template.querySelector('#toggleText');
-                    const toggleTextShow = template.querySelector('#toggleTextShow');
-                    console.log(desc.scrollHeight > 110);
-                    if (desc.scrollHeight > 110) {
+                const toggleText = template.querySelector('#toggleText');
+                const toggleTextShow = template.querySelector('#toggleTextShow');
+                console.log(desc.scrollHeight > 110);
+                if (desc.scrollHeight > 110) {
+                    desc.style.height = '110px';
+                    toggleText.style.display = 'inline';
+                    toggleTextShow.style.display = 'none'; // Hide "Show Less" by default
+                } else {
+                    // Hide the toggle buttons if content doesn't overflow
+                    toggleText.style.display = 'none';
+                    toggleTextShow.style.display = 'none';
+                }
+                template.querySelector('#toggle').addEventListener('change', function () {
+                    if (this.checked) {
+                        desc.style.height = `${desc.scrollHeight}px`;
+                        toggleText.style.display = 'none';
+                        toggleTextShow.style.display = 'inline';
+                    } else {
                         desc.style.height = '110px';
                         toggleText.style.display = 'inline';
-                        toggleTextShow.style.display = 'none'; // Hide "Show Less" by default
-                    } else {
-                        // Hide the toggle buttons if content doesn't overflow
-                        toggleText.style.display = 'none';
                         toggleTextShow.style.display = 'none';
                     }
-                    template.querySelector('#toggle').addEventListener('change', function () {
-                        if (this.checked) {
-                            desc.style.height = `${desc.scrollHeight}px`;
-                            toggleText.style.display = 'none';
-                            toggleTextShow.style.display = 'inline';
-                        } else {
-                            desc.style.height = '110px';
-                            toggleText.style.display = 'inline';
-                            toggleTextShow.style.display = 'none';
-                        }
-                    });
+                });
 
                 // Toggle like status on checkbox change
                 likeCheckbox.addEventListener('change', async () => {
@@ -865,7 +911,7 @@ onAuthStateChanged(auth, async (user) => {
                 if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
                     template.querySelector('#deletePost').addEventListener('click', async (event) => {
                         const postId = event.target.getAttribute('data-post-id');
-                        await deletePost(postId,syntax); // Add deletePost function to remove the post
+                        await deletePost(postId, syntax); // Add deletePost function to remove the post
                         cancelFunction(template);
                     });
                 };
@@ -960,21 +1006,37 @@ function checkpasswordlength(password) {
     }
 }
 
-async function updateProfile(displayName, email, uid, photoUrl) {
+async function updateRFID(uid, rfidUid) {
+    const userDocRef = doc(db, 'users', uid);
+    await setDoc(userDocRef, {
+        rfidUid: rfidUid || null // Save only RFID UID (null if not provided)
+    }, { merge: true })
+        .then(() => {
+            console.log('RFID UID updated successfully');
+        })
+        .catch((error) => {
+            console.error('Error updating RFID UID:', error);
+        });
+}
+
+
+async function updateProfile(displayName, email, uid, photoUrl, rfidUid) {
     const userDocRef = doc(db, 'users', uid);
     await setDoc(userDocRef, {
         displayName: displayName || 'Anonymous',
         email: email,
         uid: uid,
-        photoUrl: photoUrl || 'None'
+        photoUrl: photoUrl || 'None',
+        rfidUid: rfidUid || null // Save RFID UID (null if not provided)
     }, { merge: true })
         .then(() => {
-            console.log('Profile updated successfully');
+            console.log('Profile updated successfully with RFID UID');
         })
         .catch((error) => {
             console.error('Error updating profile:', error);
         });
 }
+
 
 export async function saveDescriptorsToFirebase(descriptors) {
     const uid = currentUser.uid;
@@ -1809,19 +1871,10 @@ export async function checkAttendance(syntax, timezone, id) {
         const afternoonTime = DateTime.fromFormat(classTimeInAft, 'HH:mm', { zone: classTimezone });
         const afternoonDateTime = afternoonTime.set({ year: currentTime.year, month: currentTime.month, day: currentTime.day });
 
-        let morningStatus, afternoonStatus;
-
-        // Determine morning status
-        if (currentTime <= morningDateTime) {
-            morningStatus = 'present';
-        } else {
-            morningStatus = 'late';
-        }
-
-        // Initialize afternoon status as existing or absent
+        // Fetch existing attendance document
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
-        
+
         // Check existing attendance for the current date
         const existingMorning = existingAttendance[currentDate]?.morning;
         const existingAfternoon = existingAttendance[currentDate]?.afternoon;
@@ -1830,30 +1883,27 @@ export async function checkAttendance(syntax, timezone, id) {
         const updatedAttendance = {
             ...existingAttendance,
             [currentDate]: {
-                morning: {
-                    status: existingMorning?.status || morningStatus,
-                    timeChecked: null // Initialize timeChecked to null
-                },
-                afternoon: {
-                    status: existingAfternoon?.status || 'absent', // Default to absent if no record
-                    timeChecked: null // Initialize timeChecked to null
-                }
+                morning: existingMorning || { status: 'absent', timeChecked: null },
+                afternoon: existingAfternoon || { status: 'absent', timeChecked: null }
             }
         };
 
-        // Set timeChecked for morning if it's morning
+        // Update morning status if it's morning and hasn't been marked yet
         if (currentTime <= morningDateTime) {
-            updatedAttendance[currentDate].morning.timeChecked = currentTime.toFormat('HH:mm');
+            const morningStatus = currentTime <= morningDateTime ? 'present' : 'late';
+            updatedAttendance[currentDate].morning = {
+                status: existingMorning?.status || morningStatus,
+                timeChecked: existingMorning?.timeChecked || currentTime.toFormat('HH:mm')
+            };
         }
 
-        // Set afternoon status and timeChecked only if after noon
+        // Update afternoon status only if it's afternoon and hasn't been marked yet
         if (currentTime > afternoonDateTime) {
-            if (existingAfternoon?.status === 'absent' && !existingAfternoon?.timeChecked) {
-                updatedAttendance[currentDate].afternoon.status = 'late'; // Set to late if previously absent
-                updatedAttendance[currentDate].afternoon.timeChecked = currentTime.toFormat('HH:mm'); // Set timeChecked to current time
-            } else {
-                updatedAttendance[currentDate].afternoon.timeChecked = existingAfternoon?.timeChecked; // Keep existing timeChecked
-            }
+            const afternoonStatus = existingAfternoon?.status === 'absent' ? 'late' : existingAfternoon?.status;
+            updatedAttendance[currentDate].afternoon = {
+                status: afternoonStatus,
+                timeChecked: existingAfternoon?.timeChecked || currentTime.toFormat('HH:mm')
+            };
         }
 
         // Save the updated attendance
@@ -1882,13 +1932,13 @@ export async function markAbsent(syntax, id) {
         const currentAttendance = existingAttendance[currentDate] || {};
 
         // If morning attendance is already 'present' or 'late', don't overwrite it with 'absent'
-        const morningStatus = currentAttendance.morning && currentAttendance.morning.status !== 'absent' 
-            ? currentAttendance.morning.status 
+        const morningStatus = currentAttendance.morning && currentAttendance.morning.status !== 'absent'
+            ? currentAttendance.morning.status
             : 'absent';
 
         // If afternoon attendance is already 'present' or 'late', don't overwrite it with 'absent'
-        const afternoonStatus = currentAttendance.afternoon && currentAttendance.afternoon.status !== 'absent' 
-            ? currentAttendance.afternoon.status 
+        const afternoonStatus = currentAttendance.afternoon && currentAttendance.afternoon.status !== 'absent'
+            ? currentAttendance.afternoon.status
             : 'absent';
 
         const updatedAttendance = {
@@ -2023,7 +2073,7 @@ function convertTo12Hour(militaryTime) {
 };
 
 export async function emailTagged(taggedemail, classroomname, user, desc, href) {
-    
+
     const emailParams = {
         tagged_email: taggedemail,
         classroomName: classroomname,
@@ -2072,7 +2122,7 @@ export async function postPost(email, img, currentDate, currentTime, description
     }
 }
 
-export async function deletePost(postId,syntax) {
+export async function deletePost(postId, syntax) {
     try {
         const postDocRef = doc(db, 'posts', postId);
         const postSnapshot = await getDoc(postDocRef);

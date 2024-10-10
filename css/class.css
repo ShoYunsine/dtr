@@ -416,6 +416,12 @@
   font-size: 12px;
 }
 
+#desc+label+label+label {
+  color: var(--text-color-second);
+  margin-left: 10px;
+  font-size: 12px;
+}
+
 
 #post p {
   margin-top: 0;
