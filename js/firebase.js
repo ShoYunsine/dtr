@@ -511,7 +511,7 @@ onAuthStateChanged(auth, async (user) => {
 
         };
         if (typeof on_login == 'undefined') {
-            updateProfile(user.displayName, user.email, user.uid, user.photoURL, user.rfidUid);
+            updateProfile(user.displayName, user.email, user.uid, user.photoURL);
             const qrcode = `${user.uid}`
             const parts = qrcode.split('/');
             console.log(parts);
@@ -1024,14 +1024,13 @@ async function updateRFID(uid, rfidUid) {
 }
 
 
-async function updateProfile(displayName, email, uid, photoUrl, rfidUid) {
+async function updateProfile(displayName, email, uid, photoUrl) {
     const userDocRef = doc(db, 'users', uid);
     await setDoc(userDocRef, {
         displayName: displayName || 'Anonymous',
         email: email,
         uid: uid,
-        photoUrl: photoUrl || 'None',
-        rfidUid: rfidUid || null // Save RFID UID (null if not provided)
+        photoUrl: photoUrl || 'None'
     }, { merge: true })
         .then(() => {
             console.log('Profile updated successfully with RFID UID');
