@@ -143,7 +143,7 @@ facescanButton.addEventListener('click', async () => {
                 try {
                     const { serialNumber } = event; // This is the UID of the RFID
                     console.log('RFID UID:', serialNumber); // Log UID for debugging
-
+                    basicNotif("RFID UID:", serialNumber, 5000);
                     // Now check Firestore for a matching RFID in 'memberProfiles'
                     const memberRef = collection(db, 'users');
                     const q = query(memberRef, where('rfidUid', '==', serialNumber));
