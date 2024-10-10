@@ -137,13 +137,12 @@ facescanButton.addEventListener('click', async () => {
             const ndef = new NDEFReader();
             await ndef.scan(); // Start NFC scan
             console.log('NFC scan started.');
-
+            basicNotif("NFC scanning started...","Please place RFID to scan", 5500);
             // Set up the NFC reading event
             ndef.onreading = async (event) => {
                 try {
                     const { serialNumber } = event; // This is the UID of the RFID
                     console.log('RFID UID:', serialNumber); // Log UID for debugging
-                    basicNotif("RFID UID:", serialNumber, 5000);
                     // Now check Firestore for a matching RFID in 'memberProfiles'
                     const memberRef = collection(db, 'users');
                     const q = query(memberRef, where('rfidUid', '==', serialNumber));
@@ -153,12 +152,19 @@ facescanButton.addEventListener('click', async () => {
                         // If we find a matching user, proceed with attendance check
                         querySnapshot.forEach( async (doc) => {
                             const userData = doc.data();
-                            basicNotif("User found", userData.uid, 5000);
-                            console.log('User data found:', userData);
-
-                            // Call checkAttendance for the matched user
-                            await checkAttendance(syntax, classroom.timezone, userData.uid);
-                            updateattendanceList();
+                            const mememberData = await fetchMember(syntax, userData.uid)
+                            if (mememberData) {
+                                basicNotif("Member found", userData.displayName, 5000);
+                                console.log('User data found:', userData);
+                                ndef.onreading = null;
+                                ndef.onerror = null;
+                                // Call checkAttendance for the matched user
+                                await checkAttendance(syntax, classroom.timezone, userData.uid);
+                                basicNotif("Member attendance checked succesfully", `User ${userData.displayName}'s attedance has been checked.`, 5000);
+                                updateattendanceList();
+                            } else {
+                                basicNotif("Not a member of class",`User ${userData.displayName} is not a member for this class.`, 5000);
+                            }
                         });
                     } else {
                         // If no user is found with the scanned RFID

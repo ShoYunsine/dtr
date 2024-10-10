@@ -585,11 +585,11 @@ onAuthStateChanged(auth, async (user) => {
                         const ndef = new NDEFReader();
                         await ndef.scan();
                         console.log('NFC scanning started...');
-
+                        basicNotif("NFC scanning started...","Please place RFID to scan", 5500);
                         ndef.onreading = (event) => {
                             const { serialNumber } = event; // This is the RFID UID
                             console.log('Scanned NFC tag with UID:', serialNumber);
-                            basicNotif(serialNumber, user.uid, 5500);
+                            basicNotif("Scan complete",`${serialNumber} for user ${user.displayName} has been saved`, 5500);
                             updateRFID(user.uid, serialNumber); // Call the function to update RFID
                             ndef.onreading = null;
                             ndef.onerror = null;
@@ -1866,12 +1866,9 @@ export async function checkAttendance(syntax, timezone, id) {
 
         const currentTime = DateTime.now().setZone(timezone);
 
-        // Check for both morning and afternoon attendance
+        // Convert class times to DateTime objects
         const morningTime = DateTime.fromFormat(classTimeInMor, 'HH:mm', { zone: classTimezone });
-        const morningDateTime = morningTime.set({ year: currentTime.year, month: currentTime.month, day: currentTime.day });
-
         const afternoonTime = DateTime.fromFormat(classTimeInAft, 'HH:mm', { zone: classTimezone });
-        const afternoonDateTime = afternoonTime.set({ year: currentTime.year, month: currentTime.month, day: currentTime.day });
 
         // Fetch existing attendance document
         const docSnapshot = await getDoc(attendanceDoc);
@@ -1886,22 +1883,37 @@ export async function checkAttendance(syntax, timezone, id) {
             }
         };
 
-        // Update morning status if it's before or during morning class time and hasn't been marked yet
-        if (currentTime <= morningDateTime) {
-            const morningStatus = existingAttendance[currentDate]?.morning?.status || 'present';
-            updatedAttendance[currentDate].morning = {
-                status: morningStatus,
-                timeChecked: existingAttendance[currentDate]?.morning?.timeChecked || currentTime.toFormat('HH:mm')
-            };
-        } 
-
-        // Update afternoon status only if it's after afternoon class time and hasn't been marked yet
-        if (currentTime > afternoonDateTime) {
-            const afternoonStatus = existingAttendance[currentDate]?.afternoon?.status === 'absent' ? 'late' : existingAttendance[currentDate]?.afternoon?.status;
-            updatedAttendance[currentDate].afternoon = {
-                status: afternoonStatus || 'present',
-                timeChecked: existingAttendance[currentDate]?.afternoon?.timeChecked || currentTime.toFormat('HH:mm')
-            };
+        // Check if it's past noon
+        if (currentTime.hour >= 12) {
+            // It's afternoon time
+            if (currentTime > afternoonTime) {
+                // Current time is after afternoon time
+                if (updatedAttendance[currentDate].afternoon.status === 'absent') {
+                    updatedAttendance[currentDate].afternoon.status = 'late';
+                    updatedAttendance[currentDate].afternoon.timeChecked = currentTime.toFormat('HH:mm');
+                }
+            } else {
+                // Current time is before or at afternoon time
+                if (updatedAttendance[currentDate].afternoon.status === 'absent') {
+                    updatedAttendance[currentDate].afternoon.status = 'present';
+                    updatedAttendance[currentDate].afternoon.timeChecked = currentTime.toFormat('HH:mm');
+                }
+            }
+        } else {
+            // It's morning time
+            if (currentTime > morningTime) {
+                // Current time is after morning time
+                if (updatedAttendance[currentDate].morning.status === 'absent') {
+                    updatedAttendance[currentDate].morning.status = 'late';
+                    updatedAttendance[currentDate].morning.timeChecked = currentTime.toFormat('HH:mm');
+                }
+            } else {
+                // Current time is before or at morning time
+                if (updatedAttendance[currentDate].morning.status === 'absent') {
+                    updatedAttendance[currentDate].morning.status = 'present';
+                    updatedAttendance[currentDate].morning.timeChecked = currentTime.toFormat('HH:mm');
+                }
+            }
         }
 
         // Save the updated attendance
@@ -1917,6 +1929,7 @@ export async function checkAttendance(syntax, timezone, id) {
         throw error;
     }
 }
+
 
 
 
