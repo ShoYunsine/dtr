@@ -20,7 +20,7 @@ luxonScript.onload = function () {
     DateTime = window.luxon.DateTime;
 }
 
-import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 import "https://cdn.jsdelivr.net/npm/chart.js";
