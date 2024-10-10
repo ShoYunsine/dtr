@@ -151,13 +151,14 @@ facescanButton.addEventListener('click', async () => {
 
                     if (!querySnapshot.empty) {
                         // If we find a matching user, proceed with attendance check
-                        querySnapshot.forEach((doc) => {
+                        querySnapshot.forEach( async (doc) => {
                             const userData = doc.data();
-                            basicNotif("User found", "", 5000);
+                            basicNotif("User found", userData.uid, 5000);
                             console.log('User data found:', userData);
 
                             // Call checkAttendance for the matched user
-                            checkAttendance(userData.syntax, classroom.timezone, userData.uid);
+                            await checkAttendance(syntax, classroom.timezone, userData.uid);
+                            updateattendanceList();
                         });
                     } else {
                         // If no user is found with the scanned RFID

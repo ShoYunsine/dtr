@@ -1847,7 +1847,6 @@ export async function getAttendance(syntax, timezone, id) {
     }
 }
 
-
 export async function checkAttendance(syntax, timezone, id) {
     try {
         const classdata = await fetchClass(syntax);
@@ -1878,34 +1877,30 @@ export async function checkAttendance(syntax, timezone, id) {
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
-        // Check existing attendance for the current date
-        const existingMorning = existingAttendance[currentDate]?.morning;
-        const existingAfternoon = existingAttendance[currentDate]?.afternoon;
-
         // Prepare updated attendance object
         const updatedAttendance = {
             ...existingAttendance,
             [currentDate]: {
-                morning: existingMorning || { status: 'absent', timeChecked: null },
-                afternoon: existingAfternoon || { status: 'absent', timeChecked: null }
+                morning: existingAttendance[currentDate]?.morning || { status: 'absent', timeChecked: null },
+                afternoon: existingAttendance[currentDate]?.afternoon || { status: 'absent', timeChecked: null }
             }
         };
 
-        // Update morning status if it's morning and hasn't been marked yet
+        // Update morning status if it's before or during morning class time and hasn't been marked yet
         if (currentTime <= morningDateTime) {
-            const morningStatus = currentTime <= morningDateTime ? 'present' : 'late';
+            const morningStatus = existingAttendance[currentDate]?.morning?.status || 'present';
             updatedAttendance[currentDate].morning = {
-                status: existingMorning?.status || morningStatus,
-                timeChecked: existingMorning?.timeChecked || currentTime.toFormat('HH:mm')
+                status: morningStatus,
+                timeChecked: existingAttendance[currentDate]?.morning?.timeChecked || currentTime.toFormat('HH:mm')
             };
-        }
+        } 
 
-        // Update afternoon status only if it's afternoon and hasn't been marked yet
+        // Update afternoon status only if it's after afternoon class time and hasn't been marked yet
         if (currentTime > afternoonDateTime) {
-            const afternoonStatus = existingAfternoon?.status === 'absent' ? 'late' : existingAfternoon?.status;
+            const afternoonStatus = existingAttendance[currentDate]?.afternoon?.status === 'absent' ? 'late' : existingAttendance[currentDate]?.afternoon?.status;
             updatedAttendance[currentDate].afternoon = {
-                status: afternoonStatus,
-                timeChecked: existingAfternoon?.timeChecked || currentTime.toFormat('HH:mm')
+                status: afternoonStatus || 'present',
+                timeChecked: existingAttendance[currentDate]?.afternoon?.timeChecked || currentTime.toFormat('HH:mm')
             };
         }
 
@@ -1922,6 +1917,7 @@ export async function checkAttendance(syntax, timezone, id) {
         throw error;
     }
 }
+
 
 
 export async function markAbsent(syntax, id) {
