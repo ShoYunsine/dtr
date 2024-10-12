@@ -328,6 +328,7 @@ function capitalizeFirstLetter(str) {
 async function updateattendanceList() {
     const currentUserLogged = await getCurrentUser();
     const currentMember = await fetchMember(syntax, currentUserLogged.uid);
+    let currentmember = currentMember;
     members = await fetchMembers(syntax);
     const attendanceList = document.getElementById('attendance-List');
 
@@ -382,9 +383,33 @@ async function updateattendanceList() {
             listItem.classList.add('list-item');
             listItem.innerHTML = `
                 <div class="${statusClass}">
+                <img src=${memberData.photoUrl}></img>
                     <h3>${memberData.displayName}</h3>
                     <p>${capitalizeFirstLetter(status || 'Absent')}<br>${time}</p>
-                </div>`;
+                    
+                </div>
+                <div>
+                
+                ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.id !== currentUserLogged.uid ? `<label for="memberoptions${memberData.uid}"><i class="fa-solid fa-ellipsis"></i></label>` : ""}
+                </div>
+                <input class="option" type="checkbox" style="display: none;" id="memberoptions${memberData.uid}">
+                <div id="memberoptions">
+                ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
+${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.role !== 'admin'
+                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
+${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.role === 'admin'
+                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
+        ${(currentmember.role === 'owner' && member.id !== currentUserLogged.uid) ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="give-owner"><i id="i" class="fa-solid fa-arrow-right-arrow-left"></i> Transfer Ownership</button>` : ''}
+                </div>
+                `;
             attendanceList.appendChild(listItem);
         } catch (error) {
             console.error(`Failed to fetch profile for member with ID ${member.id}:`, error);
@@ -436,12 +461,36 @@ async function updateattendanceList() {
     
                 // Create list item for the member
                 const listItem = document.createElement('li');
-                listItem.classList.add('list-item');
-                listItem.innerHTML = `
-                    <div class="${statusClass}">
-                        <h3>${displayName}</h3>
-                        <p>${capitalizeFirstLetter(attendanceStatus)}<br>${time}</p>
-                    </div>`;
+            listItem.classList.add('list-item');
+            listItem.innerHTML = `
+                <div class="${statusClass}">
+                <img src=${memberData.photoUrl}></img>
+                    <h3>${memberData.displayName}</h3>
+                    <p>${capitalizeFirstLetter(status || 'Absent')}<br>${time}</p>
+                    
+                </div>
+                <div>
+                
+                ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.id !== currentUserLogged.uid ? `<label for="memberoptions${memberData.uid}"><i class="fa-solid fa-ellipsis"></i></label>` : ""}
+                </div>
+                <input class="option" type="checkbox" style="display: none;" id="memberoptions${memberData.uid}">
+                <div id="memberoptions">
+                ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
+${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.role !== 'admin'
+                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
+${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                    && member.role !== 'owner'
+                    && member.role === 'admin'
+                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
+        ${(currentmember.role === 'owner' && member.id !== currentUserLogged.uid) ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="give-owner"><i id="i" class="fa-solid fa-arrow-right-arrow-left"></i> Transfer Ownership</button>` : ''}
+                </div>
+                `;
                 attendanceList.appendChild(listItem);
             } catch (error) {
                 console.error(`Failed to fetch profile for member with ID ${memberId}:`, error);
@@ -803,7 +852,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-document.getElementById('memberList').addEventListener('click', async function (event) {
+document.getElementById('attendance-List').addEventListener('click', async function (event) {
     if (event.target.classList.contains('remove-btn')) {
         var listItem = event.target.closest('li');
         var btn = event.target;

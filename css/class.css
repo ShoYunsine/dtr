@@ -85,7 +85,7 @@
   width: 100%;
   padding: 12px 0;
   gap: 10px;
-  z-index: 10000;
+  z-index: 99;
   justify-content: flex-end;
   background-color: var(--background-color);
   border-top: 1px solid var(--border-color);
@@ -154,7 +154,8 @@
   justify-self: flex-end;
 }
 
-#postOptions,
+#postOptions, 
+#memberoptions,
 .commentBlock #postOptions,
 #commentSection,
 .comments {
@@ -167,7 +168,7 @@
   bottom: -100%;
   background-color: var(--background-color);
   height: auto;
-  z-index: 1000000;
+  z-index: 100;
   border-radius: 15px 15px 0 0;
   border: 1px solid var(--border-color);
   transition: 0.3s;
@@ -599,6 +600,7 @@
   border: 1px solid var(--border-color);
   border-radius: 100%;
 }
+
 
 
 #camera-button,
