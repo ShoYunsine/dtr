@@ -43,7 +43,9 @@ import {
     deleteField,
     increment,
     addDoc,
-    limit
+    limit,
+    arrayUnion,
+    arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import { basicNotif, confirmNotif } from "./notif.js";
@@ -233,21 +235,30 @@ onAuthStateChanged(auth, async (user) => {
                     });
 
                     // Check if the post is liked by the current user on page load
-                    const userLikes = await fetchUserLikes(user.uid);
-                    if (userLikes.includes(postId)) {
-                        likeCheckbox.checked = true;
+                    const postRef = doc(db, 'posts', postId);
+                    const postSnapshot = await getDoc(postRef);
+
+                    if (postSnapshot.exists()) {
+                        const postData = postSnapshot.data();
+                        const postLikes = postData.userlikes || []; // Get the 'likes' array or an empty array if it doesn't exist
+
+                        if (postLikes.includes(user.uid)) {
+                            likeCheckbox.checked = true; // Check the checkbox if user has liked the post
+                        }
                     }
+
                     // Toggle like status on checkbox change
                     likeCheckbox.addEventListener('change', async () => {
-                        const likestxt = template.querySelector('#likes')
+                        const likestxt = template.querySelector('#likes');
+
                         if (likeCheckbox.checked) {
-                            likestxt.innerHTML = `${likes + 1} likes`
-                            likes = likes + 1
-                            await addToLikedPosts(user.uid, postId); // Add post to user's liked posts
+                            likestxt.innerHTML = `${likes + 1} likes`;
+                            likes = likes + 1;
+                            await addToLikedPosts(user.uid, postId); // Add user ID to the post's likes array
                         } else {
-                            likestxt.innerHTML = `${likes - 1} likes`
-                            likes = likes - 1
-                            await removeFromLikedPosts(user.uid, postId); // Remove post from user's liked posts
+                            likestxt.innerHTML = `${likes - 1} likes`;
+                            likes = likes - 1;
+                            await removeFromLikedPosts(user.uid, postId); // Remove user ID from the post's likes array
                         }
                     });
 
@@ -585,11 +596,11 @@ onAuthStateChanged(auth, async (user) => {
                         const ndef = new NDEFReader();
                         await ndef.scan();
                         console.log('NFC scanning started...');
-                        basicNotif("NFC scanning started...","Please place RFID to scan", 5500);
+                        basicNotif("NFC scanning started...", "Please place RFID to scan", 5500);
                         ndef.onreading = (event) => {
                             const { serialNumber } = event; // This is the RFID UID
                             console.log('Scanned NFC tag with UID:', serialNumber);
-                            basicNotif("Scan complete",`${serialNumber} for user ${user.displayName} has been saved`, 5500);
+                            basicNotif("Scan complete", `${serialNumber} for user ${user.displayName} has been saved`, 5500);
                             updateRFID(user.uid, serialNumber); // Call the function to update RFID
                             ndef.onreading = null;
                             ndef.onerror = null;
@@ -720,11 +731,6 @@ onAuthStateChanged(auth, async (user) => {
                 };
                 const likeCheckbox = template.querySelector(`#like${postId}`);
 
-                // Check if the post is liked by the current user on page load
-                const userLikes = await fetchUserLikes(user.uid);
-                if (userLikes.includes(postId)) {
-                    likeCheckbox.checked = true;
-                }
                 const desc = template.querySelector('#desc');
                 const toggleText = template.querySelector('#toggleText');
                 const toggleTextShow = template.querySelector('#toggleTextShow');
@@ -751,16 +757,30 @@ onAuthStateChanged(auth, async (user) => {
                 });
 
                 // Toggle like status on checkbox change
+                const postRef = doc(db, 'posts', postId);
+                const postSnapshot = await getDoc(postRef);
+
+                if (postSnapshot.exists()) {
+                    const postData = postSnapshot.data();
+                    const postLikes = postData.userlikes || []; // Get the 'likes' array or an empty array if it doesn't exist
+
+                    if (postLikes.includes(user.uid)) {
+                        likeCheckbox.checked = true; // Check the checkbox if user has liked the post
+                    }
+                }
+
+                // Toggle like status on checkbox change
                 likeCheckbox.addEventListener('change', async () => {
-                    const likestxt = template.querySelector('#likes')
+                    const likestxt = template.querySelector('#likes');
+
                     if (likeCheckbox.checked) {
-                        likestxt.innerHTML = `${likes + 1} likes`
-                        likes = likes + 1
-                        await addToLikedPosts(user.uid, postId); // Add post to user's liked posts
+                        likestxt.innerHTML = `${likes + 1} likes`;
+                        likes = likes + 1;
+                        await addToLikedPosts(user.uid, postId); // Add user ID to the post's likes array
                     } else {
-                        likestxt.innerHTML = `${likes - 1} likes`
-                        likes = likes - 1
-                        await removeFromLikedPosts(user.uid, postId); // Remove post from user's liked posts
+                        likestxt.innerHTML = `${likes - 1} likes`;
+                        likes = likes - 1;
+                        await removeFromLikedPosts(user.uid, postId); // Remove user ID from the post's likes array
                     }
                 });
 
@@ -946,24 +966,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Fetch the list of liked post IDs for a user
-export async function fetchUserLikes(userId) {
-    const userLikesRef = collection(db, 'users', userId, 'likedPosts');
-    const userLikesSnapshot = await getDocs(userLikesRef);
-    return userLikesSnapshot.docs.map(doc => doc.id);
-}
-
 // Add a post to the user's liked posts
-export async function addToLikedPosts(userId, postId) {
-    const userLikesRef = doc(db, 'users', userId, 'likedPosts', postId);
-    const postRef = doc(db, 'posts', postId);
-
-    await setDoc(userLikesRef, { postId }); // Store an empty document with the postId as a reference
-
-    await updateDoc(postRef, {
-        likes: increment(1) // Increment the likes count by 1
-    });
-}
 
 export const getPostById = async (postId) => {
     try {
@@ -981,15 +984,51 @@ export const getPostById = async (postId) => {
     }
 };
 
-// Remove a post from the user's liked posts
-export async function removeFromLikedPosts(userId, postId) {
-    const userLikesRef = doc(db, 'users', userId, 'likedPosts', postId);
+// Add a user's ID to the 'likes' array in the post document
+export async function addToLikedPosts(userId, postId) {
     const postRef = doc(db, 'posts', postId);
+
+    await updateDoc(postRef, {
+        userlikes: arrayUnion(userId) // Add the userId to the 'likes' array
+    });
+
+    await updateDoc(postRef, {
+        likes: increment(1) // Increment the likes count by 1
+    });
+}
+
+// Remove a user's ID from the 'likes' array in the post document
+export async function removeFromLikedPosts(userId, postId) {
+    const postRef = doc(db, 'posts', postId);
+
+    await updateDoc(postRef, {
+        userlikes: arrayRemove(userId) // Remove the userId from the 'likes' array
+    });
     await updateDoc(postRef, {
         likes: increment(-1) // Increment the likes count by 1
     });
-    await deleteDoc(userLikesRef);
 }
+export async function addToLikedComment(userId, commentId, postId) {
+    const commentRef = doc(db, 'posts', postId, 'comments', commentId);
+
+    await updateDoc(commentRef, {
+        userlikes: arrayUnion(userId) // Add userId to the 'likes' array of the comment
+    });
+    await updateDoc(commentRef, {
+        likes: increment(1) // Increment the likes count by 1
+    });
+}
+export async function removeFromLikedComment(userId, commentId, postId) {
+    const commentRef = doc(db, 'posts', postId, 'comments', commentId);
+
+    await updateDoc(commentRef, {
+        userlikes: arrayRemove(userId) // Remove userId from the 'likes' array of the comment
+    });
+    await updateDoc(commentRef, {
+        likes: increment(-1) // Increment the likes count by 1
+    });
+}
+
 
 
 function downloadQRCode() {
@@ -2174,7 +2213,7 @@ export async function deletePost(postId, syntax) {
         await deleteDoc(classPostRef);
         console.log(`Post document deleted successfully from class ${syntax}`);
         const storage = getStorage();
-        const imgRef = ref(storage, 'images/' + syntax + '/' + postId); // Unique path
+        const imgRef = ref(storage, 'images/posts/' + postId); // Unique path
         await deleteObject(imgRef);
         console.log('Image deleted successfully from Firebase Storage');
         // Optionally, remove the post item from the DOM
@@ -2249,9 +2288,12 @@ export async function displayComments(postId) {
             // Format the timestamp using your existing function
             const timeDisplay = formatTimeDifference(comment.timestamp); // Use existing formatTimeDifference function
 
+            // Check if the current user has liked the comment
+            const hasLiked = comment.userlikes && comment.userlikes.includes(currentUser.uid);
+
             // Create the structure for displaying comment
             commentElement.innerHTML = `
-            <input style="display:none;" class="like" type="checkbox" id="like${comment.id}">
+            <input style="display:none;" class="like" type="checkbox" id="like${comment.id}" ${hasLiked ? 'checked' : ''}>
             <div>
                 <img class="commentPfp" src="${user.photoUrl}" alt="User Photo">
                 <div>
@@ -2271,7 +2313,28 @@ export async function displayComments(postId) {
             `;
 
             commentsContainer.appendChild(commentElement);
+
+            // Add event listener for like toggle
+            const likeCheckbox = commentElement.querySelector(`#like${comment.id}`);
+            const heartUncheck = commentElement.querySelector('#heartUncheck');
+            const heartCheck = commentElement.querySelector('#heartCheck');
+            const likestxt = commentElement.querySelector('.like-count'); // If you want to display like count
+
+            likeCheckbox.addEventListener('change', async () => {
+                if (likeCheckbox.checked) {
+                    // Update like count UI
+                    heartUncheck.style.display = 'none';
+                    heartCheck.style.display = 'inline-block';
+                    await addToLikedComment(currentUser.uid, comment.id, postId); // Add like to comment
+                } else {
+                    heartUncheck.style.display = 'inline-block';
+                    heartCheck.style.display = 'none';
+                    await removeFromLikedComment(currentUser.uid, comment.id, postId); // Remove like from comment
+                }
+            });
         }
+
+        // Add event listeners for comment deletion
         const deleteButtons = commentsContainer.querySelectorAll('#deleteComment');
         deleteButtons.forEach(button => {
             button.addEventListener('click', async () => {

@@ -36,6 +36,12 @@
 margin:  0 16px;
 }
 
+#attendanceChart {
+  width: 100%;
+  height: auto; /* Let the height adjust based on the content */
+  max-height: 400px; /* Set a maximum height if necessary */
+}
+
 #qrscanner-container {
   display: none;
   position: fixed;

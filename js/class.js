@@ -4,7 +4,6 @@ import {
     getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance, postPost, fetchClassPosts, deletePost, generateUniquePostSyntax,
     addToLikedPosts,
     removeFromLikedPosts,
-    fetchUserLikes,
     displayComments,
     sendCommentToPost,
     emailTagged
@@ -20,7 +19,7 @@ luxonScript.onload = function () {
     DateTime = window.luxon.DateTime;
 }
 
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 import "https://cdn.jsdelivr.net/npm/chart.js";
@@ -137,7 +136,7 @@ facescanButton.addEventListener('click', async () => {
             const ndef = new NDEFReader();
             await ndef.scan(); // Start NFC scan
             console.log('NFC scan started.');
-            basicNotif("NFC scanning started...","Please place RFID to scan", 5500);
+            basicNotif("NFC scanning started...", "Please place RFID to scan", 5500);
             // Set up the NFC reading event
             ndef.onreading = async (event) => {
                 try {
@@ -150,7 +149,7 @@ facescanButton.addEventListener('click', async () => {
 
                     if (!querySnapshot.empty) {
                         // If we find a matching user, proceed with attendance check
-                        querySnapshot.forEach( async (doc) => {
+                        querySnapshot.forEach(async (doc) => {
                             const userData = doc.data();
                             const mememberData = await fetchMember(syntax, userData.uid)
                             if (mememberData) {
@@ -163,7 +162,7 @@ facescanButton.addEventListener('click', async () => {
                                 basicNotif("Member attendance checked succesfully", `User ${userData.displayName}'s attedance has been checked.`, 5000);
                                 updateattendanceList();
                             } else {
-                                basicNotif("Not a member of class",`User ${userData.displayName} is not a member for this class.`, 5000);
+                                basicNotif("Not a member of class", `User ${userData.displayName} is not a member for this class.`, 5000);
                             }
                         });
                     } else {
@@ -391,7 +390,66 @@ async function updateattendanceList() {
             console.error(`Failed to fetch profile for member with ID ${member.id}:`, error);
         }
     }
+    console.log(memberProfiles);
+    async function updateAttendanceList(date, session) {
+        const attendanceList = document.getElementById('attendance-List'); // Adjust based on your HTML structure
+        if (!attendanceList) {
+            console.error("Attendance list element not found.");
+            return; // Exit if the attendance list element is not found
+        }
+    
+        attendanceList.innerHTML = ''; // Clear existing list items before updating
+    
+        // Loop through members to update the attendance list
+        for (const member of members) {
+            try {
+                const memberId = member.id; // Get member ID
+                const attendanceRecord = member.attendance?.[date]?.[session.toLowerCase()];
+                console.log(`Checking attendance for date: ${date}, session: ${session.toLowerCase()}`);
+                console.log(`Attendance for member ${memberId}:`, member.attendance);
 
+                // Extract status and time from attendance data
+                const attendanceStatus = attendanceRecord ? attendanceRecord.status : 'Absent';
+                const time = attendanceRecord && attendanceRecord.timeChecked ? convertTo12Hour(attendanceRecord.timeChecked) : "Not Available";
+    
+                // Find the member profile using memberId
+                const memberData = memberProfiles.find(profile => profile.uid === memberId);
+    
+                // Get the display name or set a default value if not found
+                const displayName = memberData ? memberData.displayName : 'Unknown Member';
+    
+                // Determine the color class based on status
+                let statusClass = '';
+                switch (attendanceStatus.toLowerCase()) {
+                    case 'present':
+                        statusClass = 'status-present'; // Green
+                        break;
+                    case 'late':
+                        statusClass = 'status-late'; // Purple
+                        break;
+                    case 'absent':
+                        statusClass = 'status-absent'; // Red
+                        break;
+                    default:
+                        statusClass = ''; // Default class or leave it empty
+                }
+    
+                // Create list item for the member
+                const listItem = document.createElement('li');
+                listItem.classList.add('list-item');
+                listItem.innerHTML = `
+                    <div class="${statusClass}">
+                        <h3>${displayName}</h3>
+                        <p>${capitalizeFirstLetter(attendanceStatus)}<br>${time}</p>
+                    </div>`;
+                attendanceList.appendChild(listItem);
+            } catch (error) {
+                console.error(`Failed to fetch profile for member with ID ${memberId}:`, error);
+            }
+        }
+    }
+    
+    
     function getFilteredData(range, customRange = null) {
         const today = new Date();
         const filteredData = {};
@@ -498,6 +556,7 @@ async function updateattendanceList() {
                         label: 'Morning Present',
                         data: morningPresentData,
                         backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 0.6)',
                         borderWidth: 1,
                         stack: 'morning', // Specify stack group
                         barThickness: chartType === 'bar' ? 20 : undefined,
@@ -506,6 +565,7 @@ async function updateattendanceList() {
                         label: 'Morning Late',
                         data: morningLateData,
                         backgroundColor: 'rgba(255, 206, 86, 0.6)',
+                        borderColor: 'rgba(255, 206, 86, 0.6)',
                         borderWidth: 1,
                         stack: 'morning', // Specify stack group
                         barThickness: chartType === 'bar' ? 20 : undefined,
@@ -514,6 +574,7 @@ async function updateattendanceList() {
                         label: 'Morning Absent',
                         data: morningAbsentData,
                         backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 0.6)',
                         borderWidth: 1,
                         stack: 'morning', // Specify stack group
                         barThickness: chartType === 'bar' ? 20 : undefined,
@@ -522,6 +583,7 @@ async function updateattendanceList() {
                         label: 'Afternoon Present',
                         data: afternoonPresentData,
                         backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 0.6)',
                         borderWidth: 1,
                         stack: 'afternoon', // Specify stack group',
                         barThickness: chartType === 'bar' ? 20 : undefined,
@@ -530,6 +592,7 @@ async function updateattendanceList() {
                         label: 'Afternoon Late',
                         data: afternoonLateData,
                         backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                        borderColor: 'rgba(255, 159, 64, 0.6)',
                         borderWidth: 1,
                         stack: 'afternoon',
                         barThickness: chartType === 'bar' ? 20 : undefined,
@@ -538,6 +601,7 @@ async function updateattendanceList() {
                         label: 'Afternoon Absent',
                         data: afternoonAbsentData,
                         backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                        borderColor: 'rgba(153, 102, 255, 0.6)',
                         borderWidth: 1,
                         stack: 'afternoon',
                         barThickness: chartType === 'bar' ? 20 : undefined,
@@ -546,7 +610,7 @@ async function updateattendanceList() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 scales: {
                     x: {
                         stacked: true, // Set to true for stacked bars, false for grouped
@@ -573,12 +637,28 @@ async function updateattendanceList() {
                                 const names = filteredData[date]?.[session]?.[status]?.names || []; // Ensure names is defined
                                 return [
                                     `${tooltipItem.dataset.label}: ${tooltipItem.raw}`,
-                                    `Names: ${names.length ? names.join(', ') : 'None'}`
+                                    `Names: ${names.length ? names.join(', ') : 'None'}` // Use comma for simplicity
                                 ];
                             }
                         }
                     }
-                }
+                },
+                onClick: async function (event) {
+                    const activePoints = this.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                    if (activePoints.length > 0) {
+                        const { datasetIndex, index } = activePoints[0]; // Get the first active point
+
+                        // Assuming you have a way to get the corresponding date and session based on your dataset
+                        const date = this.data.labels[index]; // Get the date
+                        const sessionLabel = this.data.datasets[datasetIndex].label; // Get the dataset label (e.g., 'morning present')
+
+                        const session = sessionLabel.split(' ')[0]; // 'morning' or 'afternoon'
+                        const status = sessionLabel.split(' ')[1]; // 'present', 'late', or 'absent'
+
+                        // Call a function to update attendance list based on the clicked item
+                        await updateAttendanceList(date, session);
+                    }
+                },
             }
         });
     }
@@ -1410,21 +1490,30 @@ async function createPostItem(email, img, dateTime, description, currentUserEmai
     });
 
     // Check if the post is liked by the current user on page load
-    const userLikes = await fetchUserLikes(user.uid);
-    if (userLikes.includes(postId)) {
-        likeCheckbox.checked = true;
+    const postRef = doc(db, 'posts', postId);
+    const postSnapshot = await getDoc(postRef);
+
+    if (postSnapshot.exists()) {
+        const postData = postSnapshot.data();
+        const postLikes = postData.userlikes || []; // Get the 'likes' array or an empty array if it doesn't exist
+
+        if (postLikes.includes(user.uid)) {
+            likeCheckbox.checked = true; // Check the checkbox if user has liked the post
+        }
     }
+
     // Toggle like status on checkbox change
     likeCheckbox.addEventListener('change', async () => {
-        const likestxt = template.querySelector('#likes')
+        const likestxt = template.querySelector('#likes');
+
         if (likeCheckbox.checked) {
-            likestxt.innerHTML = `${likes + 1} likes`
-            likes = likes + 1
-            await addToLikedPosts(user.uid, postId); // Add post to user's liked posts
+            likestxt.innerHTML = `${likes + 1} likes`;
+            likes = likes + 1;
+            await addToLikedPosts(user.uid, postId); // Add user ID to the post's likes array
         } else {
-            likestxt.innerHTML = `${likes - 1} likes`
-            likes = likes - 1
-            await removeFromLikedPosts(user.uid, postId); // Remove post from user's liked posts
+            likestxt.innerHTML = `${likes - 1} likes`;
+            likes = likes - 1;
+            await removeFromLikedPosts(user.uid, postId); // Remove user ID from the post's likes array
         }
     });
 
