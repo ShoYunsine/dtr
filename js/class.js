@@ -1,7 +1,11 @@
 import {
     fetchClass, fetchMembers,
     changeMemberRole, fetchProfile,
-    getCurrentUser, fetchMember, kickfromClass, db, checkAttendance, getAttendance, postPost, fetchClassPosts, deletePost, generateUniquePostSyntax,
+    getCurrentUser, fetchMember, 
+    kickfromClass, db, 
+    checkAttendance, getAttendance, 
+    postPost, fetchClassPosts, 
+    deletePost, generateUniquePostSyntax,
     addToLikedPosts,
     removeFromLikedPosts,
     displayComments,
@@ -155,8 +159,8 @@ facescanButton.addEventListener('click', async () => {
                             if (mememberData) {
                                 basicNotif("Member found", userData.displayName, 5000);
                                 console.log('User data found:', userData);
-                                ndef.onreading = null;
-                                ndef.onerror = null;
+                                //ndef.onreading = null;
+                                //ndef.onerror = null;
                                 // Call checkAttendance for the matched user
                                 await checkAttendance(syntax, classroom.timezone, userData.uid);
                                 basicNotif("Member attendance checked succesfully", `User ${userData.displayName}'s attedance has been checked.`, 5000);
@@ -466,7 +470,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 <div class="${statusClass}">
                 <img src=${memberData.photoUrl}></img>
                     <h3>${memberData.displayName}</h3>
-                    <p>${capitalizeFirstLetter(status || 'Absent')}<br>${time}</p>
+                    <p>${capitalizeFirstLetter(attendanceStatus || 'Absent')}<br>${time}</p>
                     
                 </div>
                 <div>

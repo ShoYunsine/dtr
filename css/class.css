@@ -145,7 +145,7 @@
 #postHeader div div p {
   display: flex;
   margin-top: 0;
-
+  color: var(--text-color-main);
 }
 
 #postHeader label {

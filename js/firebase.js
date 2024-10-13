@@ -1095,31 +1095,24 @@ export async function saveDescriptorsToFirebase(descriptors) {
 }
 
 export async function signUpWithEmail() {
-    const warning = document.getElementById('warning')
-    const warningtxt = document.getElementById('warningtext')
     const displayName = document.getElementById('signUpUsername').value;
     const email = document.getElementById('signUpEmail').value;
     const password = document.getElementById('signUpPassword').value;
     const confirmpassword = document.getElementById('signUpPasswordConfirm').value;
     if (checkpasswordlength(password) == true) {
         if (confirmpassword == password) {
-            warning.style.display = "none";
             createUserWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
                     const user = userCredential.user;
                     updateProfile(displayName, email, user.uid, user.photoURL);
                 })
                 .catch((error) => {
-                    const errorCode = error.code;
-                    const errorMessage = error.message;
                 });
         } else {
-            warning.style.display = "flex";
-            warningtxt.innerHTML = "Passwords do not match"
+            basicNotif("Passwords dont match.","Please try again",5000)
         }
     } else {
-        warning.style.display = "flex";
-        warningtxt.innerHTML = "Password need to be 8 characters long"
+
     }
 }
 
@@ -1969,9 +1962,6 @@ export async function checkAttendance(syntax, timezone, id) {
     }
 }
 
-
-
-
 export async function markAbsent(syntax, id) {
     try {
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
@@ -2015,7 +2005,6 @@ export async function markAbsent(syntax, id) {
         throw error;
     }
 }
-
 
 export async function deleteAllAttendanceRecords(classTimezone, classId) {
     try {
@@ -2095,8 +2084,6 @@ export async function deleteAllAttendanceRecords(classTimezone, classId) {
 
     }
 }
-
-
 
 const emailjsScript = document.createElement('script');
 emailjsScript.src = 'https://cdn.emailjs.com/dist/email.min.js';
