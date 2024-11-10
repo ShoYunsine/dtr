@@ -89,56 +89,55 @@ onAuthStateChanged(auth, async (user) => {
         if (typeof on_index != 'undefined') {
             const currentUser = await getCurrentUser(); // Fetch the current user's email
             const userClasses = await getUserClasses(); // Fetch the user's classes
-
-            // Loop through each class
-            for (const classData of userClasses) {
-                const syntax = classData.syntax;  // Assuming `syntax` is a property of each class
-
-                // Fetch posts for the current class
-                const classPosts = await fetchClassPosts(syntax, alreadyFetched, 2);
-
-
-                console.log(alreadyFetched);
-                async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid, likes) {
-                    const user = await getCurrentUser();
-                    const currentMemberData = await fetchMember(syntax, user.uid);
-                    const userdata = await fetchProfile(userid);
-                    const posts = document.getElementById('posts');
-                    const template = document.createElement('li');
-                    template.id = 'post';
-
-                    description = description.replace(/(@[\w_\.]+)/g, function (match) {
-                        return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
-                    });
-
-                    // Wrap #hashtags with <span> tags
-                    description = description.replace(/(#[\w_\.]+)/g, function (match) {
-                        return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
-                    });
-
-                    // Make text between * bold
-                    description = description.replace(/\*(.*?)\*/g, function (match, content) {
-                        return `<strong>${content}</strong>`;
-                    });
-
-                    // Make text between *^ very bold
-                    description = description.replace(/\+\+(.*?)\+\+/g, function (match, content) {
-                        return `<b style="font-weight: bold; font-size: 1.1em;">${content}</b>`; // Using <b> for very bold
-                    });
-                    // Italicize text between //
-                    description = description.replace(/\/\/(.*?)\/\//g, function (match, content) {
-                        return `<i>${content}</i>`;
-                    });
-
-                    // Change font size using ^n (e.g., ^2(text))
-                    description = description.replace(/\^(\d+)\((.*?)\)/g, function (match, size, content) {
-                        return `<span style="font-size: ${size}em;">${content}</span>`;
-                    });
+            console.log(userClasses)
+            if (userClasses != "None") {
+                for (const classData of userClasses) {
+                    const syntax = classData.syntax;  // Assuming `syntax` is a property of each class
+                    
+                    const classPosts = await fetchClassPosts(syntax, alreadyFetched, 2);
 
 
-                    const timeDisplay = formatTimeDifference(dateTime);
+                    console.log(alreadyFetched);
+                    async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid, likes) {
+                        const user = await getCurrentUser();
+                        const currentMemberData = await fetchMember(syntax, user.uid);
+                        const userdata = await fetchProfile(userid);
+                        const posts = document.getElementById('posts');
+                        const template = document.createElement('li');
+                        template.id = 'post';
 
-                    template.innerHTML = `
+                        description = description.replace(/(@[\w_\.]+)/g, function (match) {
+                            return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
+                        });
+
+                        // Wrap #hashtags with <span> tags
+                        description = description.replace(/(#[\w_\.]+)/g, function (match) {
+                            return `<span class="tag">${match.replace(/_/g, ' ')}</span>`;
+                        });
+
+                        // Make text between * bold
+                        description = description.replace(/\*(.*?)\*/g, function (match, content) {
+                            return `<strong>${content}</strong>`;
+                        });
+
+                        // Make text between *^ very bold
+                        description = description.replace(/\+\+(.*?)\+\+/g, function (match, content) {
+                            return `<b style="font-weight: bold; font-size: 1.1em;">${content}</b>`; // Using <b> for very bold
+                        });
+                        // Italicize text between //
+                        description = description.replace(/\/\/(.*?)\/\//g, function (match, content) {
+                            return `<i>${content}</i>`;
+                        });
+
+                        // Change font size using ^n (e.g., ^2(text))
+                        description = description.replace(/\^(\d+)\((.*?)\)/g, function (match, size, content) {
+                            return `<span style="font-size: ${size}em;">${content}</span>`;
+                        });
+
+
+                        const timeDisplay = formatTimeDifference(dateTime);
+
+                        template.innerHTML = `
                         <div id="postHeader">
                             <div>
                                 <img class="img" src="${userdata.photoUrl}">
@@ -175,8 +174,8 @@ onAuthStateChanged(auth, async (user) => {
                         <input style="display:none;" class="commentToggle" type="checkbox" id="commentSectionToggle${postId}">
                         <div id="postOptions">
                             ${email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin' ?
-                            `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
-                            ''}
+                                `<button class="postOptionButton" id="deletePost" data-post-id="${postId}">Delete Post <i class="fa-solid fa-trash"></i></button>` :
+                                ''}
                         </div>
                         <div id="commentSection">
                         <div id="commentArea">
@@ -191,285 +190,282 @@ onAuthStateChanged(auth, async (user) => {
                         </div>
                     `;
 
-                    posts.appendChild(template);
-                    const imgElement = template.querySelector('#postImg');
-                    const loader = template.querySelector('.loader');
+                        posts.appendChild(template);
+                        const imgElement = template.querySelector('#postImg');
+                        const loader = template.querySelector('.loader');
 
-                    // Load the image
-                    imgElement.src = img;
-                    imgElement.style.display = 'none';
-                    // Show loader until the image loads
-                    imgElement.onload = () => {
-                        loader.style.display = 'none'; // Hide loader
-                        imgElement.style.display = 'block'; // Show image
-                    };
-                    imgElement.addEventListener('click', () => {
-                        window.location.href = `post.html?postId=${encodeURIComponent(postId)}&syntax=${encodeURIComponent(syntax)}`;
-                    });
+                        // Load the image
+                        imgElement.src = img;
+                        imgElement.style.display = 'none';
+                        // Show loader until the image loads
+                        imgElement.onload = () => {
+                            loader.style.display = 'none'; // Hide loader
+                            imgElement.style.display = 'block'; // Show image
+                        };
+                        imgElement.addEventListener('click', () => {
+                            window.location.href = `post.html?postId=${encodeURIComponent(postId)}&syntax=${encodeURIComponent(syntax)}`;
+                        });
 
-                    const likeCheckbox = template.querySelector(`#like${postId}`);
+                        const likeCheckbox = template.querySelector(`#like${postId}`);
 
-                    const desc = template.querySelector('#desc');
-                    const toggleText = template.querySelector('#toggleText');
-                    const toggleTextShow = template.querySelector('#toggleTextShow');
-                    console.log(desc.scrollHeight > 110);
-                    if (desc.scrollHeight > 110) {
-                        desc.style.height = '110px';
-                        toggleText.style.display = 'inline';
-                        toggleTextShow.style.display = 'none'; // Hide "Show Less" by default
-                    } else {
-                        // Hide the toggle buttons if content doesn't overflow
-                        toggleText.style.display = 'none';
-                        toggleTextShow.style.display = 'none';
-                    }
-                    template.querySelector('#toggle').addEventListener('change', function () {
-                        if (this.checked) {
-                            desc.style.height = `${desc.scrollHeight}px`;
-                            toggleText.style.display = 'none';
-                            toggleTextShow.style.display = 'inline';
-                        } else {
+                        const desc = template.querySelector('#desc');
+                        const toggleText = template.querySelector('#toggleText');
+                        const toggleTextShow = template.querySelector('#toggleTextShow');
+                        console.log(desc.scrollHeight > 110);
+                        if (desc.scrollHeight > 110) {
                             desc.style.height = '110px';
                             toggleText.style.display = 'inline';
+                            toggleTextShow.style.display = 'none'; // Hide "Show Less" by default
+                        } else {
+                            // Hide the toggle buttons if content doesn't overflow
+                            toggleText.style.display = 'none';
                             toggleTextShow.style.display = 'none';
                         }
-                    });
+                        template.querySelector('#toggle').addEventListener('change', function () {
+                            if (this.checked) {
+                                desc.style.height = `${desc.scrollHeight}px`;
+                                toggleText.style.display = 'none';
+                                toggleTextShow.style.display = 'inline';
+                            } else {
+                                desc.style.height = '110px';
+                                toggleText.style.display = 'inline';
+                                toggleTextShow.style.display = 'none';
+                            }
+                        });
 
-                    // Check if the post is liked by the current user on page load
-                    const postRef = doc(db, 'posts', postId);
-                    const postSnapshot = await getDoc(postRef);
+                        // Check if the post is liked by the current user on page load
+                        const postRef = doc(db, 'posts', postId);
+                        const postSnapshot = await getDoc(postRef);
 
-                    if (postSnapshot.exists()) {
-                        const postData = postSnapshot.data();
-                        const postLikes = postData.userlikes || []; // Get the 'likes' array or an empty array if it doesn't exist
+                        if (postSnapshot.exists()) {
+                            const postData = postSnapshot.data();
+                            const postLikes = postData.userlikes || []; // Get the 'likes' array or an empty array if it doesn't exist
 
-                        if (postLikes.includes(user.uid)) {
-                            likeCheckbox.checked = true; // Check the checkbox if user has liked the post
-                        }
-                    }
-
-                    // Toggle like status on checkbox change
-                    likeCheckbox.addEventListener('change', async () => {
-                        const likestxt = template.querySelector('#likes');
-
-                        if (likeCheckbox.checked) {
-                            likestxt.innerHTML = `${likes + 1} likes`;
-                            likes = likes + 1;
-                            await addToLikedPosts(user.uid, postId); // Add user ID to the post's likes array
-                        } else {
-                            likestxt.innerHTML = `${likes - 1} likes`;
-                            likes = likes - 1;
-                            await removeFromLikedPosts(user.uid, postId); // Remove user ID from the post's likes array
-                        }
-                    });
-
-                    function makeCommentSectionDraggable(postId) {
-                        const commentSection = document.getElementById(`commentSection${postId}`);
-                        const commentToggle = document.getElementById(`commentSectionToggle${postId}`);
-
-                        let startY = 0;
-                        let currentY = 0;
-                        let isDragging = false;
-
-                        const dragThreshold = 50;
-                        const initialBottomPercent = -1; // Adjust as needed
-                        const dragScaleFactor = 0.3;
-
-                        // Create the "Refresh Comments" message
-                        const refreshMessage = document.createElement('div');
-                        refreshMessage.textContent = 'Refresh Comments';
-                        refreshMessage.style.position = 'absolute';
-                        refreshMessage.style.bottom = '100%'; // Position above the comment section
-                        refreshMessage.style.left = '50%';
-                        refreshMessage.style.transform = 'translateX(-50%)';
-                        refreshMessage.style.fontSize = '12px';
-                        refreshMessage.style.padding = '5px 10px';
-                        refreshMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                        refreshMessage.style.color = 'var(--text-color-main)';
-                        refreshMessage.style.borderRadius = '15px';
-                        refreshMessage.style.display = 'none'; // Hidden by default
-                        commentSection.appendChild(refreshMessage);
-
-                        // Function to handle the start of the drag
-                        function startDrag(event) {
-                            if (event.target === commentSection) {
-                                isDragging = true;
-                                startY = event.touches ? event.touches[0].clientY : event.clientY;
-                                commentSection.style.transition = 'none'; // Disable smooth transition during drag
+                            if (postLikes.includes(user.uid)) {
+                                likeCheckbox.checked = true; // Check the checkbox if user has liked the post
                             }
                         }
 
-                        // Function to handle dragging
-                        function drag(event) {
-                            if (!isDragging) return;
+                        // Toggle like status on checkbox change
+                        likeCheckbox.addEventListener('change', async () => {
+                            const likestxt = template.querySelector('#likes');
 
-                            currentY = event.touches ? event.touches[0].clientY : event.clientY;
-                            let dragDistance = currentY - startY;
-
-                            // Show refresh message when dragging upwards
-                            if (dragDistance < -10) {
-                                refreshMessage.style.display = 'block';
+                            if (likeCheckbox.checked) {
+                                likestxt.innerHTML = `${likes + 1} likes`;
+                                likes = likes + 1;
+                                await addToLikedPosts(user.uid, postId); // Add user ID to the post's likes array
                             } else {
+                                likestxt.innerHTML = `${likes - 1} likes`;
+                                likes = likes - 1;
+                                await removeFromLikedPosts(user.uid, postId); // Remove user ID from the post's likes array
+                            }
+                        });
+
+                        function makeCommentSectionDraggable(postId) {
+                            const commentSection = document.getElementById(`commentSection${postId}`);
+                            const commentToggle = document.getElementById(`commentSectionToggle${postId}`);
+
+                            let startY = 0;
+                            let currentY = 0;
+                            let isDragging = false;
+
+                            const dragThreshold = 50;
+                            const initialBottomPercent = -1; // Adjust as needed
+                            const dragScaleFactor = 0.3;
+
+                            // Create the "Refresh Comments" message
+                            const refreshMessage = document.createElement('div');
+                            refreshMessage.textContent = 'Refresh Comments';
+                            refreshMessage.style.position = 'absolute';
+                            refreshMessage.style.bottom = '100%'; // Position above the comment section
+                            refreshMessage.style.left = '50%';
+                            refreshMessage.style.transform = 'translateX(-50%)';
+                            refreshMessage.style.fontSize = '12px';
+                            refreshMessage.style.padding = '5px 10px';
+                            refreshMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                            refreshMessage.style.color = 'var(--text-color-main)';
+                            refreshMessage.style.borderRadius = '15px';
+                            refreshMessage.style.display = 'none'; // Hidden by default
+                            commentSection.appendChild(refreshMessage);
+
+                            // Function to handle the start of the drag
+                            function startDrag(event) {
+                                if (event.target === commentSection) {
+                                    isDragging = true;
+                                    startY = event.touches ? event.touches[0].clientY : event.clientY;
+                                    commentSection.style.transition = 'none'; // Disable smooth transition during drag
+                                }
+                            }
+
+                            // Function to handle dragging
+                            function drag(event) {
+                                if (!isDragging) return;
+
+                                currentY = event.touches ? event.touches[0].clientY : event.clientY;
+                                let dragDistance = currentY - startY;
+
+                                // Show refresh message when dragging upwards
+                                if (dragDistance < -10) {
+                                    refreshMessage.style.display = 'block';
+                                } else {
+                                    refreshMessage.style.display = 'none';
+                                }
+
+                                // Adjust the bottom property based on the drag distance
+                                if (dragDistance > 0) {
+                                    commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance}px)`;
+                                }
+                                if (dragDistance < 0) {
+                                    dragDistance *= dragScaleFactor;
+                                    refreshMessage.style.bottom = `calc(${100}% - ${dragDistance / 12}px)`; // Position above the comment section
+                                    commentSection.style.height = `calc(${50}% - ${dragDistance * 2}px)`;
+                                    commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance / 12}px)`;
+                                }
+                            }
+
+                            // Function to handle the end of the drag
+                            async function endDrag() {
+                                if (!isDragging) return;
+                                isDragging = false;
+                                commentSection.style.transition = 'bottom 0.3s ease'; // Re-enable smooth transition
+
+                                const dragDistance = currentY - startY;
+
+                                // Hide the refresh message after dragging ends
                                 refreshMessage.style.display = 'none';
+                                commentSection.style.height = ''
+                                if (dragDistance > dragThreshold) {
+
+                                    commentSection.style.bottom = ''; // Close the comment section
+                                    commentToggle.checked = false;
+                                } else if (dragDistance < -10) {
+                                    await displayComments(postId); // Call your refresh function
+                                    commentSection.style.bottom = `${initialBottomPercent}%`;
+                                } else {
+                                    commentSection.style.bottom = `${initialBottomPercent}%`; // Reset to the original position
+                                }
                             }
 
-                            // Adjust the bottom property based on the drag distance
-                            if (dragDistance > 0) {
-                                commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance}px)`;
-                            }
-                            if (dragDistance < 0) {
-                                dragDistance *= dragScaleFactor;
-                                refreshMessage.style.bottom = `calc(${100}% - ${dragDistance / 12}px)`; // Position above the comment section
-                                commentSection.style.height = `calc(${50}% - ${dragDistance * 2}px)`;
-                                commentSection.style.bottom = `calc(${initialBottomPercent}% - ${dragDistance / 12}px)`;
-                            }
+                            // Attach event listeners for mouse and touch events
+                            commentSection.addEventListener('mousedown', startDrag);
+                            commentSection.addEventListener('mousemove', drag);
+                            commentSection.addEventListener('mouseup', endDrag);
+                            commentSection.addEventListener('mouseleave', endDrag);
+
+                            commentSection.addEventListener('touchstart', startDrag);
+                            commentSection.addEventListener('touchmove', drag);
+                            commentSection.addEventListener('touchend', endDrag);
+
+                            // Prevent child elements from triggering drag
+                            commentSection.addEventListener('mousedown', (event) => {
+                                if (event.target !== commentSection) {
+                                    event.stopPropagation();
+                                }
+                            });
+                            commentSection.addEventListener('touchstart', (event) => {
+                                if (event.target !== commentSection) {
+                                    event.stopPropagation();
+                                }
+                            });
                         }
 
-                        // Function to handle the end of the drag
-                        async function endDrag() {
-                            if (!isDragging) return;
-                            isDragging = false;
-                            commentSection.style.transition = 'bottom 0.3s ease'; // Re-enable smooth transition
+                        makeCommentSectionDraggable(postId);
 
-                            const dragDistance = currentY - startY;
+                        template.querySelector(`#postComment${postId}`).addEventListener('click', async () => {
+                            const commentInput = template.querySelector(`#commentInput${postId}`);
+                            const commentText = commentInput.value.trim();
 
-                            // Hide the refresh message after dragging ends
-                            refreshMessage.style.display = 'none';
-                            commentSection.style.height = ''
-                            if (dragDistance > dragThreshold) {
-
-                                commentSection.style.bottom = ''; // Close the comment section
-                                commentToggle.checked = false;
-                            } else if (dragDistance < -10) {
-                                await displayComments(postId); // Call your refresh function
-                                commentSection.style.bottom = `${initialBottomPercent}%`;
+                            if (commentText) {
+                                await sendCommentToPost(postId, user.uid, commentText);
+                                commentInput.value = ''; // Clear the input after sending
                             } else {
-                                commentSection.style.bottom = `${initialBottomPercent}%`; // Reset to the original position
-                            }
-                        }
-
-                        // Attach event listeners for mouse and touch events
-                        commentSection.addEventListener('mousedown', startDrag);
-                        commentSection.addEventListener('mousemove', drag);
-                        commentSection.addEventListener('mouseup', endDrag);
-                        commentSection.addEventListener('mouseleave', endDrag);
-
-                        commentSection.addEventListener('touchstart', startDrag);
-                        commentSection.addEventListener('touchmove', drag);
-                        commentSection.addEventListener('touchend', endDrag);
-
-                        // Prevent child elements from triggering drag
-                        commentSection.addEventListener('mousedown', (event) => {
-                            if (event.target !== commentSection) {
-                                event.stopPropagation();
+                                alert('Please enter a comment before sending.');
                             }
                         });
-                        commentSection.addEventListener('touchstart', (event) => {
-                            if (event.target !== commentSection) {
-                                event.stopPropagation();
+
+                        function observeComments(postId) {
+                            const commentsContainer = template.querySelector(`#commentsContainer${postId}`);
+                            const commentsToggleLabel = template.querySelector(`#commentsToggleLabel${postId}`);
+
+                            // Function to update the visibility of the checkbox label
+                            function updateCommentsToggle() {
+                                if (commentsContainer.children.length > 0) {
+                                    commentsToggleLabel.textContent = `View ${commentsContainer.children.length} ${commentsContainer.children.length > 1 ? 'comments' : 'comment'}`;
+                                    commentsToggleLabel.style.display = 'block';
+                                } else {
+                                    // Hide the checkbox if no comments exist
+                                    commentsToggleLabel.style.display = 'none';
+                                }
                             }
-                        });
-                    }
 
-                    makeCommentSectionDraggable(postId);
-
-                    template.querySelector(`#postComment${postId}`).addEventListener('click', async () => {
-                        const commentInput = template.querySelector(`#commentInput${postId}`);
-                        const commentText = commentInput.value.trim();
-
-                        if (commentText) {
-                            await sendCommentToPost(postId, user.uid, commentText);
-                            commentInput.value = ''; // Clear the input after sending
-                        } else {
-                            alert('Please enter a comment before sending.');
-                        }
-                    });
-
-                    function observeComments(postId) {
-                        const commentsContainer = template.querySelector(`#commentsContainer${postId}`);
-                        const commentsToggleLabel = template.querySelector(`#commentsToggleLabel${postId}`);
-
-                        // Function to update the visibility of the checkbox label
-                        function updateCommentsToggle() {
-                            if (commentsContainer.children.length > 0) {
-                                commentsToggleLabel.textContent = `View ${commentsContainer.children.length} ${commentsContainer.children.length > 1 ? 'comments' : 'comment'}`;
-                                commentsToggleLabel.style.display = 'block';
-                            } else {
-                                // Hide the checkbox if no comments exist
-                                commentsToggleLabel.style.display = 'none';
-                            }
-                        }
-
-                        updateCommentsToggle();
-
-                        const observer = new MutationObserver(() => {
                             updateCommentsToggle();
-                        });
 
-                        observer.observe(commentsContainer, { childList: true });
-                    }
+                            const observer = new MutationObserver(() => {
+                                updateCommentsToggle();
+                            });
 
-                    observeComments(postId);
-
-                    if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
-                        template.querySelector('#deletePost').addEventListener('click', async (event) => {
-                            const postId = event.target.getAttribute('data-post-id');
-                            await deletePost(postId, syntax); // Add deletePost function to remove the post
-                            cancelFunction(template);
-                        });
-                    };
-                    await displayComments(postId);
-                }
-                function cancelFunction(template) {
-                    // Remove the template from the DOM
-                    template.remove();
-                }
-                // Loop through each post and render it
-                classPosts.forEach(post => {
-                    const { email, image, dateTime, description } = post;
-
-                    // Call the createPostItem function for each post
-                    createPostItem(email, image, dateTime, description, currentUser.email, post.id, post.userid, post.likes);
-                    alreadyFetched.push(post.id);
-                });
-                function isNearBottom() {
-                    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-                    const scrollHeight = document.documentElement.scrollHeight;
-                    const clientHeight = document.documentElement.clientHeight;
-
-                    // Check if the user is within 300px of the bottom of the page
-                    return scrollTop + clientHeight >= scrollHeight - 300;
-                }
-
-                // Function to fetch and render posts when scrolling near the bottom
-                async function fetchPostsOnScroll() {
-                    if (isNearBottom() && !isFetchingPosts) {
-                        isFetchingPosts = true; // Set the flag to prevent multiple fetches
-
-                        // Fetch new posts (e.g., 3 posts at a time)
-                        for (const classData of userClasses) {
-                            const syntax = classData.syntax;
-                            const newPosts = await fetchClassPosts(syntax, alreadyFetched, 1);
-
-                            if (newPosts.length > 0) {
-                                newPosts.forEach(post => {
-                                    const { email, image, dateTime, description, userid, likes } = post;
-                                    createPostItem(email, image, dateTime, description, currentUser.email, post.id, userid, likes);
-                                    alreadyFetched.push(post.id); // Mark the post as fetched
-                                });
-                            }
+                            observer.observe(commentsContainer, { childList: true });
                         }
 
-                        isFetchingPosts = false; // Reset the flag after fetching
+                        observeComments(postId);
+
+                        if (email === currentUserEmail || currentMemberData.role === 'owner' || currentMemberData.role === 'admin') {
+                            template.querySelector('#deletePost').addEventListener('click', async (event) => {
+                                const postId = event.target.getAttribute('data-post-id');
+                                await deletePost(postId, syntax); // Add deletePost function to remove the post
+                                cancelFunction(template);
+                            });
+                        };
+                        await displayComments(postId);
                     }
+                    function cancelFunction(template) {
+                        // Remove the template from the DOM
+                        template.remove();
+                    }
+                    // Loop through each post and render it
+                    classPosts.forEach(post => {
+                        const { email, image, dateTime, description } = post;
+
+                        // Call the createPostItem function for each post
+                        createPostItem(email, image, dateTime, description, currentUser.email, post.id, post.userid, post.likes);
+                        alreadyFetched.push(post.id);
+                    });
+                    function isNearBottom() {
+                        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+                        const scrollHeight = document.documentElement.scrollHeight;
+                        const clientHeight = document.documentElement.clientHeight;
+
+                        // Check if the user is within 300px of the bottom of the page
+                        return scrollTop + clientHeight >= scrollHeight - 300;
+                    }
+
+                    // Function to fetch and render posts when scrolling near the bottom
+                    async function fetchPostsOnScroll() {
+                        if (isNearBottom() && !isFetchingPosts) {
+                            isFetchingPosts = true; // Set the flag to prevent multiple fetches
+
+                            // Fetch new posts (e.g., 3 posts at a time)
+                            for (const classData of userClasses) {
+                                const syntax = classData.syntax;
+                                const newPosts = await fetchClassPosts(syntax, alreadyFetched, 1);
+
+                                if (newPosts.length > 0) {
+                                    newPosts.forEach(post => {
+                                        const { email, image, dateTime, description, userid, likes } = post;
+                                        createPostItem(email, image, dateTime, description, currentUser.email, post.id, userid, likes);
+                                        alreadyFetched.push(post.id); // Mark the post as fetched
+                                    });
+                                }
+                            }
+
+                            isFetchingPosts = false; // Reset the flag after fetching
+                        }
+                    }
+
+                    // Listen for scroll events
+                    window.addEventListener('scroll', fetchPostsOnScroll);
                 }
-
-                // Listen for scroll events
-                window.addEventListener('scroll', fetchPostsOnScroll);
-            }
-
-        }
-        if (typeof on_index != 'undefined') {
-            displayUserClasses();
+                displayUserClasses();
             document.getElementById('classList').addEventListener('click', async function (event) {
                 if (event.target.classList.contains('remove-btn')) {
                     var listItem = event.target.closest('li');
@@ -520,7 +516,9 @@ onAuthStateChanged(auth, async (user) => {
                 }
             });
 
-        };
+            };
+
+        }
         if (typeof on_login == 'undefined') {
             updateProfile(user.displayName, user.email, user.uid, user.photoURL);
             const qrcode = `${user.uid}`
@@ -1030,19 +1028,6 @@ export async function removeFromLikedComment(userId, commentId, postId) {
 }
 
 
-
-function downloadQRCode() {
-    const canvas = document.getElementById('qrcode');
-    if (canvas) {
-        const link = document.createElement('a');
-        link.href = canvas.toDataURL('image/png');
-        link.download = 'qrcode.png';
-        link.click();
-    } else {
-        console.error('QR code canvas not found.');
-    }
-}
-
 function checkpasswordlength(password) {
     if (password.length >= 8) {
         return true
@@ -1069,7 +1054,7 @@ async function updateProfile(displayName, email, uid, photoUrl) {
         displayName: displayName || 'Anonymous',
         email: email,
         uid: uid,
-        photoUrl: photoUrl || 'None'
+        photoUrl: photoUrl || '../Images/gear.png'
     }, { merge: true })
         .then(() => {
             console.log('Profile updated successfully with RFID UID');
@@ -1078,7 +1063,6 @@ async function updateProfile(displayName, email, uid, photoUrl) {
             console.error('Error updating profile:', error);
         });
 }
-
 
 export async function saveDescriptorsToFirebase(descriptors) {
     const uid = currentUser.uid;
@@ -1099,22 +1083,38 @@ export async function signUpWithEmail() {
     const email = document.getElementById('signUpEmail').value;
     const password = document.getElementById('signUpPassword').value;
     const confirmpassword = document.getElementById('signUpPasswordConfirm').value;
-    if (checkpasswordlength(password) == true) {
-        if (confirmpassword == password) {
-            createUserWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    updateProfile(displayName, email, user.uid, user.photoURL);
-                })
-                .catch((error) => {
+    
+    console.log(displayName, email, password, confirmpassword);
+    
+    // Validate password length (for example, minimum 6 characters)
+    if (checkpasswordlength(password)) {
+        if (confirmpassword === password) {
+            try {
+                // Create user with email and password
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Update user profile with display name
+                await updateProfile(user, {
+                    displayName: displayName,
+                    photoURL: null // You can add a URL for the photo if desired
                 });
+
+                console.log('User created successfully:', user);
+                // Handle further logic, like redirecting or showing a success message
+            } catch (error) {
+                // Handle errors from Firebase Auth
+                console.error('Error signing up:', error.message);
+                basicNotif('Sign Up Error', error.message, 5000);
+            }
         } else {
-            basicNotif("Passwords dont match.","Please try again",5000)
+            basicNotif("Passwords don't match.", "Please try again", 5000);
         }
     } else {
-
+        basicNotif('Password is too short.', 'Your password must be at least 6 characters long.', 5000);
     }
 }
+
 
 export async function loginWithEmail() {
     const email = document.getElementById('loginEmail').value;

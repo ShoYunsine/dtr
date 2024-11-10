@@ -1,5 +1,5 @@
 import "./firebase.js";
-import { loginWithGoogle, signUpWithEmail } from "./firebase.js";
+import { loginWithEmail, loginWithGoogle, signUpWithEmail } from "./firebase.js";
 
 document.getElementById('signUpWithGoogle').addEventListener('click', async function (event) {
     loginWithGoogle();
@@ -9,8 +9,14 @@ document.getElementById('loginWithGoogle').addEventListener('click', async funct
     loginWithGoogle();
 });
 
-document.getElementById('signUpForm').addEventListener('click', async function (event) {
+document.getElementById('signUpForm').addEventListener('submit', async function (event) {
+  event.preventDefault();
   signUpWithEmail();
+});
+
+document.getElementById('loginForm').addEventListener('submit', async function (event) {
+  event.preventDefault();
+  loginWithEmail();
 });
 
 

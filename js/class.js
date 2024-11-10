@@ -1,10 +1,10 @@
 import {
     fetchClass, fetchMembers,
     changeMemberRole, fetchProfile,
-    getCurrentUser, fetchMember, 
-    kickfromClass, db, 
-    checkAttendance, getAttendance, 
-    postPost, fetchClassPosts, 
+    getCurrentUser, fetchMember,
+    kickfromClass, db,
+    checkAttendance, getAttendance,
+    postPost, fetchClassPosts,
     deletePost, generateUniquePostSyntax,
     addToLikedPosts,
     removeFromLikedPosts,
@@ -426,9 +426,9 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             console.error("Attendance list element not found.");
             return; // Exit if the attendance list element is not found
         }
-    
+
         attendanceList.innerHTML = ''; // Clear existing list items before updating
-    
+
         // Loop through members to update the attendance list
         for (const member of members) {
             try {
@@ -440,13 +440,13 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 // Extract status and time from attendance data
                 const attendanceStatus = attendanceRecord ? attendanceRecord.status : 'Absent';
                 const time = attendanceRecord && attendanceRecord.timeChecked ? convertTo12Hour(attendanceRecord.timeChecked) : "Not Available";
-    
+
                 // Find the member profile using memberId
                 const memberData = memberProfiles.find(profile => profile.uid === memberId);
-    
+
                 // Get the display name or set a default value if not found
                 const displayName = memberData ? memberData.displayName : 'Unknown Member';
-    
+
                 // Determine the color class based on status
                 let statusClass = '';
                 switch (attendanceStatus.toLowerCase()) {
@@ -462,11 +462,11 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     default:
                         statusClass = ''; // Default class or leave it empty
                 }
-    
+
                 // Create list item for the member
                 const listItem = document.createElement('li');
-            listItem.classList.add('list-item');
-            listItem.innerHTML = `
+                listItem.classList.add('list-item');
+                listItem.innerHTML = `
                 <div class="${statusClass}">
                 <img src=${memberData.photoUrl}></img>
                     <h3>${memberData.displayName}</h3>
@@ -476,22 +476,22 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 <div>
                 
                 ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                    && member.role !== 'owner'
-                    && member.id !== currentUserLogged.uid ? `<label for="memberoptions${memberData.uid}"><i class="fa-solid fa-ellipsis"></i></label>` : ""}
+                        && member.role !== 'owner'
+                        && member.id !== currentUserLogged.uid ? `<label for="memberoptions${memberData.uid}"><i class="fa-solid fa-ellipsis"></i></label>` : ""}
                 </div>
                 <input class="option" type="checkbox" style="display: none;" id="memberoptions${memberData.uid}">
                 <div id="memberoptions">
                 ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                    && member.role !== 'owner'
-                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
+                        && member.role !== 'owner'
+                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
 ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                    && member.role !== 'owner'
-                    && member.role !== 'admin'
-                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
+                        && member.role !== 'owner'
+                        && member.role !== 'admin'
+                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
 ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                    && member.role !== 'owner'
-                    && member.role === 'admin'
-                    && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
+                        && member.role !== 'owner'
+                        && member.role === 'admin'
+                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
         ${(currentmember.role === 'owner' && member.id !== currentUserLogged.uid) ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="give-owner"><i id="i" class="fa-solid fa-arrow-right-arrow-left"></i> Transfer Ownership</button>` : ''}
                 </div>
                 `;
@@ -501,8 +501,8 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             }
         }
     }
-    
-    
+
+
     function getFilteredData(range, customRange = null) {
         const today = new Date();
         const filteredData = {};
@@ -1308,12 +1308,6 @@ async function addPostTemplate(img, matches) {
                 suggestionBox.style.display = 'none'; // Hide the suggestion box
             }
 
-            // Function to check for overflow and add new line breaks
-            function addNewLineToTextarea(textarea) {
-                const value = textarea.value;
-                textarea.value = value + '\n'; // Add a new line at the end
-            }
-
             // Function to calculate the caret's coordinates within the textarea
             function getCaretCoordinates(textarea) {
                 const text = textarea.value.substr(0, textarea.selectionStart);
@@ -1341,48 +1335,50 @@ async function addPostTemplate(img, matches) {
 
 
         template.querySelector('#postPost').addEventListener('click', async () => {
-            const description = template.querySelector('#desc').value;
-            const postSyntax = await generateUniquePostSyntax(syntax);
-            const buttons = template.querySelector('#post-buttons');
-            buttons.innerHTML = "<p>Posting...<p>"
-
-            loadingBar.style.transform = 'translateX(-100%)'
-            await postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax, user.uid);
-
-            const location = await getCurrentLocation();
-            const distance = calculateDistance(
-                location.latitude,
-                location.longitude,
-                classroom.lat,
-                classroom.long
-            );
-            if (emails) {
-                const href = `https://shoyunsine.github.io/dtr/post.html?postId=${postSyntax}&syntax=${syntax}`;
-                for (const email of emails) {
-                    await emailTagged(email, classroom.name, user.displayName, description, href)
+            try {
+                const description = template.querySelector('#desc').value;
+                const postSyntax = await generateUniquePostSyntax(syntax);
+                const buttons = template.querySelector('#post-buttons');
+                buttons.innerHTML = "<p>Posting...<p>";
+        
+                loadingBar.style.transform = 'translateX(-100%)';
+                await postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax, user.uid);
+        
+                // Attempt to get location
+                const location = await getCurrentLocation();
+                const distance = calculateDistance(
+                    location.latitude,
+                    location.longitude,
+                    classroom.lat,
+                    classroom.long
+                );
+        
+                if (emails) {
+                    const href = `https://shoyunsine.github.io/dtr/post.html?postId=${postSyntax}&syntax=${syntax}`;
+                    const emailPromises = emails.map(email => emailTagged(email, classroom.name, user.displayName, description, href));
+                    await Promise.all(emailPromises);
                 }
-            }
-
-            //basicNotif(distance,distance <= classroom.rad, 5000)
-            //basicNotif(code.data,distance <= classroom.rad, 5000)
-            if (distance <= classroom.rad) {
-                // Loop through matches array and check attendance for each match
-                if (matches) {
-                    for (const match of matches) {
-                        console.log(match)
-                        const attendance = await checkAttendance(syntax, classroom.timezone, match);
+        
+                if (distance <= classroom.rad && matches) {
+                    const attendancePromises = matches.map(async match => {
+                        console.log(match);
+                        await checkAttendance(syntax, classroom.timezone, match);
                         updateattendanceList();
-                    }
+                    });
+                    await Promise.all(attendancePromises);
                 }
-
+        
+                await createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid, 0, matches);
+                loadingBar.style.transform = 'translateX(100%)';
+                cancelFunction(template);
+        
+            } catch (error) {
+                console.error("Error getting location or posting:", error);
+                buttons.innerHTML = "<p>Error: Could not complete the post. Please check location permissions.</p>";
+                loadingBar.style.transform = 'translateX(0%)'; // Reset loading bar if there's an error
             }
-
-
-            await createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid, 0, matches);
-            loadingBar.style.transform = 'translateX(100%)'
-            cancelFunction(template);
-            // Hide loading bar when done
         });
+        
 
         template.querySelector('#cancelPost').addEventListener('click', () => {// Hide loading bar when done
             cancelFunction(template);
