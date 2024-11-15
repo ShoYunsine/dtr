@@ -419,7 +419,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             console.error(`Failed to fetch profile for member with ID ${member.id}:`, error);
         }
     }
-    console.log(memberProfiles);
+    console.log("Profile",memberProfiles);
     async function updateAttendanceList(date, session) {
         const attendanceList = document.getElementById('attendance-List'); // Adjust based on your HTML structure
         if (!attendanceList) {
@@ -501,7 +501,6 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             }
         }
     }
-
 
     function getFilteredData(range, customRange = null) {
         const today = new Date();
@@ -716,8 +715,86 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
         });
     }
 
-
-
+    function updateCalendarHeatmap(range, customRange = null) {
+        const filteredData = getFilteredData(range, customRange);
+        const dates = Object.keys(filteredData).sort((a, b) => new Date(a) - new Date(b));
+        const calendarContainer = document.getElementById('heatmap-calendar');
+        const timeSelector = document.getElementById('time'); // Get the selected value from the dropdown
+    
+        const selectedTime = timeSelector.value; // "morning" or "afternoon"
+        
+        // Clear the calendar
+        calendarContainer.innerHTML = '';
+    
+        let lastMonth = '';
+    
+        // Generate the heatmap
+        dates.forEach((date, index) => {
+            const currentDate = new Date(date);
+            const dayOfMonth = currentDate.getDate();
+            const currentMonth = currentDate.toLocaleString('default', { month: 'short' });
+    
+            // Check if the month has changed
+            if (currentMonth !== lastMonth) {
+                lastMonth = currentMonth;
+                const monthLabel = document.createElement('div');
+                monthLabel.className = 'heatmap-month-label';
+                monthLabel.textContent = currentMonth;
+                calendarContainer.appendChild(monthLabel);
+            }
+    
+            const data = filteredData[date];
+            
+            // Assuming you can calculate the number of members somehow (e.g., from `data`)
+            const numberOfMembers = memberProfiles.length || 0; // Adjust to your data structure
+            
+            // Calculate the total expected attendance counts (each member has a morning and afternoon session)
+            const total = numberOfMembers;
+    
+            // Calculate the combined "present + late" for either morning or afternoon based on the selected time
+            let presentAndLate = 0;
+            if (selectedTime === 'morning') {
+                presentAndLate = (data?.morning?.present.count || 0) + (data?.morning?.late.count || 0);
+            } else if (selectedTime === 'afternoon') {
+                presentAndLate = (data?.afternoon?.present.count || 0) + (data?.afternoon?.late.count || 0);
+            }
+    
+            // Calculate the percentage for color intensity (scaled down slightly for clearer distinction)
+            const percentage = total > 0 ? (presentAndLate / total) * 0.8 : 0;
+    
+            // Create the day element
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'heatmap-day';
+            
+            // Set the animation delay for each element based on its position in the loop
+            const delay = index * 0.1; // Delay each element by 0.1s incrementally
+            dayDiv.style.animationDelay = `${delay}s`;
+            dayDiv.style.backgroundColor = `rgba(0, 255, 0, ${percentage})`;
+    
+            // Add the day number to the cube
+            const dayLabel = document.createElement('span');
+            dayLabel.className = 'day-label';
+            dayLabel.textContent = dayOfMonth;
+    
+            // Add click event to the day div
+            dayDiv.addEventListener('click', async () => {
+                // Determine which session to use based on selected time
+                const session = selectedTime === 'morning' ? 'morning' : 'afternoon';
+                await updateAttendanceList(date, session); // Call your function to update the attendance list
+    
+                // Add a thick dotted border to the clicked day
+                const allDays = document.querySelectorAll('.heatmap-day');
+                allDays.forEach(day => {
+                    day.classList.remove('clicked'); // Remove previous selection
+                });
+                dayDiv.classList.add('clicked'); // Add the clicked class to the current day
+            });
+    
+            dayDiv.appendChild(dayLabel);
+            calendarContainer.appendChild(dayDiv);
+        });
+    }
+    
     document.getElementById('dateRange').addEventListener('change', function () {
         const selectedRange = this.value;
         const customRangeSelector = document.getElementById('customRangeSelector');
@@ -741,12 +818,15 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 return;
             }
 
-            updateChart(range, { startDate, endDate });
+            //updateChart(range, { startDate, endDate });
+            updateCalendarHeatmap(range, { startDate, endDate });    
         } else {
-            updateChart(range);
+            updateCalendarHeatmap(range);
+            //updateChart(range);
         }
     });
-    updateChart("week");
+    updateCalendarHeatmap("week");
+    //updateChart("week");
 }
 
 
@@ -754,15 +834,6 @@ async function updatememberList() {
     const currentUserlogged = await getCurrentUser();
     const currentmember = await fetchMember(syntax, currentUserlogged.uid)
     const members = await fetchMembers(syntax);
-
-    for (const member of members) {
-        try {
-            const profile = await fetchProfile(member.id); // Fetch profile using member.id
-
-        } catch (error) {
-            console.error(`Error fetching profile for member ID ${member.id}:`, error);
-        }
-    }
 
     const memberList = document.getElementById('memberList');
     if (!currentmember) {

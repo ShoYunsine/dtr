@@ -111,6 +111,7 @@
               <option value="custom">Custom Range</option> <!-- Custom Range option -->
           </select>
           
+
           <!-- Start and End date selectors, hidden initially -->
           <div id="customRangeSelector" style="display: none;">
               <label for="startDate">Start Date:</label>
@@ -123,17 +124,17 @@
           <button id="applyDateRange">Apply</button>
       </div>
       <div id="chartOptions">
-        <label for="chartType">Chart Type:</label>
-        <select id="chartType">
-            <option value="line">Line</option>
-            <option value="bar">Bar</option>
+        <label for="time">Time:</label>
+        <select id="time">
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
         </select>
     </div>
     
         <div class="chart-container">
-          <p>Attendance</p>
-          <canvas id="attendanceChart"></canvas>
-
+          
+          <div id="heatmap-calendar"></div>
+          <p>Heatmap</p>
         </div>
         <nav>
           <div id="search"><i class="fa-solid fa-magnifying-glass"></i><input id="attendanceSearch"

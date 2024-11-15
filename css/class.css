@@ -292,6 +292,61 @@
   bottom: -1%;
 }
 
+#heatmap-calendar {
+  width: 90%;
+  max-width: 800px;
+  margin: auto;
+  display: flex;
+  gap: 2px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.heatmap-day {
+  width: 25px;
+  height: 25px;
+  position: relative;
+  background-color: rgba(0, 255, 0); /* Light green by default */
+  text-align: center;
+  border-radius: 5px;
+  border: 0.25px solid var(--text-color-second);
+  font-size: 0.7rem;
+  animation: fadeIn 0.5s ease-out forwards; /* Apply fade-in animation */
+}
+.heatmap-day:hover {
+  font-size: medium;
+}
+.heatmap-day span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  color: var(--text-color-main);
+  transform: translate(-50%, -50%);
+}
+
+.heatmap-month-label {
+  width: 25px;
+  height: 25px;
+padding: 4px;
+  font-weight: bold;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-color-second);
+  background-color: transparent; /* Optional: Adds background to label */
+  animation: fadeIn 0.5s ease-out forwards; /* Apply fade-in animation */
+}
+
+.day-label {
+  font-size: 12px; /* Adjust to fit inside the 10px x 10px box */
+  color: var(--text-color-main);   /* Adjust contrast as needed */
+  pointer-events: none; /* So the text doesn't interfere with hover */
+}
+
+.clicked {
+  border: 3px dotted var(--text-color-main); /* 4px thick dotted border */
+  outline: none; /* To remove any default focus outline */
+}
 
 @keyframes scaleUp {
   0% {
