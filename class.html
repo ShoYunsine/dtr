@@ -24,8 +24,8 @@
   <label for="sidebar-toggle" class="backdrop"></label>
   <div class="top-bar">
     <div class="logo">
-      <a>Logbook</a>
       <label for="sidebar-toggle" class="sidebar-button">☰</label>
+      <a>Logbook</a>
     </div>
     <div class="nav-links">
       <a id="account"><img id="accountImg" src="Images/gear.png"></img></a>
@@ -42,7 +42,6 @@
         </li>
         <li><a href="#">QR Code</a>
           <div><canvas id="qrcode"></canvas></div>
-          <button id="downloadQR">Download QR Code</button>
           <div id="accountDetails">
             <div id="bg"><img id="accountImg" src="Images/gear.png"></img></div>
             <div id="accountName">Not currently logged in</div>
@@ -51,6 +50,16 @@
         </li>
         <li>
           <a>Profile</a>
+          <details class="info-details">
+            <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+            <div class="info-panel">
+              <p>Update face - Upload a clear of your face and your face only so that face recognition will recognize
+                you.</p>
+              <br>
+              <p>Register RFID - Used to register your id that has RFID (Only available for those phones that have NFC
+                compatability).</p>
+            </div>
+          </details>
           <ul class="classList">
             <li class="list-item">
               <div>
@@ -70,7 +79,7 @@
             </li>
           </ul>
         </li>
-        
+
         <li>
           <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
           <div class="switch">
@@ -94,8 +103,12 @@
       <h2 id="className">.</h2>
       <p id="code"><i>.</i></p>
     </div>
+    <div id="classOption">
+      <button id="leaveButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> Leave</button>
+      <button id="deleteButton"><i class="fa-solid fa-trash"></i> Delete</button>
+    </div>
     <input type="radio" id="attendanceTab" name="formToggle" checked>
-    <input type="radio" id="postTab"  name="formToggle">
+    <input type="radio" id="postTab" name="formToggle">
     <div id="formSwitch">
       <label for="attendanceTab" class="switch-btn">Attendance</label>
       <label for="postTab" class="switch-btn">Posts</label>
@@ -105,34 +118,40 @@
         <div id="dateRangeSelector">
           <label for="dateRange">Select Date Range:</label>
           <select id="dateRange">
-              <option value="week">1 Week Ago</option>
-              <option value="month">1 Month Ago</option>
-              <option value="year">1 Year Ago</option>
-              <option value="custom">Custom Range</option> <!-- Custom Range option -->
+            <option value="week">1 Week Ago</option>
+            <option value="month">1 Month Ago</option>
+            <option value="year">1 Year Ago</option>
+            <option value="custom">Custom Range</option> <!-- Custom Range option -->
           </select>
-          
+
 
           <!-- Start and End date selectors, hidden initially -->
           <div id="customRangeSelector" style="display: none;">
-              <label for="startDate">Start Date:</label>
-              <input type="date" id="startDate">
-              <br>
-              <label for="endDate">End Date:</label>
-              <input type="date" id="endDate">
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate">
+            <br>
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate">
           </div>
-      
+
           <button id="applyDateRange">Apply</button>
-      </div>
-      <div id="chartOptions">
-        <label for="time">Time:</label>
-        <select id="time">
+        </div>
+        <div id="chartOptions">
+          <label for="time">Time:</label>
+          <select id="time">
             <option value="morning">Morning</option>
             <option value="afternoon">Afternoon</option>
-        </select>
-    </div>
-    
+          </select>
+        </div>
+        <details class="info-details">
+          <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+          <div class="info-panel">
+            <p>The heatmap helps visualize dates that attendance was taken. Clicking on the numbers shows the data
+              collected in that date.</p>
+          </div>
+        </details>
         <div class="chart-container">
-          
+
           <div id="heatmap-calendar"></div>
           <p>Heatmap</p>
         </div>
@@ -161,12 +180,15 @@
   <div id="buttonsdown">
     <button id="facescan-button">
       <i class="fa-solid fa-id-card"></i>
+      <a>RFID</a>
     </button>
     <button id="camera-button">
       <i class="fa-regular fa-square-plus"></i>
+      <a>Post</a>
     </button>
     <button id="qr-code-reader">
       <i class="fas fa-qrcode"></i>
+      <a>Scan QR</a>
     </button>
   </div>
 

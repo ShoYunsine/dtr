@@ -151,7 +151,7 @@ body::-webkit-scrollbar {
   font-style: normal;
 }
 .top-bar .logo a {
-  margin-right: 10px;
+  margin-left: 10px;
   text-decoration: none;
   font-family: 'Billabong', sans-serif;
   font-size: 230%;

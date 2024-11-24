@@ -93,9 +93,8 @@ onAuthStateChanged(auth, async (user) => {
             if (userClasses != "None") {
                 for (const classData of userClasses) {
                     const syntax = classData.syntax;  // Assuming `syntax` is a property of each class
-                    
-                    const classPosts = await fetchClassPosts(syntax, alreadyFetched, 2);
 
+                    const classPosts = await fetchClassPosts(syntax, alreadyFetched, 2);
 
                     console.log(alreadyFetched);
                     async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid, likes) {
@@ -466,55 +465,55 @@ onAuthStateChanged(auth, async (user) => {
                     window.addEventListener('scroll', fetchPostsOnScroll);
                 }
                 displayUserClasses();
-            document.getElementById('classList').addEventListener('click', async function (event) {
-                if (event.target.classList.contains('remove-btn')) {
-                    var listItem = event.target.closest('li');
+                document.getElementById('classList').addEventListener('click', async function (event) {
+                    if (event.target.classList.contains('remove-btn')) {
+                        var listItem = event.target.closest('li');
 
-                    var syntax = listItem.querySelector('#uid').textContent;
-                    let classData = await fetchClass(syntax);
-                    if (await confirmNotif(`Are you sure you want to remove ${classData.name}`)) {
-                        try {
-                            await removeClass(syntax);
-                            basicNotif("Removed class succesfully", `Removed ${classData.name}`, 5000);
-                            console.log("Class removed successfully:", syntax);
+                        var syntax = listItem.querySelector('#uid').textContent;
+                        let classData = await fetchClass(syntax);
+                        if (await confirmNotif(`Are you sure you want to remove ${classData.name}`)) {
+                            try {
+                                await removeClass(syntax);
+                                basicNotif("Removed class succesfully", `Removed ${classData.name}`, 5000);
+                                console.log("Class removed successfully:", syntax);
 
-                            listItem.remove();
-                        } catch (error) {
+                                listItem.remove();
+                            } catch (error) {
 
-                            console.error("Error removing class:", error);
+                                console.error("Error removing class:", error);
+                            }
+                        } else {
+                            basicNotif("Class removal canceled", `canceled reomiving ${classData.name}`, 5000);
+                            console.log("Class removal canceled.");
+                        }
+                    } else if (event.target.classList.contains('leave-btn')) {
+                        var listItem = event.target.closest('li');
+
+                        var syntax = listItem.querySelector('#uid').textContent;
+                        let classData = await fetchClass(syntax);
+
+                        if (await confirmNotif(`Are you sure you want to leave ${classData.name}?`)) {
+
+                            try {
+                                await leaveClass(syntax);
+                                console.log("Class removed successfully:", syntax);
+                                basicNotif("Left class succesfully", `Left ${classData.name}`, 5000);
+                                listItem.remove();
+                            } catch (error) {
+                                console.error("Error leaving class:", error);
+                            }
+                        } else {
+                            basicNotif("Class leave canceled", `canceled leaving ${classData.name}`, 5000);
+                            console.log("Class leave canceled.");
                         }
                     } else {
-                        basicNotif("Class removal canceled", `canceled reomiving ${classData.name}`, 5000);
-                        console.log("Class removal canceled.");
+                        var listItem = event.target.closest('li');
+
+                        var syntax = listItem.querySelector('#uid').textContent;
+
+                        window.location.href = `class.html?syntax=${syntax}`;
                     }
-                } else if (event.target.classList.contains('leave-btn')) {
-                    var listItem = event.target.closest('li');
-
-                    var syntax = listItem.querySelector('#uid').textContent;
-                    let classData = await fetchClass(syntax);
-
-                    if (await confirmNotif(`Are you sure you want to leave ${classData.name}?`)) {
-
-                        try {
-                            await leaveClass(syntax);
-                            console.log("Class removed successfully:", syntax);
-                            basicNotif("Left class succesfully", `Left ${classData.name}`, 5000);
-                            listItem.remove();
-                        } catch (error) {
-                            console.error("Error leaving class:", error);
-                        }
-                    } else {
-                        basicNotif("Class leave canceled", `canceled leaving ${classData.name}`, 5000);
-                        console.log("Class leave canceled.");
-                    }
-                } else {
-                    var listItem = event.target.closest('li');
-
-                    var syntax = listItem.querySelector('#uid').textContent;
-
-                    window.location.href = `class.html?syntax=${syntax}`;
-                }
-            });
+                });
 
             };
 
@@ -1083,9 +1082,9 @@ export async function signUpWithEmail() {
     const email = document.getElementById('signUpEmail').value;
     const password = document.getElementById('signUpPassword').value;
     const confirmpassword = document.getElementById('signUpPasswordConfirm').value;
-    
+
     console.log(displayName, email, password, confirmpassword);
-    
+
     // Validate password length (for example, minimum 6 characters)
     if (checkpasswordlength(password)) {
         if (confirmpassword === password) {
@@ -1454,7 +1453,10 @@ export async function kickfromClass(syntax, id) {
 export async function leaveClass(syntax) {
     const auth = getAuth();
     const user = auth.currentUser;
+
+    // User's class reference
     const userRef = doc(db, 'users', user.uid, 'classes', syntax);
+
     try {
         // Check if the class exists before trying to delete
         const docSnap = await getDoc(userRef);
@@ -1468,31 +1470,62 @@ export async function leaveClass(syntax) {
     } catch (error) {
         console.error("Error deleting document from Firestore:", error);
     }
+
+    // Class reference and member reference
     const classRef = doc(db, 'classes', syntax);
     const memberRef = doc(classRef, 'members', user.uid);
+
     try {
-        // Check if the class exists before trying to delete
+        // Check if the member document exists
         const docSnap = await getDoc(memberRef);
         if (docSnap.exists()) {
-            console.log("Document path:", userRef.path);
-            await deleteDoc(memberRef);
-            console.log("Class removed from Firestore:", syntax);
-            const urlParams = new URLSearchParams(window.location.search);
-            const pagesyntax = urlParams.get('syntax');
-            console.log(pagesyntax === syntax)
-            if (pagesyntax) {
-                if (pagesyntax === syntax) {
-                    window.location.href = `classes.html`;
+            console.log("Document path:", memberRef.path);
+console.log(docSnap)
+            // Handle ownership transfer if the user is the owner
+            if (docSnap.data().role === 'owner') {
+                // Fetch all members of the class
+                const members = await fetchMembers(syntax);
+
+                // Filter admins from members
+                const admins = members.filter(member => member.role === 'admin');
+
+                if (admins.length === 0) {
+                    // No admins available, assign a random member as the new owner
+                    const randomIndex = Math.floor(Math.random() * members.length);
+                    const newOwner = members[randomIndex];
+                    await changeMemberRole(syntax, newOwner.id, 'owner');
+                    console.log(`New owner assigned: ${newOwner.id}`);
+                } else if (admins.length != 0) {
+                    // Randomly assign an admin as the new owner
+                    const randomIndex = Math.floor(Math.random() * admins.length);
+                    const newOwner = admins[randomIndex];
+                    await changeMemberRole(syntax, newOwner.id, 'owner');
+                    console.log(`New owner assigned: ${newOwner.id}`);
+                }
+                else if (members.length === 1) {
+                    // Randomly assign an admin as the new owner
+                    await removeClass(syntax);
                 }
             }
+
+            // Remove the user from the class members collection
+            await deleteDoc(memberRef);
+            console.log("Member removed from class:", syntax);
+
+            // Redirect if the user is leaving the currently viewed class
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageSyntax = urlParams.get('syntax');
+            if (pageSyntax === syntax) {
+                window.location.href = `classes.html`;
+            }
         } else {
-            console.error("Class not found in Firestore:", syntax);
+            console.error("Member document not found in Firestore:", syntax);
         }
     } catch (error) {
-        console.error("Error deleting document from Firestore:", error);
+        console.error("Error processing class membership:", error);
     }
-
 }
+
 
 export async function getUserClasses() {
     const user = auth.currentUser;

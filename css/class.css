@@ -83,13 +83,25 @@
   flex-direction: row;
   bottom: 0;
   width: 100%;
-  padding: 12px 0;
+  padding: 22px 0;
   gap: 10px;
   z-index: 99;
   justify-content: flex-end;
   background-color: var(--background-color);
   border-top: 1px solid var(--border-color);
   flex-wrap: nowrap;
+}
+
+#buttonsdown button{
+  display: flex;
+  width: 100px;
+  flex-direction: column;
+}
+
+#buttonsdown button a{
+  display: flex;
+  font-size: 12px;
+  padding: 4px;
 }
 
 #posts {
@@ -295,12 +307,15 @@
 #heatmap-calendar {
   width: 90%;
   max-width: 800px;
-  margin: auto;
+  margin: 4px auto;
+  padding: 12px;
   display: flex;
   gap: 2px;
   justify-content: flex-start;
   flex-wrap: wrap;
   align-items: center;
+  border: 0.25px solid var(--border-color);
+  border-radius: 4px;
 }
 
 .heatmap-day {
@@ -310,7 +325,6 @@
   background-color: rgba(0, 255, 0); /* Light green by default */
   text-align: center;
   border-radius: 5px;
-  border: 0.25px solid var(--text-color-second);
   font-size: 0.7rem;
   animation: fadeIn 0.5s ease-out forwards; /* Apply fade-in animation */
 }
@@ -328,7 +342,6 @@
 .heatmap-month-label {
   width: 25px;
   height: 25px;
-padding: 4px;
   font-weight: bold;
   font-size: 12px;
   text-align: center;
@@ -344,7 +357,7 @@ padding: 4px;
 }
 
 .clicked {
-  border: 3px dotted var(--text-color-main); /* 4px thick dotted border */
+  border: 1px dotted var(--text-color-main); /* 4px thick dotted border */
   outline: none; /* To remove any default focus outline */
 }
 
@@ -760,6 +773,27 @@ padding: 4px;
   flex-grow: 1;
   width: 100px;
   height: 100px;
+}
+
+#classOption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+#classOption button{
+  width: 100px;
+  padding: 4px 8px;
+  background-color: var(--background-color);
+  color: var(--text-color-main);
+  border: 1px solid var(--text-color-second);
+  border-radius: 4px;
+  transition: 0.3s;
+}
+
+#classOption button:hover{
+  background-color: var(--text-color-second);
 }
 
 @media (max-width: 785px) {

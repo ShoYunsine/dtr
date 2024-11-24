@@ -23,8 +23,8 @@
   <label for="sidebar-toggle" class="backdrop"></label>
   <div class="top-bar">
     <div class="logo">
-      <a>Logbook</a>
       <label for="sidebar-toggle" class="sidebar-button">☰</label>
+      <a>Logbook</a>
     </div>
     <div class="nav-links">
 
@@ -36,7 +36,6 @@
       <ul>
         <li><a href="#">QR Code</a>
           <div><canvas id="qrcode"></canvas></div>
-          <button id="downloadQR">Save QR Code</button>
           <div id="accountDetails">
             <div id="bg"><img id="accountImg" src="Images/gear.png"></img></div>
             <div id="accountName">Not currently logged in</div>
@@ -45,6 +44,14 @@
         </li>
         <li>
           <a>Profile</a>
+          <details class="info-details">
+            <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+            <div class="info-panel">
+              <p>Update face - Upload a clear of your face and your face only so that face recognition will recognize you.</p>
+              <br>
+              <p>Register RFID - Used to register your id that has RFID (Only available for those phones that have NFC compatability).</p>
+            </div>
+          </details>
           <ul class="classList">
             <li class="list-item">
               <div>
@@ -78,7 +85,16 @@
     </nav>
   </aside>
   <div class="main-container">
+    <details class="info-details">
+      <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+      <div class="info-panel">
+        <p>How to Add Class</p>
+        <br>
+        <p>Below there will be an add class button. When you press the button you will be taken to a form that will let you create or join a class.</p>
+      </div>
+    </details>
     <div class="form-section" style="padding:0;">
+      
       <ul id="classList">
         <li class="list-item">
           <div>
@@ -88,10 +104,10 @@
         </li>
       </ul>
     </div>
+   
     <div class="form-section" style="padding:0;">
       <div id="postList" class="attendanceList" style="display:block;">
         <ul id="posts">
-
         </ul>
       </div>
     </div>

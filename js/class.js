@@ -10,7 +10,8 @@ import {
     removeFromLikedPosts,
     displayComments,
     sendCommentToPost,
-    emailTagged
+    emailTagged,
+    leaveClass
 } from './firebase.js';
 
 const luxonScript = document.createElement('script');
@@ -194,7 +195,6 @@ facescanButton.addEventListener('click', async () => {
     }
 });
 
-
 function handleCameraError(err) {
     switch (err.name) {
         case 'NotReadableError':
@@ -216,7 +216,6 @@ function handleCameraError(err) {
     }
 }
 
-
 async function getCurrentLocation() {
     return new Promise((resolve, reject) => {
         if (navigator.geolocation) {
@@ -233,7 +232,6 @@ async function getCurrentLocation() {
         }
     });
 }
-
 
 async function scanQRCode() {
     if (video.videoWidth > 0 && video.videoHeight > 0) {
@@ -304,10 +302,6 @@ let members;
 const memberProfiles = [];
 const className = document.getElementById('className');
 const classCode = document.getElementById('code');
-//const timeIn = document.getElementById('timeIn');
-//const lat = document.getElementById('latitude');
-//const long = document.getElementById('longitude');
-//const rad = document.getElementById('radius');
 let syntax;
 
 function convertTo12Hour(militaryTime) {
@@ -328,11 +322,11 @@ function capitalizeFirstLetter(str) {
     if (!str) return str; // Handle empty strings
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
-
+let currentmember
 async function updateattendanceList() {
     const currentUserLogged = await getCurrentUser();
     const currentMember = await fetchMember(syntax, currentUserLogged.uid);
-    let currentmember = currentMember;
+    currentmember = currentMember;
     members = await fetchMembers(syntax);
     const attendanceList = document.getElementById('attendance-List');
 
@@ -419,7 +413,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             console.error(`Failed to fetch profile for member with ID ${member.id}:`, error);
         }
     }
-    console.log("Profile",memberProfiles);
+    console.log("Profile", memberProfiles);
     async function updateAttendanceList(date, session) {
         const attendanceList = document.getElementById('attendance-List'); // Adjust based on your HTML structure
         if (!attendanceList) {
@@ -576,164 +570,25 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
     // Function to update the chart with filtered data
     let attendanceChart;
 
-
-    function updateChart(range, customRange = null) {
-        const filteredData = getFilteredData(range, customRange);
-        const dates = Object.keys(filteredData).sort((a, b) => new Date(a) - new Date(b));
-
-        // Extract data for morning
-        const morningPresentData = dates.map(date => filteredData[date]?.morning?.present.count || 0);
-        const morningLateData = dates.map(date => filteredData[date]?.morning?.late.count || 0);
-        const morningAbsentData = dates.map(date => filteredData[date]?.morning?.absent.count || 0);
-
-        // Extract data for afternoon
-        const afternoonPresentData = dates.map(date => filteredData[date]?.afternoon?.present.count || 0);
-        const afternoonLateData = dates.map(date => filteredData[date]?.afternoon?.late.count || 0);
-        const afternoonAbsentData = dates.map(date => filteredData[date]?.afternoon?.absent.count || 0);
-
-        const chartType = document.getElementById('chartType').value;
-
-        // Destroy the previous chart instance if it exists
-        if (attendanceChart) {
-            attendanceChart.destroy();
-        }
-
-        const ctx = document.getElementById('attendanceChart').getContext('2d');
-        attendanceChart = new Chart(ctx, {
-            type: chartType, // Use the selected chart type
-            data: {
-                labels: dates,
-                datasets: [
-                    {
-                        label: 'Morning Present',
-                        data: morningPresentData,
-                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                        borderColor: 'rgba(75, 192, 192, 0.6)',
-                        borderWidth: 1,
-                        stack: 'morning', // Specify stack group
-                        barThickness: chartType === 'bar' ? 20 : undefined,
-                    },
-                    {
-                        label: 'Morning Late',
-                        data: morningLateData,
-                        backgroundColor: 'rgba(255, 206, 86, 0.6)',
-                        borderColor: 'rgba(255, 206, 86, 0.6)',
-                        borderWidth: 1,
-                        stack: 'morning', // Specify stack group
-                        barThickness: chartType === 'bar' ? 20 : undefined,
-                    },
-                    {
-                        label: 'Morning Absent',
-                        data: morningAbsentData,
-                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                        borderColor: 'rgba(255, 99, 132, 0.6)',
-                        borderWidth: 1,
-                        stack: 'morning', // Specify stack group
-                        barThickness: chartType === 'bar' ? 20 : undefined,
-                    },
-                    {
-                        label: 'Afternoon Present',
-                        data: afternoonPresentData,
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 0.6)',
-                        borderWidth: 1,
-                        stack: 'afternoon', // Specify stack group',
-                        barThickness: chartType === 'bar' ? 20 : undefined,
-                    },
-                    {
-                        label: 'Afternoon Late',
-                        data: afternoonLateData,
-                        backgroundColor: 'rgba(255, 159, 64, 0.6)',
-                        borderColor: 'rgba(255, 159, 64, 0.6)',
-                        borderWidth: 1,
-                        stack: 'afternoon',
-                        barThickness: chartType === 'bar' ? 20 : undefined,
-                    },
-                    {
-                        label: 'Afternoon Absent',
-                        data: afternoonAbsentData,
-                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
-                        borderColor: 'rgba(153, 102, 255, 0.6)',
-                        borderWidth: 1,
-                        stack: 'afternoon',
-                        barThickness: chartType === 'bar' ? 20 : undefined,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        stacked: true, // Set to true for stacked bars, false for grouped
-                        title: {
-                            display: true,
-                            text: 'Dates' // Add a title for the x-axis
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Attendance Count' // Add a title for the y-axis
-                        }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function (tooltipItem) {
-                                const date = tooltipItem.label;
-                                const status = tooltipItem.dataset.label.toLowerCase().split(' ')[1]; // 'present', 'late', or 'absent'
-                                const session = tooltipItem.dataset.label.toLowerCase().split(' ')[0]; // 'morning' or 'afternoon'
-                                const names = filteredData[date]?.[session]?.[status]?.names || []; // Ensure names is defined
-                                return [
-                                    `${tooltipItem.dataset.label}: ${tooltipItem.raw}`,
-                                    `Names: ${names.length ? names.join(', ') : 'None'}` // Use comma for simplicity
-                                ];
-                            }
-                        }
-                    }
-                },
-                onClick: async function (event) {
-                    const activePoints = this.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
-                    if (activePoints.length > 0) {
-                        const { datasetIndex, index } = activePoints[0]; // Get the first active point
-
-                        // Assuming you have a way to get the corresponding date and session based on your dataset
-                        const date = this.data.labels[index]; // Get the date
-                        const sessionLabel = this.data.datasets[datasetIndex].label; // Get the dataset label (e.g., 'morning present')
-
-                        const session = sessionLabel.split(' ')[0]; // 'morning' or 'afternoon'
-                        const status = sessionLabel.split(' ')[1]; // 'present', 'late', or 'absent'
-
-                        // Call a function to update attendance list based on the clicked item
-                        await updateAttendanceList(date, session);
-                    }
-                },
-            }
-        });
-    }
-
     function updateCalendarHeatmap(range, customRange = null) {
         const filteredData = getFilteredData(range, customRange);
         const dates = Object.keys(filteredData).sort((a, b) => new Date(a) - new Date(b));
         const calendarContainer = document.getElementById('heatmap-calendar');
         const timeSelector = document.getElementById('time'); // Get the selected value from the dropdown
-    
+
         const selectedTime = timeSelector.value; // "morning" or "afternoon"
-        
+
         // Clear the calendar
         calendarContainer.innerHTML = '';
-    
+
         let lastMonth = '';
-    
+
         // Generate the heatmap
         dates.forEach((date, index) => {
             const currentDate = new Date(date);
             const dayOfMonth = currentDate.getDate();
             const currentMonth = currentDate.toLocaleString('default', { month: 'short' });
-    
+
             // Check if the month has changed
             if (currentMonth !== lastMonth) {
                 lastMonth = currentMonth;
@@ -742,15 +597,15 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 monthLabel.textContent = currentMonth;
                 calendarContainer.appendChild(monthLabel);
             }
-    
+
             const data = filteredData[date];
-            
+
             // Assuming you can calculate the number of members somehow (e.g., from `data`)
             const numberOfMembers = memberProfiles.length || 0; // Adjust to your data structure
-            
+
             // Calculate the total expected attendance counts (each member has a morning and afternoon session)
             const total = numberOfMembers;
-    
+
             // Calculate the combined "present + late" for either morning or afternoon based on the selected time
             let presentAndLate = 0;
             if (selectedTime === 'morning') {
@@ -758,30 +613,30 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             } else if (selectedTime === 'afternoon') {
                 presentAndLate = (data?.afternoon?.present.count || 0) + (data?.afternoon?.late.count || 0);
             }
-    
+
             // Calculate the percentage for color intensity (scaled down slightly for clearer distinction)
             const percentage = total > 0 ? (presentAndLate / total) * 0.8 : 0;
-    
+
             // Create the day element
             const dayDiv = document.createElement('div');
             dayDiv.className = 'heatmap-day';
-            
+
             // Set the animation delay for each element based on its position in the loop
             const delay = index * 0.1; // Delay each element by 0.1s incrementally
             dayDiv.style.animationDelay = `${delay}s`;
             dayDiv.style.backgroundColor = `rgba(0, 255, 0, ${percentage})`;
-    
+
             // Add the day number to the cube
             const dayLabel = document.createElement('span');
             dayLabel.className = 'day-label';
             dayLabel.textContent = dayOfMonth;
-    
+
             // Add click event to the day div
             dayDiv.addEventListener('click', async () => {
                 // Determine which session to use based on selected time
                 const session = selectedTime === 'morning' ? 'morning' : 'afternoon';
                 await updateAttendanceList(date, session); // Call your function to update the attendance list
-    
+
                 // Add a thick dotted border to the clicked day
                 const allDays = document.querySelectorAll('.heatmap-day');
                 allDays.forEach(day => {
@@ -789,12 +644,12 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 });
                 dayDiv.classList.add('clicked'); // Add the clicked class to the current day
             });
-    
+
             dayDiv.appendChild(dayLabel);
             calendarContainer.appendChild(dayDiv);
         });
     }
-    
+
     document.getElementById('dateRange').addEventListener('change', function () {
         const selectedRange = this.value;
         const customRangeSelector = document.getElementById('customRangeSelector');
@@ -819,7 +674,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             }
 
             //updateChart(range, { startDate, endDate });
-            updateCalendarHeatmap(range, { startDate, endDate });    
+            updateCalendarHeatmap(range, { startDate, endDate });
         } else {
             updateCalendarHeatmap(range);
             //updateChart(range);
@@ -904,6 +759,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     debouncedUpdateList();
 
     if (syntax) {
+        document.getElementById('leaveButton').addEventListener('click', async function (event) {
+            if (await confirmNotif("Leave Class?","Your attendance data will be removed from this class.") === true) {
+                leaveClass(syntax);
+            }
+        });
         classroom = await fetchClass(syntax);
         if (classroom) {
             className.innerHTML = classroom.name;
@@ -913,13 +773,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const textToCopy = `Join *${classroom.name}* today to get your attendance checked.\n${window.location.origin}/dtr/classes.html?classCode=${classroom.code}`;
                 try {
                     await navigator.clipboard.writeText(textToCopy);
-                    //console.log('Copied plain text to clipboard');
                 } catch (err) {
-                    //console.error('Failed to copy text:', err);
                 }
             });
         } else {
-            //console.error('Failed to fetch classroom');
             window.location.href = `classes.html`;
         }
     } else {
@@ -1411,10 +1268,10 @@ async function addPostTemplate(img, matches) {
                 const postSyntax = await generateUniquePostSyntax(syntax);
                 const buttons = template.querySelector('#post-buttons');
                 buttons.innerHTML = "<p>Posting...<p>";
-        
+
                 loadingBar.style.transform = 'translateX(-100%)';
                 await postPost(user.email, img, currentDate, currentTime, description, syntax, postSyntax, user.uid);
-        
+
                 // Attempt to get location
                 const location = await getCurrentLocation();
                 const distance = calculateDistance(
@@ -1423,13 +1280,13 @@ async function addPostTemplate(img, matches) {
                     classroom.lat,
                     classroom.long
                 );
-        
+
                 if (emails) {
                     const href = `https://shoyunsine.github.io/dtr/post.html?postId=${postSyntax}&syntax=${syntax}`;
                     const emailPromises = emails.map(email => emailTagged(email, classroom.name, user.displayName, description, href));
                     await Promise.all(emailPromises);
                 }
-        
+
                 if (distance <= classroom.rad && matches) {
                     const attendancePromises = matches.map(async match => {
                         console.log(match);
@@ -1438,18 +1295,18 @@ async function addPostTemplate(img, matches) {
                     });
                     await Promise.all(attendancePromises);
                 }
-        
+
                 await createPostItem(user.email, img, `${currentDate} ${currentTime}`, description, user.email, postSyntax, user.uid, 0, matches);
                 loadingBar.style.transform = 'translateX(100%)';
                 cancelFunction(template);
-        
+
             } catch (error) {
                 console.error("Error getting location or posting:", error);
                 buttons.innerHTML = "<p>Error: Could not complete the post. Please check location permissions.</p>";
                 loadingBar.style.transform = 'translateX(0%)'; // Reset loading bar if there's an error
             }
         });
-        
+
 
         template.querySelector('#cancelPost').addEventListener('click', () => {// Hide loading bar when done
             cancelFunction(template);
