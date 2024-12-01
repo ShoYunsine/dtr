@@ -566,7 +566,9 @@ onAuthStateChanged(auth, async (user) => {
                     // Assume facerecognition.faceDetect is a function that processes the image
                     const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor));
-
+                    if (detection.length != 1) {
+                        return;
+                    }
                     // Display notifications for feedback
                     basicNotif(descriptors, "", 5000); // Convert Float32Array to Array
                     if (descriptors.length > 0) {
@@ -585,6 +587,46 @@ onAuthStateChanged(auth, async (user) => {
                 }
             });
             // Handle RFID registration and NFC scanning
+            const registerWithLink = document.getElementById('registerWithLink');
+
+            registerWithLink.addEventListener('click', async () => {
+                console.log("Copying plain text...");
+                const textToCopy = `${window.location.origin}/dtr/classes.html?registerNfcRFID=${currentUser.uid}`;
+                try {
+                    basicNotif("Copied to clipboard","",5000)
+                    await navigator.clipboard.writeText(textToCopy);
+                } catch (err) {
+                }
+            });
+            const urlParams = new URLSearchParams(window.location.search);
+            const registeringuid = urlParams.get('registerNfcRFID');
+
+            if (registeringuid) {
+                try {
+                    if ('NDEFReader' in window) {
+                        const ndef = new NDEFReader();
+                        await ndef.scan();
+                        console.log('NFC scanning started...');
+                        basicNotif("NFC scanning started...", "Please place RFID to scan", 5500);
+                        ndef.onreading = (event) => {
+                            const { serialNumber } = event; // This is the RFID UID
+                            console.log('Scanned NFC tag with UID:', serialNumber);
+                            basicNotif("Scan complete", `${serialNumber} for user ${user.displayName} has been saved`, 5500);
+                            updateRFID(registeringuid, serialNumber); // Call the function to update RFID
+                            ndef.onreading = null;
+                            ndef.onerror = null;
+                            console.log('NFC scan stopped.');
+                        };
+
+                    } else {
+                        console.log('NFC is not supported in this browser.');
+                        basicNotif('NFC is not supported in this browser.', '', 5500);
+                    }
+                } catch (error) {
+                    console.error('Error during NFC scanning:', error);
+                }
+            }
+
             const registerRFIDBtn = document.getElementById('registerRFIDBtn');
 
             registerRFIDBtn.addEventListener('click', async () => {
@@ -1480,7 +1522,7 @@ export async function leaveClass(syntax) {
         const docSnap = await getDoc(memberRef);
         if (docSnap.exists()) {
             console.log("Document path:", memberRef.path);
-console.log(docSnap)
+            console.log(docSnap)
             // Handle ownership transfer if the user is the owner
             if (docSnap.data().role === 'owner') {
                 // Fetch all members of the class
