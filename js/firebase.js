@@ -2019,14 +2019,19 @@ export async function checkAttendance(syntax, timezone, id) {
         };
 
         // Check attendance based on the current time
-        if (currentTime >= startTime && currentTime <= endTime) {
-            if (currentTime <= startTime.plus({ minutes: 5 })) {
+        if (currentTime >= startTime.minus({ minutes: 5 }) && currentTime <= endTime) {
+            // If current time is within 5 minutes before the start time
+            if (currentTime <= startTime) {
                 updatedAttendance[currentDate].status = 'present';
             } else {
+                // Otherwise, mark as late if the current time is after the start time but within the allowed range
                 updatedAttendance[currentDate].status = 'late';
             }
+        
+            // Record the time the attendance was checked
             updatedAttendance[currentDate].timeChecked = currentTime.toFormat('HH:mm');
         } else {
+            // If current time is outside the acceptable window
             console.warn(`Current time is outside the scheduled class time for ${dayOfWeek}`);
         }
 

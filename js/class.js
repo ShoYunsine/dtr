@@ -354,7 +354,7 @@ async function updateattendanceList() {
             }
 
             var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
-            console.log(status,time)
+            console.log(status, time)
             if (!time) {
                 time = "Not Available";
             } else {
@@ -421,9 +421,9 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             console.error("Attendance list element not found.");
             return; // Exit if the attendance list element is not found
         }
-    
+
         attendanceList.innerHTML = ''; // Clear existing list items before updating
-    
+
         // Loop through members to update the attendance list
         for (const member of members) {
             try {
@@ -431,17 +431,17 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 const attendanceRecord = member.attendance?.[date];
                 console.log(`Checking attendance for date: ${date}`);
                 console.log(`Attendance for member ${memberId}:`, member.attendance);
-    
+
                 // Extract status and time from attendance data
                 const attendanceStatus = attendanceRecord ? attendanceRecord.status : 'Absent';
                 const time = attendanceRecord && attendanceRecord.timeChecked ? convertTo12Hour(attendanceRecord.timeChecked) : "Not Available";
-    
+
                 // Find the member profile using memberId
                 const memberData = memberProfiles.find(profile => profile.uid === memberId);
-    
+
                 // Get the display name or set a default value if not found
                 const displayName = memberData ? memberData.displayName : 'Unknown Member';
-    
+
                 // Determine the color class based on status
                 let statusClass = '';
                 switch (attendanceStatus.toLowerCase()) {
@@ -457,7 +457,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     default:
                         statusClass = ''; // Default class or leave it empty
                 }
-    
+
                 // Create list item for the member
                 const listItem = document.createElement('li');
                 listItem.classList.add('list-item');
@@ -469,22 +469,22 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 </div>
                 <div>
                     ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                            && member.role !== 'owner'
-                            && member.id !== currentUserLogged.uid ? `<label for="memberoptions${memberData.uid}"><i class="fa-solid fa-ellipsis"></i></label>` : ""}
+                        && member.role !== 'owner'
+                        && member.id !== currentUserLogged.uid ? `<label for="memberoptions${memberData.uid}"><i class="fa-solid fa-ellipsis"></i></label>` : ""}
                 </div>
                 <input class="option" type="checkbox" style="display: none;" id="memberoptions${memberData.uid}">
                 <div id="memberoptions">
                     ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                            && member.role !== 'owner'
-                            && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
+                        && member.role !== 'owner'
+                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
                     ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                            && member.role !== 'owner'
-                            && member.role !== 'admin'
-                            && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
+                        && member.role !== 'owner'
+                        && member.role !== 'admin'
+                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
                     ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                            && member.role !== 'owner'
-                            && member.role === 'admin'
-                            && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
+                        && member.role !== 'owner'
+                        && member.role === 'admin'
+                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
                     ${(currentmember.role === 'owner' && member.id !== currentUserLogged.uid) ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="give-owner"><i id="i" class="fa-solid fa-arrow-right-arrow-left"></i> Transfer Ownership</button>` : ''}
                 </div>
                 `;
@@ -494,7 +494,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             }
         }
     }
-    
+
 
     function getFilteredData(range, customRange = null) {
         const today = new Date();
@@ -574,18 +574,18 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
         const filteredData = getFilteredData(range, customRange);
         const dates = Object.keys(filteredData).sort((a, b) => new Date(a) - new Date(b));
         const calendarContainer = document.getElementById('heatmap-calendar');
-    
+
         // Clear the calendar
         calendarContainer.innerHTML = '';
-    
+
         let lastMonth = '';
-    
+
         // Generate the heatmap
         dates.forEach((date, index) => {
             const currentDate = new Date(date);
             const dayOfMonth = currentDate.getDate();
             const currentMonth = currentDate.toLocaleString('default', { month: 'short' });
-    
+
             // Check if the month has changed
             if (currentMonth !== lastMonth) {
                 lastMonth = currentMonth;
@@ -594,39 +594,39 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 monthLabel.textContent = currentMonth;
                 calendarContainer.appendChild(monthLabel);
             }
-    
+
             const data = filteredData[date];
-    
+
             // Assuming you can calculate the number of members somehow (e.g., from `data`)
             const numberOfMembers = memberProfiles.length || 0; // Adjust to your data structure
-    
+
             // Calculate the total expected attendance counts (each member is counted once)
             const total = numberOfMembers;
-    
+
             // Calculate the combined "present + late" for the day (no distinction between morning/afternoon)
             const presentAndLate = (data?.present?.count || 0) + (data?.late?.count || 0);
-    
+
             // Calculate the percentage for color intensity (scaled down slightly for clearer distinction)
             const percentage = total > 0 ? (presentAndLate / total) * 0.8 : 0;
-    
+
             // Create the day element
             const dayDiv = document.createElement('div');
             dayDiv.className = 'heatmap-day';
-    
+
             // Set the animation delay for each element based on its position in the loop
             const delay = index * 0.1; // Delay each element by 0.1s incrementally
             dayDiv.style.animationDelay = `${delay}s`;
             dayDiv.style.backgroundColor = `rgba(0, 255, 0, ${percentage})`;
-    
+
             // Add the day number to the cube
             const dayLabel = document.createElement('span');
             dayLabel.className = 'day-label';
             dayLabel.textContent = dayOfMonth;
-    
+
             // Add click event to the day div
             dayDiv.addEventListener('click', async () => {
                 await updateAttendanceList(date); // Call your function to update the attendance list
-    
+
                 // Add a thick dotted border to the clicked day
                 const allDays = document.querySelectorAll('.heatmap-day');
                 allDays.forEach(day => {
@@ -634,12 +634,12 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 });
                 dayDiv.classList.add('clicked'); // Add the clicked class to the current day
             });
-    
+
             dayDiv.appendChild(dayLabel);
             calendarContainer.appendChild(dayDiv);
         });
     }
-    
+
 
     document.getElementById('dateRange').addEventListener('change', function () {
         const selectedRange = this.value;
@@ -735,10 +735,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     syntax = urlParams.get('syntax');
     console.log(syntax);
     let isInitialLoad = true;
-   
+
     const classPosts = await fetchClassPosts(syntax);
     const currentUser = await getCurrentUser(); // Fetch the current user's email
-    
+
     classPosts.forEach(post => {
         // Destructure the post object
         const { email, image, dateTime, description } = post;
@@ -777,6 +777,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch (err) {
                 }
             });
+            function populateForm(classData) {
+                // Set class name
+                document.getElementById('class-Name').value = classData.name;
+
+                // Set latitude and longitude
+                document.getElementById('lat').value = classData.lat;
+                document.getElementById('long').value = classData.long;
+
+                // Set radius
+                document.getElementById('radius').value = classData.rad;
+
+                // Set time values for each day
+                document.getElementById('timeInMondayfirst').value = classData.timeInMondayfirst;
+                document.getElementById('timeInMondaylast').value = classData.timeInMondaylast;
+
+                document.getElementById('timeInTuesdayfirst').value = classData.timeInTuesdayfirst;
+                document.getElementById('timeInTuesdaylast').value = classData.timeInTuesdaylast;
+
+                document.getElementById('timeInWednesdayfirst').value = classData.timeInWednesdayfirst;
+                document.getElementById('timeInWednesdaylast').value = classData.timeInWednesdaylast;
+
+                document.getElementById('timeInThursdayfirst').value = classData.timeInThursdayfirst;
+                document.getElementById('timeInThursdaylast').value = classData.timeInThursdaylast;
+
+                document.getElementById('timeInFridayfirst').value = classData.timeInFridayfirst;
+                document.getElementById('timeInFridaylast').value = classData.timeInFridaylast;
+            }
+
+            // Call the function to populate the form
+            populateForm(classroom);
         } else {
             window.location.href = `classes.html`;
         }
@@ -1664,8 +1694,8 @@ document.getElementById('classEditform').addEventListener('submit', async (event
 
     // Log the filtered values
     console.log('Filtered Form Values:', formValues);
-    await updateClass(syntax,formValues);
-    basicNotif("Class Updated","Succesfully updated data",5000)
+    await updateClass(syntax, formValues);
+    basicNotif("Class Updated", "Succesfully updated data", 5000)
     // Handle the filtered data (e.g., send it to a server or update UI)
 });
 
