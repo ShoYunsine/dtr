@@ -34,6 +34,50 @@
   <aside class="sidebar">
     <nav>
       <ul>
+        <li>
+          <a>Quick Attendance</a>
+          <input type="text" id="attendance-code" maxlength="3" placeholder="Code">
+          <details class="info-details">
+            <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+            <div class="info-panel">
+              <p>Quick Attendance is a quick way to start checking attendance with a time limit.</p>
+            </div>
+          </details>
+          <ul style="justify-content: center;" class="classList">
+            <li class="list-item">
+              <div>
+                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                </form>
+                <a class="classPfp" id="startQA"><i id="icon" class="fas fa-bolt"></i></i></a>
+                <p>Start Quick Attendance</p>
+              </div>
+            </li>
+          </ul>
+          <ul class="classList">
+            <li class="list-item">
+              <div>
+                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                </form>
+                <a class="classPfp" id="atD"><i id="icon" class="fa-solid fa-check"></i></i></i></a>
+                <p>Attend(Default)</p>
+              </div>
+            </li>
+            <li class="list-item">
+              <div>
+                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                </form>
+                <a class="classPfp" id="atR"><i id="icon" class="fa-solid fa-id-card"></i></a>
+                <p>Attend(RFID)</p>
+              </div>
+            </li>
+          </ul>
+        </li>
         <li><a href="#">QR Code</a>
           <div><canvas id="qrcode"></canvas></div>
           <div id="accountDetails">
@@ -47,9 +91,11 @@
           <details class="info-details">
             <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
             <div class="info-panel">
-              <p>Update face - Upload a clear of your face and your face only so that face recognition will recognize you.</p>
+              <p>Update face - Upload a clear of your face and your face only so that face recognition will recognize
+                you.</p>
               <br>
-              <p>Register RFID - Used to register your id that has RFID (Only available for those phones that have NFC compatability).</p>
+              <p>Register RFID - Used to register your id that has RFID (Only available for those phones that have NFC
+                compatability).</p>
             </div>
           </details>
           <ul class="classList">
@@ -77,7 +123,7 @@
               <p>This will give you a link that will let someone who has nfc to register your rfid for you.</p>
             </div>
           </details>
-          <ul class="classList">
+          <ul style="justify-content: center;" class="classList">
             <li class="list-item">
               <div>
                 <a class="classPfp" id="registerWithLink"><i id="icon" class="fa-solid fa-link"></i></a>
@@ -86,7 +132,7 @@
             </li>
           </ul>
         </li>
-        
+
         <li>
           <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
           <div class="switch">
@@ -105,11 +151,12 @@
       <div class="info-panel">
         <p>How to Add Class</p>
         <br>
-        <p>Below there will be an add class button. When you press the button you will be taken to a form that will let you create or join a class.</p>
+        <p>Below there will be an add class button. When you press the button you will be taken to a form that will let
+          you create or join a class.</p>
       </div>
     </details>
     <div class="form-section" style="padding:0;">
-      
+
       <ul id="classList">
         <li class="list-item">
           <div>
@@ -119,7 +166,7 @@
         </li>
       </ul>
     </div>
-   
+
     <div class="form-section" style="padding:0;">
       <div id="postList" class="attendanceList" style="display:block;">
         <ul id="posts">

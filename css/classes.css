@@ -141,7 +141,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow-x: hidden;
-  font-size: 200%;
+  font-size: 16px;
   margin: auto;
   margin-bottom: 8px;
   text-align: center;
@@ -256,7 +256,6 @@
 
 .list-item {
   text-overflow: ellipsis;
-  overflow-x: hidden;
   background-color: #f9f9f900;
   display: flex;
   justify-content: space-between;

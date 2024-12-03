@@ -11,7 +11,8 @@ import {
     displayComments,
     sendCommentToPost,
     emailTagged,
-    leaveClass
+    leaveClass,
+    updateClass
 } from './firebase.js';
 
 const luxonScript = document.createElement('script');
@@ -342,7 +343,6 @@ async function updateattendanceList() {
 
     const now = DateTime.now();
     const currentHour = now.hour;
-    const isMorning = currentHour < 12; // Define "morning" as before 12:00
 
     for (const member of members) {
         try {
@@ -354,6 +354,7 @@ async function updateattendanceList() {
             }
 
             var { status, time } = await getAttendance(syntax, classroom.timezone, member.id);
+            console.log(status,time)
             if (!time) {
                 time = "Not Available";
             } else {
@@ -414,33 +415,33 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
         }
     }
     console.log("Profile", memberProfiles);
-    async function updateAttendanceList(date, session) {
+    async function updateAttendanceList(date) {
         const attendanceList = document.getElementById('attendance-List'); // Adjust based on your HTML structure
         if (!attendanceList) {
             console.error("Attendance list element not found.");
             return; // Exit if the attendance list element is not found
         }
-
+    
         attendanceList.innerHTML = ''; // Clear existing list items before updating
-
+    
         // Loop through members to update the attendance list
         for (const member of members) {
             try {
                 const memberId = member.id; // Get member ID
-                const attendanceRecord = member.attendance?.[date]?.[session.toLowerCase()];
-                console.log(`Checking attendance for date: ${date}, session: ${session.toLowerCase()}`);
+                const attendanceRecord = member.attendance?.[date];
+                console.log(`Checking attendance for date: ${date}`);
                 console.log(`Attendance for member ${memberId}:`, member.attendance);
-
+    
                 // Extract status and time from attendance data
                 const attendanceStatus = attendanceRecord ? attendanceRecord.status : 'Absent';
                 const time = attendanceRecord && attendanceRecord.timeChecked ? convertTo12Hour(attendanceRecord.timeChecked) : "Not Available";
-
+    
                 // Find the member profile using memberId
                 const memberData = memberProfiles.find(profile => profile.uid === memberId);
-
+    
                 // Get the display name or set a default value if not found
                 const displayName = memberData ? memberData.displayName : 'Unknown Member';
-
+    
                 // Determine the color class based on status
                 let statusClass = '';
                 switch (attendanceStatus.toLowerCase()) {
@@ -456,37 +457,35 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     default:
                         statusClass = ''; // Default class or leave it empty
                 }
-
+    
                 // Create list item for the member
                 const listItem = document.createElement('li');
                 listItem.classList.add('list-item');
                 listItem.innerHTML = `
                 <div class="${statusClass}">
-                <img src=${memberData.photoUrl}></img>
+                    <img src=${memberData.photoUrl}></img>
                     <h3>${memberData.displayName}</h3>
                     <p>${capitalizeFirstLetter(attendanceStatus || 'Absent')}<br>${time}</p>
-                    
                 </div>
                 <div>
-                
-                ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                        && member.role !== 'owner'
-                        && member.id !== currentUserLogged.uid ? `<label for="memberoptions${memberData.uid}"><i class="fa-solid fa-ellipsis"></i></label>` : ""}
+                    ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                            && member.role !== 'owner'
+                            && member.id !== currentUserLogged.uid ? `<label for="memberoptions${memberData.uid}"><i class="fa-solid fa-ellipsis"></i></label>` : ""}
                 </div>
                 <input class="option" type="checkbox" style="display: none;" id="memberoptions${memberData.uid}">
                 <div id="memberoptions">
-                ${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                        && member.role !== 'owner'
-                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
-${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                        && member.role !== 'owner'
-                        && member.role !== 'admin'
-                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
-${(currentmember.role === 'admin' || currentmember.role === 'owner')
-                        && member.role !== 'owner'
-                        && member.role === 'admin'
-                        && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
-        ${(currentmember.role === 'owner' && member.id !== currentUserLogged.uid) ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="give-owner"><i id="i" class="fa-solid fa-arrow-right-arrow-left"></i> Transfer Ownership</button>` : ''}
+                    ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                            && member.role !== 'owner'
+                            && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-btn"><i id="i" class="fa-solid fa-user-minus"></i> Kick</button>` : ''}
+                    ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                            && member.role !== 'owner'
+                            && member.role !== 'admin'
+                            && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="set-admin">Give Admin</button>` : ''}
+                    ${(currentmember.role === 'admin' || currentmember.role === 'owner')
+                            && member.role !== 'owner'
+                            && member.role === 'admin'
+                            && member.id !== currentUserLogged.uid ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="remove-admin">Revoke Admin</button>` : ''}
+                    ${(currentmember.role === 'owner' && member.id !== currentUserLogged.uid) ? `<button data-typeId="${memberData.uid}" data-syntax="${syntax}"  class="give-owner"><i id="i" class="fa-solid fa-arrow-right-arrow-left"></i> Transfer Ownership</button>` : ''}
                 </div>
                 `;
                 attendanceList.appendChild(listItem);
@@ -495,6 +494,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
             }
         }
     }
+    
 
     function getFilteredData(range, customRange = null) {
         const today = new Date();
@@ -574,21 +574,18 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
         const filteredData = getFilteredData(range, customRange);
         const dates = Object.keys(filteredData).sort((a, b) => new Date(a) - new Date(b));
         const calendarContainer = document.getElementById('heatmap-calendar');
-        const timeSelector = document.getElementById('time'); // Get the selected value from the dropdown
-
-        const selectedTime = timeSelector.value; // "morning" or "afternoon"
-
+    
         // Clear the calendar
         calendarContainer.innerHTML = '';
-
+    
         let lastMonth = '';
-
+    
         // Generate the heatmap
         dates.forEach((date, index) => {
             const currentDate = new Date(date);
             const dayOfMonth = currentDate.getDate();
             const currentMonth = currentDate.toLocaleString('default', { month: 'short' });
-
+    
             // Check if the month has changed
             if (currentMonth !== lastMonth) {
                 lastMonth = currentMonth;
@@ -597,46 +594,39 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 monthLabel.textContent = currentMonth;
                 calendarContainer.appendChild(monthLabel);
             }
-
+    
             const data = filteredData[date];
-
+    
             // Assuming you can calculate the number of members somehow (e.g., from `data`)
             const numberOfMembers = memberProfiles.length || 0; // Adjust to your data structure
-
-            // Calculate the total expected attendance counts (each member has a morning and afternoon session)
+    
+            // Calculate the total expected attendance counts (each member is counted once)
             const total = numberOfMembers;
-
-            // Calculate the combined "present + late" for either morning or afternoon based on the selected time
-            let presentAndLate = 0;
-            if (selectedTime === 'morning') {
-                presentAndLate = (data?.morning?.present.count || 0) + (data?.morning?.late.count || 0);
-            } else if (selectedTime === 'afternoon') {
-                presentAndLate = (data?.afternoon?.present.count || 0) + (data?.afternoon?.late.count || 0);
-            }
-
+    
+            // Calculate the combined "present + late" for the day (no distinction between morning/afternoon)
+            const presentAndLate = (data?.present?.count || 0) + (data?.late?.count || 0);
+    
             // Calculate the percentage for color intensity (scaled down slightly for clearer distinction)
             const percentage = total > 0 ? (presentAndLate / total) * 0.8 : 0;
-
+    
             // Create the day element
             const dayDiv = document.createElement('div');
             dayDiv.className = 'heatmap-day';
-
+    
             // Set the animation delay for each element based on its position in the loop
             const delay = index * 0.1; // Delay each element by 0.1s incrementally
             dayDiv.style.animationDelay = `${delay}s`;
             dayDiv.style.backgroundColor = `rgba(0, 255, 0, ${percentage})`;
-
+    
             // Add the day number to the cube
             const dayLabel = document.createElement('span');
             dayLabel.className = 'day-label';
             dayLabel.textContent = dayOfMonth;
-
+    
             // Add click event to the day div
             dayDiv.addEventListener('click', async () => {
-                // Determine which session to use based on selected time
-                const session = selectedTime === 'morning' ? 'morning' : 'afternoon';
-                await updateAttendanceList(date, session); // Call your function to update the attendance list
-
+                await updateAttendanceList(date); // Call your function to update the attendance list
+    
                 // Add a thick dotted border to the clicked day
                 const allDays = document.querySelectorAll('.heatmap-day');
                 allDays.forEach(day => {
@@ -644,11 +634,12 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 });
                 dayDiv.classList.add('clicked'); // Add the clicked class to the current day
             });
-
+    
             dayDiv.appendChild(dayLabel);
             calendarContainer.appendChild(dayDiv);
         });
     }
+    
 
     document.getElementById('dateRange').addEventListener('change', function () {
         const selectedRange = this.value;
@@ -744,10 +735,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     syntax = urlParams.get('syntax');
     console.log(syntax);
     let isInitialLoad = true;
-
+   
     const classPosts = await fetchClassPosts(syntax);
     const currentUser = await getCurrentUser(); // Fetch the current user's email
-
+    
     classPosts.forEach(post => {
         // Destructure the post object
         const { email, image, dateTime, description } = post;
@@ -759,8 +750,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     debouncedUpdateList();
 
     if (syntax) {
+        const form = document.getElementById('classEditform');
+        const currentUserlogged = await getCurrentUser();
+        const currentmember = await fetchMember(syntax, currentUserlogged.uid)
+
+        if (currentmember.role === 'admin' || currentmember.role === 'owner') {
+            form.style.display = 'block'; // Show the form
+        } else {
+            form.style.display = 'none'; // Hide the form
+        }
         document.getElementById('leaveButton').addEventListener('click', async function (event) {
-            if (await confirmNotif("Leave Class?","Your attendance data will be removed from this class.") === true) {
+            event.preventDefault();
+            if (await confirmNotif("Leave Class?", "Your attendance data will be removed from this class.") === true) {
                 leaveClass(syntax);
             }
         });
@@ -792,6 +793,7 @@ document.getElementById('attendance-List').addEventListener('click', async funct
 
         try {
             await kickfromClass(syntax, id);
+            updateattendanceList();
             console.log("Class removed successfully:", syntax);
         } catch (error) {
             console.error("Error removing class:", syntax, id, error);
@@ -801,52 +803,21 @@ document.getElementById('attendance-List').addEventListener('click', async funct
         var btn = event.target;
         let id = btn.getAttribute('data-typeId');
         changeMemberRole(syntax, id, "admin");
+        updateattendanceList();
     } else if (event.target.classList.contains('remove-admin')) {
         var btn = event.target;
         let id = btn.getAttribute('data-typeId');
         changeMemberRole(syntax, id, "student");
+        updateattendanceList();
     } else if (event.target.classList.contains('give-owner')) {
         var btn = event.target;
         let id = btn.getAttribute('data-typeId');
         const currentUserlogged = await getCurrentUser();
         changeMemberRole(syntax, currentUserlogged.uid, "admin");
         changeMemberRole(syntax, id, "owner");
+        updateattendanceList();
     }
 });
-
-
-const classSearchInput = document.getElementById('memberSearch');
-const classList = document.getElementById('memberList');
-let items = Array.from(classList.getElementsByClassName('list-item'));
-
-const filterClasses = () => {
-    const searchTerm = classSearchInput.value.toLowerCase();
-    items.forEach(item => {
-        const h3Text = item.querySelector('h3').textContent.toLowerCase();
-        if (h3Text.includes(searchTerm)) {
-            item.classList.remove('hidden');
-        } else {
-            item.classList.add('hidden');
-        }
-    });
-};
-
-classSearchInput.addEventListener('keyup', () => {
-    filterClasses();
-});
-
-const observer = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-        if (mutation.addedNodes.length) {
-            items = Array.from(classList.getElementsByClassName('list-item'));
-            filterClasses();
-        }
-    });
-});
-
-observer.observe(classList, { childList: true });
-
-filterClasses();
 
 const attendanceSearchInput = document.getElementById('attendanceSearch');
 const attendanceList = document.getElementById('attendance-List');
@@ -1678,4 +1649,51 @@ function formatTimeDifference(dateTime) {
         const options = { month: 'long', day: 'numeric' }; // Format as "Month Day"
         return postDate.toLocaleDateString(undefined, options);
     }
+}
+
+document.getElementById('classEditform').addEventListener('submit', async (event) => {
+    event.preventDefault(); // Prevent the default form submission
+
+    // Create a FormData object
+    const formData = new FormData(event.target);
+
+    // Filter form values to exclude empty ones
+    const formValues = Object.fromEntries(
+        [...formData.entries()].filter(([key, value]) => value.trim() !== "")
+    );
+
+    // Log the filtered values
+    console.log('Filtered Form Values:', formValues);
+    await updateClass(syntax,formValues);
+    basicNotif("Class Updated","Succesfully updated data",5000)
+    // Handle the filtered data (e.g., send it to a server or update UI)
+});
+
+document.getElementById('getLocation').addEventListener('click', async function (event) {
+    event.preventDefault();
+    let location = await getLocation();
+    const lat = document.getElementById('lat');
+    const long = document.getElementById('long');
+    console.log(location)
+    lat.value = location.latitude
+    long.value = location.longitude
+});
+
+function getLocation() {
+    return new Promise((resolve, reject) => {
+        if (navigator.geolocation) {
+            console.log("Getting Location");
+            navigator.geolocation.getCurrentPosition(
+                position => resolve(position.coords),
+                error => reject(alert('Unable to retrieve location: ' + error.message)),
+                {
+                    enableHighAccuracy: true, // Set to false for quicker, less accurate location
+                    timeout: 15000, // Set a timeout (e.g., 5000 ms) for the location request
+                    maximumAge: 0 // Don't use cached location data
+                }
+            );
+        } else {
+            reject(new Error('Geolocation is not supported by this browser.'));
+        }
+    });
 }

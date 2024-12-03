@@ -350,7 +350,7 @@ a {
 .sidebar nav ul li input:focus-visible {
   outline: none;
   border-radius: 0;
-  width: 135px;
+  width: 65px;
 }
 
 .sidebar nav ul li i {

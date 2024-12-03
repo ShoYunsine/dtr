@@ -41,7 +41,50 @@
         <li>
           <a href="index.html">Home</a><i class="fa-solid fa-house"></i>
         </li>
-        
+        <li>
+          <a>Quick Attendance</a>
+          <input type="text" id="attendance-code" maxlength="3" placeholder="Code">
+          <details class="info-details">
+            <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+            <div class="info-panel">
+              <p>Quick Attendance is a quick way to start checking attendance with a time limit.</p>
+            </div>
+          </details>
+          <ul style="justify-content: center;" class="classList">
+            <li class="list-item">
+              <div>
+                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                </form>
+                <a class="classPfp" id="startQA"><i id="icon" class="fas fa-bolt"></i></i></a>
+                <p>Start Quick Attendance</p>
+              </div>
+            </li>
+          </ul>
+          <ul class="classList">
+            <li class="list-item">
+              <div>
+                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                </form>
+                <a class="classPfp" id="atD"><i id="icon" class="fa-solid fa-check"></i></i></i></a>
+                <p>Attend(Default)</p>
+              </div>
+            </li>
+            <li class="list-item">
+              <div>
+                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                </form>
+                <a class="classPfp" id="atR"><i id="icon" class="fa-solid fa-id-card"></i></a>
+                <p>Attend(RFID)</p>
+              </div>
+            </li>
+          </ul>
+        </li>
         <li><a href="#">QR Code</a>
           <div><canvas id="qrcode"></canvas></div>
           <div id="accountDetails">
@@ -121,14 +164,6 @@
         <div>
           <h3 for="className">Class Name</h3>
           <input type="text" id="className" name="className" required placeholder="Class Name">
-        </div>
-        <div>
-          <h3 for="timeIn">Time In (Morning)</h3>
-          <input type="time" id="timeInMor" name="timeIn" required>
-        </div>
-        <div>
-          <h3 for="timeIn">Time In (Afternoon)</h3>
-          <input type="time" id="timeInAft" name="timeIn" required>
         </div>
         <div>
           <h3 for="timezone">Time Zone</h3>

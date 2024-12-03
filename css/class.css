@@ -740,6 +740,35 @@
   /* Remove default focus outline */
 }
 
+#datePart {
+  display: flex;
+  margin: 20px auto;
+  width: 90%;
+}
+
+#optionList label {
+  font-size: 12px;
+color: var(--text-color-main);
+position: relative;
+}
+
+#datePart div {
+  display: flex;
+  gap: 10px;
+  width: 95%;
+  margin: auto;
+}
+
+#datePart div input{
+  display: flex;
+width: 50%;
+}
+
+#datePart div h5{
+  margin-top: 40px;
+color: var(--text-color-second);
+}
+
 .attendanceList {
   display: none;
 }
@@ -748,14 +777,18 @@
   display: block;
 }
 
-
 /* Show the classjoinForm when joinTab is checked */
 #postTab:checked~#formSwitch+.form-section #postList {
   display: block;
 }
 
+#optionTab:checked~#formSwitch+.form-section #optionList {
+  display: block;
+}
+
 #attendanceTab:checked~#formSwitch label[for="attendanceTab"],
-#postTab:checked~#formSwitch label[for="postTab"] {
+#postTab:checked~#formSwitch label[for="postTab"],
+#optionTab:checked~#formSwitch label[for="optionTab"] {
   color: var(--active-tab-color);
   border-bottom: 2px solid var(--active-tab-color);
 }

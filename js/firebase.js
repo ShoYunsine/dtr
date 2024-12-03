@@ -529,6 +529,26 @@ onAuthStateChanged(auth, async (user) => {
                 signOutAccount();
             });
 
+            const qab = document.getElementById('startQA');
+            const atD = document.getElementById('atD');
+
+            qab.addEventListener('click', async () => {
+                basicNotif("Starting", "Please wait...", 5000);
+                const code = await generateAttendanceCode();
+                await createqA(code);
+                if (await confirmNotif(`Quick Attendance Code is ${code}`, "would you like to get results")) {
+                    await emailresults(currentUser.email,code);
+                    await deleteAttendanceDoc(code);
+                } else {
+                    await deleteAttendanceDoc(code);
+                }
+            });
+            atD.addEventListener('click', async () => {
+                basicNotif("Checking", "Please wait...", 5000);
+                const code = document.getElementById('attendance-code').value;
+                await addUserToAttendance(code, currentUser.displayName);
+            });
+
             // Handle face image upload and form submission
             const imageUpload = document.getElementById('imageUpload');
             const updateFaceBtn = document.getElementById('updateFaceBtn');
@@ -591,9 +611,9 @@ onAuthStateChanged(auth, async (user) => {
 
             registerWithLink.addEventListener('click', async () => {
                 console.log("Copying plain text...");
-                const textToCopy = `${window.location.origin}/dtr/classes.html?registerNfcRFID=${currentUser.uid}`;
+                const textToCopy = `${window.location.origin}/dtr/index.html?registerNfcRFID=${currentUser.uid}`;
                 try {
-                    basicNotif("Copied to clipboard","",5000)
+                    basicNotif("Copied to clipboard", "", 5000)
                     await navigator.clipboard.writeText(textToCopy);
                 } catch (err) {
                 }
@@ -606,12 +626,13 @@ onAuthStateChanged(auth, async (user) => {
                     if ('NDEFReader' in window) {
                         const ndef = new NDEFReader();
                         await ndef.scan();
+                        const fetchedUser = await fetchProfile(registeringuid);
                         console.log('NFC scanning started...');
                         basicNotif("NFC scanning started...", "Please place RFID to scan", 5500);
                         ndef.onreading = (event) => {
                             const { serialNumber } = event; // This is the RFID UID
                             console.log('Scanned NFC tag with UID:', serialNumber);
-                            basicNotif("Scan complete", `${serialNumber} for user ${user.displayName} has been saved`, 5500);
+                            basicNotif("Scan complete", `${serialNumber} for user ${fetchedUser.displayName} has been saved`, 5500);
                             updateRFID(registeringuid, serialNumber); // Call the function to update RFID
                             ndef.onreading = null;
                             ndef.onerror = null;
@@ -1105,6 +1126,19 @@ async function updateProfile(displayName, email, uid, photoUrl) {
         });
 }
 
+export async function updateClass(syntax, data) {
+    const classRef = doc(db, 'classes', syntax); // Reference to the document in Firestore
+    await setDoc(classRef, data, { merge: true }) // Merge the provided data
+        .then(() => {
+            console.log('Class updated successfully');
+        })
+        .catch((error) => {
+            console.error('Error updating class:', error);
+        });
+}
+
+
+
 export async function saveDescriptorsToFirebase(descriptors) {
     const uid = currentUser.uid;
     try {
@@ -1354,7 +1388,7 @@ function generateRandomSyntax() {
     return result;
 }
 
-export async function addClass(className, syntax, classcode, timeInMor, timeInAft, lat, long, rad, timezone) {
+export async function addClass(className, syntax, classcode, lat, long, rad, timezone) {
     const auth = getAuth();
     const user = auth.currentUser;
 
@@ -1378,8 +1412,6 @@ export async function addClass(className, syntax, classcode, timeInMor, timeInAf
             name: className,
             syntax: syntax,
             code: classcode,
-            timeInMor: timeInMor,
-            timeInAft: timeInAft,
             lat: lat,
             long: long,
             rad: rad,
@@ -1929,23 +1961,15 @@ export async function getAttendance(syntax, timezone, id) {
 
         // Check if there's attendance data for today
         if (existingAttendance[currentDate]) {
-            const morningData = existingAttendance[currentDate].morning;
-            const afternoonData = existingAttendance[currentDate].afternoon;
+            const status = existingAttendance[currentDate].status || "Absent"; // Default to "Absent" if no status
+            const timeChecked = existingAttendance[currentDate].timeChecked || null;
 
-            // Determine whether to return morning or afternoon data based on the current time
-            if (currentTime.hour < 12) { // Morning before noon
-                return {
-                    status: morningData?.status || "Absent",
-                    time: morningData?.timeChecked || null
-                };
-            } else { // Afternoon after noon
-                return {
-                    status: afternoonData?.status || "Absent",
-                    time: afternoonData?.timeChecked || null
-                };
-            }
+            return {
+                status,
+                time: timeChecked
+            };
         } else {
-            return { status: "Absent" }; // No attendance data for today
+            return { status: "Absent", time: null }; // No attendance data for today
         }
 
     } catch (error) {
@@ -1953,6 +1977,8 @@ export async function getAttendance(syntax, timezone, id) {
         throw error;
     }
 }
+
+
 
 export async function checkAttendance(syntax, timezone, id) {
     try {
@@ -1962,20 +1988,25 @@ export async function checkAttendance(syntax, timezone, id) {
         const currentDate = DateTime.now().toISODate();
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
 
-        const classTimezone = classdata.timezone;
-        const classTimeInMor = classdata.timeInMor; // Morning class time (e.g., 08:00)
-        const classTimeInAft = classdata.timeInAft; // Afternoon class time (e.g., 14:00)
+        const currentTime = DateTime.now().setZone(timezone);
+        const dayOfWeek = currentTime.toFormat('cccc'); // Get the full name of the day (e.g., Monday)
 
-        // Validate class times
-        if (!classTimeInMor || !classTimeInAft) {
-            throw new Error("Invalid class times");
+        // Construct field names dynamically based on the day
+        const startTimeKey = `timeIn${dayOfWeek}first`;
+        const endTimeKey = `timeIn${dayOfWeek}last`;
+
+        const startTimeStr = classdata[startTimeKey]; // e.g., "08:00"
+        const endTimeStr = classdata[endTimeKey]; // e.g., "14:00"
+
+        // Validate if times are set for the current day
+        if (!startTimeStr || !endTimeStr) {
+            console.warn(`No class times set for ${dayOfWeek}`);
+            return { error: `No class times set for ${dayOfWeek}` };
         }
 
-        const currentTime = DateTime.now().setZone(timezone);
-
         // Convert class times to DateTime objects
-        const morningTime = DateTime.fromFormat(classTimeInMor, 'HH:mm', { zone: classTimezone });
-        const afternoonTime = DateTime.fromFormat(classTimeInAft, 'HH:mm', { zone: classTimezone });
+        const startTime = DateTime.fromFormat(startTimeStr, 'HH:mm', { zone: timezone });
+        const endTime = DateTime.fromFormat(endTimeStr, 'HH:mm', { zone: timezone });
 
         // Fetch existing attendance document
         const docSnapshot = await getDoc(attendanceDoc);
@@ -1984,53 +2015,28 @@ export async function checkAttendance(syntax, timezone, id) {
         // Prepare updated attendance object
         const updatedAttendance = {
             ...existingAttendance,
-            [currentDate]: {
-                morning: existingAttendance[currentDate]?.morning || { status: 'absent', timeChecked: null },
-                afternoon: existingAttendance[currentDate]?.afternoon || { status: 'absent', timeChecked: null }
-            }
+            [currentDate]: existingAttendance[currentDate] || { status: 'absent', timeChecked: null }
         };
 
-        // Check if it's past noon
-        if (currentTime.hour >= 12) {
-            // It's afternoon time
-            if (currentTime > afternoonTime) {
-                // Current time is after afternoon time
-                if (updatedAttendance[currentDate].afternoon.status === 'absent') {
-                    updatedAttendance[currentDate].afternoon.status = 'late';
-                    updatedAttendance[currentDate].afternoon.timeChecked = currentTime.toFormat('HH:mm');
-                }
+        // Check attendance based on the current time
+        if (currentTime >= startTime && currentTime <= endTime) {
+            if (currentTime <= startTime.plus({ minutes: 5 })) {
+                updatedAttendance[currentDate].status = 'present';
             } else {
-                // Current time is before or at afternoon time
-                if (updatedAttendance[currentDate].afternoon.status === 'absent') {
-                    updatedAttendance[currentDate].afternoon.status = 'present';
-                    updatedAttendance[currentDate].afternoon.timeChecked = currentTime.toFormat('HH:mm');
-                }
+                updatedAttendance[currentDate].status = 'late';
             }
+            updatedAttendance[currentDate].timeChecked = currentTime.toFormat('HH:mm');
         } else {
-            // It's morning time
-            if (currentTime > morningTime) {
-                // Current time is after morning time
-                if (updatedAttendance[currentDate].morning.status === 'absent') {
-                    updatedAttendance[currentDate].morning.status = 'late';
-                    updatedAttendance[currentDate].morning.timeChecked = currentTime.toFormat('HH:mm');
-                }
-            } else {
-                // Current time is before or at morning time
-                if (updatedAttendance[currentDate].morning.status === 'absent') {
-                    updatedAttendance[currentDate].morning.status = 'present';
-                    updatedAttendance[currentDate].morning.timeChecked = currentTime.toFormat('HH:mm');
-                }
-            }
+            console.warn(`Current time is outside the scheduled class time for ${dayOfWeek}`);
         }
 
         // Save the updated attendance
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
 
         return {
-            morning: { status: updatedAttendance[currentDate].morning.status, time: updatedAttendance[currentDate].morning.timeChecked },
-            afternoon: { status: updatedAttendance[currentDate].afternoon.status, time: updatedAttendance[currentDate].afternoon.timeChecked }
+            status: updatedAttendance[currentDate].status,
+            time: updatedAttendance[currentDate].timeChecked
         };
-
     } catch (error) {
         console.error("Error checking attendance:", error);
         throw error;
@@ -2041,45 +2047,37 @@ export async function markAbsent(syntax, id) {
     try {
         const attendanceDoc = doc(db, 'classes', syntax, 'members', id || currentUser.uid);
 
-        const currentDate = DateTime.now().toISODate();
+        const currentDate = DateTime.now().toISODate(); // Get current date in 'YYYY-MM-DD' format
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
 
         const currentAttendance = existingAttendance[currentDate] || {};
 
-        // If morning attendance is already 'present' or 'late', don't overwrite it with 'absent'
-        const morningStatus = currentAttendance.morning && currentAttendance.morning.status !== 'absent'
-            ? currentAttendance.morning.status
+        // If attendance for today already exists and is not "absent," retain it
+        const status = currentAttendance.status && currentAttendance.status !== 'absent'
+            ? currentAttendance.status
             : 'absent';
 
-        // If afternoon attendance is already 'present' or 'late', don't overwrite it with 'absent'
-        const afternoonStatus = currentAttendance.afternoon && currentAttendance.afternoon.status !== 'absent'
-            ? currentAttendance.afternoon.status
-            : 'absent';
+        const timeChecked = status === 'absent' ? null : currentAttendance.timeChecked || null;
 
         const updatedAttendance = {
             ...existingAttendance,
             [currentDate]: {
-                morning: {
-                    status: morningStatus,
-                    timeChecked: morningStatus === 'absent' ? null : currentAttendance.morning?.timeChecked || null
-                },
-                afternoon: {
-                    status: afternoonStatus,
-                    timeChecked: afternoonStatus === 'absent' ? null : currentAttendance.afternoon?.timeChecked || null
-                }
+                status,
+                timeChecked
             }
         };
 
-        // Save the updated attendance with 'absent' status where appropriate
+        // Save the updated attendance
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
 
         return updatedAttendance[currentDate];
-
     } catch (error) {
+        console.error('Error marking attendance as absent:', error);
         throw error;
     }
 }
+
 
 export async function deleteAllAttendanceRecords(classTimezone, classId) {
     try {
@@ -2447,5 +2445,141 @@ async function deleteComment(commentId, postId) {
         console.log(`Comment ${commentId} deleted successfully.`);
     } catch (error) {
         console.error('Error deleting comment:', error);
+    }
+}
+
+export async function generateAttendanceCode() {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code;
+    let isUnique = false;
+
+    while (!isUnique) {
+        // Generate a random 5-character code
+        code = '';
+        for (let i = 0; i < 3; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        // Check if the code is unique
+        isUnique = await checkIfAttendanceCodeUnique(code);
+    }
+
+    return code;
+}
+
+// Function to check if the class code is unique
+async function checkIfAttendanceCodeUnique(code) {
+    const attref = collection(db, 'quickAttendance');
+    const q = query(attref, where('code', '==', code)); // Replace 'code' with the field name used for class codes
+
+    try {
+        const querySnapshot = await getDocs(q);
+        // If any document is returned, the code is not unique
+        return querySnapshot.empty;
+    } catch (error) {
+        console.error("Error checking class code uniqueness:", error);
+        return false;
+    }
+}
+
+async function createqA(code) {
+    try {
+        basicNotif("Created Quick Attendance", "", 5000);
+
+        const docRef = doc(db, 'quickAttendance', code); // Create a reference with the desired ID
+        await setDoc(docRef, {
+            code: code,
+            attendees: [] // Empty array to hold attendee IDs
+        });
+
+        console.log(`Quick Attendance created with code: ${code}`);
+        return { success: true, message: `Quick Attendance created successfully.` };
+    } catch (error) {
+        console.error("Error creating Quick Attendance:", error);
+        return { success: false, message: 'Failed to create Quick Attendance.' };
+    }
+}
+
+async function deleteAttendanceDoc(code) {
+    try {
+        const docRef = doc(db, 'quickAttendance', code); // Reference to the document
+        await deleteDoc(docRef); // Deletes the document
+        console.log(`Document with ID: ${code} deleted successfully.`);
+        return { success: true, message: `Document with ID: ${code} deleted successfully.` };
+    } catch (error) {
+        console.error("Error deleting document:", error);
+        return { success: false, message: 'Failed to delete the document.' };
+    }
+}
+
+async function addUserToAttendance(code, user) {
+    try {
+        const docRef = doc(db, 'quickAttendance', code); // Reference to the attendance document
+        const docSnap = await getDoc(docRef); // Fetch the document
+
+        if (!docSnap.exists()) {
+            basicNotif("Code doesn't exist", "Please check again", 5000);
+            return { success: false, message: 'Attendance code does not exist.' };
+        }
+
+        const attendanceData = docSnap.data(); // Get the document data
+        const attendees = attendanceData.attendees || []; // Get the attendees array
+
+        // Check if the user is already in the attendees list
+        if (attendees.includes(user)) {
+            basicNotif("User already added", "This user is already in the attendees list.", 5000);
+            return { success: false, message: 'User already added to attendees.' };
+        }
+
+        // If the user is not in the list, add them to the attendees array
+        basicNotif("User added", "This user added in the attendees list.", 5000);
+        await updateDoc(docRef, {
+            attendees: arrayUnion(user) // Adds the userId to the attendees array
+        });
+        console.log(`User ${user} added to attendees for document ID: ${code}`);
+        return { success: true, message: 'User added successfully.' };
+    } catch (error) {
+        console.error("Error adding user to attendees:", error);
+        return { success: false, message: 'Failed to add user to attendees.' };
+    }
+}
+
+
+// Function to send an email with the list of attendees
+export async function emailresults(email, code) {
+    try {
+        // Reference to the quickAttendance document based on the provided code
+        const attRef = doc(db, 'quickAttendance', code);
+        const docSnap = await getDoc(attRef);
+
+        if (!docSnap.exists()) {
+            console.error(`No attendance found for code: ${code}`);
+            return;
+        }
+
+        // Get the list of attendees from the document
+        const attendees = docSnap.data().attendees;
+
+        if (attendees && attendees.length > 0) {
+            // Format the list of attendees into a string (e.g., names separated by commas)
+
+            // Email parameters
+            const emailParams = {
+                owner_email: email,
+                attendees: attendees,         
+            };
+
+            console.log("Sending email with the following parameters:", emailParams);
+
+            // Send email using EmailJS
+            const result = await emailjs.send("service_p3ddhzv", "template_3n5ewnh", emailParams);
+            basicNotif("Email sent","Attendance was taken",5000)
+            console.log("Email sent successfully:", result);
+        } else {
+            basicNotif("No attendees","0 attendance was taken",5000);
+            console.log("No attendees found for this code.");
+        }
+    } catch (error) {
+        console.error("Error fetching attendees or sending email:", error);
     }
 }
