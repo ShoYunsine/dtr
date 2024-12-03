@@ -534,32 +534,20 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     // Initialize the date entry if it doesn't exist
                     if (!filteredData[date]) {
                         filteredData[date] = {
-                            morning: {
                                 present: { count: 0, names: [] },
                                 late: { count: 0, names: [] },
                                 absent: { count: 0, names: [] }
-                            },
-                            afternoon: {
-                                present: { count: 0, names: [] },
-                                late: { count: 0, names: [] },
-                                absent: { count: 0, names: [] }
-                            }
                         };
                     }
 
                     // Process morning attendance
-                    if (attendance[date].morning) {
-                        const morningStatus = attendance[date].morning.status;
-                        filteredData[date].morning[morningStatus].count++;
-                        filteredData[date].morning[morningStatus].names.push(memberProfiles.find(profile => profile.uid === member.id).displayName); // Store the member's name
+                    if (attendance[date]) {
+                        const status = attendance[date]status;
+                        filteredData[date].[status].count++;
+                        filteredData[date].[status].names.push(memberProfiles.find(profile => profile.uid === member.id).displayName); // Store the member's name
                     }
 
-                    // Process afternoon attendance
-                    if (attendance[date].afternoon) {
-                        const afternoonStatus = attendance[date].afternoon.status;
-                        filteredData[date].afternoon[afternoonStatus].count++;
-                        filteredData[date].afternoon[afternoonStatus].names.push(memberProfiles.find(profile => profile.uid === member.id).displayName); // Store the member's name
-                    }
+        
                 }
             }
         });
