@@ -70,12 +70,15 @@ if ('serviceWorker' in navigator) {
                                         cls.long
                                     );
                                     //basicNotif(`${cls.name}`, "", 5000);
+                                    const { status } = await getAttendance(cls.syntax, cls.timezone);
                                     if (distance <= cls.rad) {
-                                        const { status } = await checkAttendance(cls.syntax, cls.timezone);
+                                        
+                                        if (status === "Absent") {
+                                            await checkAttendance(cls.syntax, cls.timezone);
+                                        }
                                         //basicNotif(`${cls.name} inRadius`, "", 5000);
                                     } else {
-                                        const attendance = await getAttendance(cls.syntax, cls.timezone);
-                                        if (attendance.status === "Absent") {
+                                        if (status === "Absent") {
                                             await markAbsent(cls.syntax);
                                         }
                                     }
