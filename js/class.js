@@ -490,7 +490,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 `;
                 attendanceList.appendChild(listItem);
             } catch (error) {
-                console.error(`Failed to fetch profile for member with ID ${memberId}:`, error);
+                console.error(`Failed to fetch profile for member:`, error);
             }
         }
     }
