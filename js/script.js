@@ -47,53 +47,93 @@ if ('serviceWorker' in navigator) {
 
             if ('sync' in registration) {
                 let classes = await getUserClasses();
-                console.log("Classes",classes);
-
+                console.log("Classes", classes);
+            
                 function startTracking() {
                     if (navigator.geolocation) {
-                        navigator.geolocation.watchPosition(async position => {
-                            const location = {
-                                latitude: position.coords.latitude,
-                                longitude: position.coords.longitude
-                            };
-                            console.log("Classes",classes);
-                            // Ensure classes is defined and an array
-                            if (classes.length === 0 && classes != "None") {
-                                //basicNotif("Refetching classes","",5000);
-                                classes = await getUserClasses();
-                            } else if (classes.length >= 1 && classes != "None"){
-                                //basicNotif("Classes fetched","",5000);
-                                for (const cls of classes) {
-                                    const distance = calculateDistance(
-                                        location.latitude,
-                                        location.longitude,
-                                        cls.lat,
-                                        cls.long
-                                    );
-                                    //basicNotif(`${cls.name}`, "", 5000);
-                                    const { status } = await getAttendance(cls.syntax, cls.timezone);
-                                    console.log("AAAAAAAAAAH",status)
-                                    if (distance <= cls.rad) {
-                                        
-                                        if (status === "Absent" || status === "absent") {
-                                            console.log(await checkAttendance(cls.syntax, cls.timezone));
+                        let lastUpdate = 0;  // Track the last time we triggered the function
+                        const throttleInterval = 60000;  // Set the throttle interval (in milliseconds, 10 seconds in this case)
+            
+                        const geoOptions = {
+                            maximumAge: 60000, // Cache position for 1 minute (60000 ms)
+                            timeout: 10000, // Timeout after 10 seconds if no position is found
+                            enableHighAccuracy: true // Use high accuracy if available
+                        };
+            
+                        navigator.geolocation.watchPosition(async (position) => {
+                            const currentTime = Date.now();  // Get the current time in milliseconds
+            
+                            // Only process the position if the throttle interval has passed
+                            if (currentTime - lastUpdate > throttleInterval) {
+                                lastUpdate = currentTime;  // Update the last update time
+            
+                                const location = {
+                                    latitude: position.coords.latitude,
+                                    longitude: position.coords.longitude
+                                };
+            
+                                console.log("Classes", classes);
+            
+                                // Ensure classes is defined and an array
+                                if (classes.length === 0 && classes != "None") {
+                                    // Refetch the classes if empty
+                                    classes = await getUserClasses();
+                                } else if (classes.length >= 1 && classes != "None") {
+                                    // Get today's date for storage key (formatted as YYYY-MM-DD)
+                                    const today = new Date().toISOString().split('T')[0];  // YYYY-MM-DD
+            
+                                    for (const cls of classes) {
+                                        // Generate a unique storage key for each class and date
+                                        const storageKey = `class-${cls.syntax}-${today}`;
+            
+                                        // Check if the class status is already in localStorage for today
+                                        let storedClass = JSON.parse(localStorage.getItem(storageKey));
+                                        let cstatus;
+                                        if (storedClass) {
+                                            console.log(`Status for class ${cls.syntax} on ${today}: ${storedClass.status}`);
+                                            cstatus = storedClass.status
+                                        } else {
+                                            cstatus = await getAttendance(cls.syntax, cls.timezone);
+                                            localStorage.setItem(storageKey, JSON.stringify({ syntax: cls.syntax, status: cstatus}));
                                         }
-                                        //basicNotif(`${cls.name} inRadius`, "", 5000);
-                                    } else {
-                                        console.log("Toofar")
-                                        if (status === "Absent" || status === "absent") {
-                                            await markAbsent(cls.syntax);
+            
+                                        // Fetch the attendance status for the class if not stored in localStorage
+                                        
+                                        console.log("Class status:", cstatus);
+            
+                                        // If the class is within radius, process the attendance
+                                        const distance = calculateDistance(
+                                            location.latitude,
+                                            location.longitude,
+                                            cls.lat,
+                                            cls.long
+                                        );
+            
+                                        if (distance <= cls.rad) {
+                                        
+                                            if (cstatus === "Absent" || cstatus === "absent") {
+                                                const att = await checkAttendance(cls.syntax, cls.timezone);
+                                                localStorage.setItem(storageKey, JSON.stringify({ syntax: cls.syntax, status: att.status}));
+                                            }
+                                            //basicNotif(`${cls.name} inRadius`, "", 5000);
+                                        } else {
+                                            console.log("Toofar")
+                                            if (cstatus === "Absent" || cstatus === "absent") {
+                                                await markAbsent(cls.syntax);
+                                            }
                                         }
                                     }
-                                    //await deleteAllAttendanceRecords(cls.timezone, cls.syntax);
                                 }
                             }
-                        });
+                        }, (error) => {
+                            console.error("Geolocation error:", error);
+                        }, geoOptions);
                     }
                 }
+            
                 startTracking();
-
             }
+            
 
         })
 

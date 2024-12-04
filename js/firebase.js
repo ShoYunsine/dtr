@@ -1640,6 +1640,13 @@ export async function getUserClasses() {
         return [];
     }
 
+    // Check if the data is already in sessionStorage
+    const cachedClasses = sessionStorage.getItem(`userClasses-${user.uid}`);
+    if (cachedClasses) {
+        console.log('Returning user classes from sessionStorage');
+        return JSON.parse(cachedClasses); // Return cached data if it exists
+    }
+
     try {
         // Reference to the user's classes subcollection
         const userClassesRef = collection(db, 'users', user.uid, 'classes');
@@ -1668,8 +1675,12 @@ export async function getUserClasses() {
 
         if (classList.length === 0) {
             console.warn('No valid classes found.');
+            sessionStorage.setItem(`userClasses-${user.uid}`, JSON.stringify("None")); // Store "None" in sessionStorage
             return "None";
         }
+
+        // Store the class list in sessionStorage for future use
+        sessionStorage.setItem(`userClasses-${user.uid}`, JSON.stringify(classList));
 
         return classList;
     } catch (error) {
@@ -1677,6 +1688,7 @@ export async function getUserClasses() {
         return [];
     }
 }
+
 
 export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitNumber) {
     const classPostsRef = collection(db, 'classes', syntax, 'posts'); // Reference to class posts subcollection
@@ -2107,7 +2119,6 @@ export async function checkAttendance(syntax, timezone, id) {
                 // Otherwise, mark as late if the current time is exactly equal to the start time or after it but within the allowed range
                 updatedAttendance[currentDate].status = 'late';
             }
-            await fetchClass(syntax,true)
             // Record the time the attendance was checked
             updatedAttendance[currentDate].timeChecked = currentTime.toFormat('HH:mm');
         } else {
