@@ -1840,8 +1840,23 @@ async function checkIfClassCodeUnique(code) {
     }
 }
 
-export async function fetchClass(syntax) {
+export async function fetchClass(syntax, forceFetch = false) {
     try {
+        // If brute force is enabled, skip sessionStorage and fetch from Firestore directly
+        if (forceFetch) {
+            console.log('Force fetching class from Firestore...');
+            const classRef = doc(db, 'classes', syntax);
+            const docSnap = await getDoc(classRef);
+            if (docSnap.exists()) {
+                const classdata = docSnap.data();
+                console.log('Fetched classdata from Firestore:', classdata);
+                return classdata;
+            } else {
+                console.log('No class found for syntax:', syntax);
+                return null;
+            }
+        }
+
         // Check if the 'classes' array exists in sessionStorage
         let classes = JSON.parse(sessionStorage.getItem('classes')) || [];
 
@@ -1873,6 +1888,7 @@ export async function fetchClass(syntax) {
         return null;
     }
 }
+
 
 
 export async function fetchMembers(syntax) {
@@ -2091,7 +2107,7 @@ export async function checkAttendance(syntax, timezone, id) {
                 // Otherwise, mark as late if the current time is exactly equal to the start time or after it but within the allowed range
                 updatedAttendance[currentDate].status = 'late';
             }
-        
+            await fetchClass(syntax,true)
             // Record the time the attendance was checked
             updatedAttendance[currentDate].timeChecked = currentTime.toFormat('HH:mm');
         } else {
