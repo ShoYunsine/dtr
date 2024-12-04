@@ -495,17 +495,18 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
         }
     }
 
+
     function getFilteredData(range, customRange = null) {
         const today = new Date();
         const filteredData = {};
-
+    
         members.forEach(member => {
             const attendance = member.attendance;
-
+    
             for (const date in attendance) {
                 const attendanceDate = new Date(date);
                 let withinRange = false;
-
+    
                 // Check if the attendance date is within the specified range
                 switch (range) {
                     case 'week':
@@ -527,44 +528,33 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     default:
                         withinRange = false;
                 }
-
+    
                 // If the date is within the selected range, process the attendance data
                 if (withinRange) {
                     // Initialize the date entry if it doesn't exist
                     if (!filteredData[date]) {
                         filteredData[date] = {
-                            morning: {
-                                present: { count: 0, names: [] },
-                                late: { count: 0, names: [] },
-                                absent: { count: 0, names: [] }
-                            },
-                            afternoon: {
-                                present: { count: 0, names: [] },
-                                late: { count: 0, names: [] },
-                                absent: { count: 0, names: [] }
-                            }
+                            present: { count: 0, names: [] },
+                            late: { count: 0, names: [] },
+                            absent: { count: 0, names: [] }
                         };
                     }
-
-                    // Process morning attendance
-                    if (attendance[date].morning) {
-                        const morningStatus = attendance[date].morning.status;
-                        filteredData[date].morning[morningStatus].count++;
-                        filteredData[date].morning[morningStatus].names.push(memberProfiles.find(profile => profile.uid === member.id).displayName); // Store the member's name
-                    }
-
-                    // Process afternoon attendance
-                    if (attendance[date].afternoon) {
-                        const afternoonStatus = attendance[date].afternoon.status;
-                        filteredData[date].afternoon[afternoonStatus].count++;
-                        filteredData[date].afternoon[afternoonStatus].names.push(memberProfiles.find(profile => profile.uid === member.id).displayName); // Store the member's name
+    
+                    // Process attendance for the date
+                    if (attendance[date]) {
+                        const status = attendance[date].status; // Get the overall attendance status
+                        filteredData[date][status].count++;
+                        filteredData[date][status].names.push(
+                            memberProfiles.find(profile => profile.uid === member.id).displayName
+                        ); // Store the member's name
                     }
                 }
             }
         });
-
+    
         return filteredData;
     }
+    
 
     // Function to update the chart with filtered data
     let attendanceChart;

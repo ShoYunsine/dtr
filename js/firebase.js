@@ -1227,11 +1227,27 @@ export async function signOutAccount() {
 }
 
 export async function fetchProfile(userid) {
-    const userDocRef = doc(db, 'users', userid);
     try {
+        // Check if the 'profiles' array exists in sessionStorage
+        let profiles = JSON.parse(sessionStorage.getItem('profiles')) || [];
+
+        // Look for the profile in sessionStorage
+        const cachedProfile = profiles.find(profile => profile.userid === userid);
+        if (cachedProfile) {
+            console.log('Profile found in sessionStorage:', cachedProfile);
+            return cachedProfile;
+        }
+
+        // If not found in sessionStorage, fetch it from Firestore
+        const userDocRef = doc(db, 'users', userid);
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
             const user = docSnap.data();
+
+            // Add the fetched profile to the sessionStorage array
+            profiles.push({ userid, ...user });
+            sessionStorage.setItem('profiles', JSON.stringify(profiles));
+
             return user;
         } else {
             console.log('No profile found for user ID:', userid);
@@ -1241,6 +1257,7 @@ export async function fetchProfile(userid) {
         return null;
     }
 }
+
 
 export function getAverageAndSecondColor(imageUrl) {
     return new Promise((resolve, reject) => {
@@ -1652,7 +1669,19 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
     const postsCollectionRef = collection(db, 'posts'); // Reference to the global posts collection
 
     try {
-        // Step 1: Fetch the posts subcollection under the class to get the post IDs
+        // Step 1: Check sessionStorage for cached posts
+        let cachedPosts = JSON.parse(sessionStorage.getItem(`classPosts_${syntax}`)) || [];
+
+        // Filter out already fetched posts from the cache
+        const newCachedPosts = cachedPosts.filter(post => !alreadyFetchedPostIds.includes(post.id));
+        alreadyFetchedPostIds.push(...newCachedPosts.map(post => post.id));
+
+        if (newCachedPosts.length >= limitNumber) {
+            console.log('Fetched posts from sessionStorage:', newCachedPosts);
+            return newCachedPosts.slice(0, limitNumber); // Return only the number of posts requested
+        }
+
+        // Step 2: Fetch the posts subcollection under the class to get the post IDs
         const classPostsQuery = query(classPostsRef, limit(limitNumber)); // Limit the number of posts to fetch
         const classPostsSnapshot = await getDocs(classPostsQuery);
 
@@ -1661,19 +1690,19 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
         // Filter out already fetched post IDs
         classPostsSnapshot.forEach((doc) => {
             if (!alreadyFetchedPostIds.includes(doc.id)) {
-                postIds.push(doc.id);  // Collect only the post IDs that have not been fetched
+                postIds.push(doc.id); // Collect only the post IDs that have not been fetched
             }
         });
 
         // Check if no new post IDs were found
         if (postIds.length === 0 && classPostsSnapshot.size >= limitNumber) {
-            console.log('No new posts found for this class.', classPostsSnapshot.size >= limitNumber);
-            return await fetchClassPosts(syntax, alreadyFetchedPostIds, limitNumber + 1);
+            console.log('No new posts found for this class.');
+            return newCachedPosts;
         }
 
-        // Step 2: Fetch the actual posts from the global 'posts' collection using the post IDs
+        // Step 3: Fetch the actual posts from the global 'posts' collection using the post IDs
         const posts = await Promise.all(postIds.map(async (postId) => {
-            const postRef = doc(postsCollectionRef, postId);  // Reference to the post in the 'posts' collection
+            const postRef = doc(postsCollectionRef, postId); // Reference to the post in the 'posts' collection
             const postDocSnapshot = await getDoc(postRef);
             if (postDocSnapshot.exists()) {
                 return { id: postId, ...postDocSnapshot.data() }; // Return the post data if it exists
@@ -1695,6 +1724,10 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
         });
 
         console.log('Fetched new posts:', validPosts);
+
+        // Update sessionStorage with the newly fetched posts
+        const allPosts = [...cachedPosts, ...validPosts];
+        sessionStorage.setItem(`classPosts_${syntax}`, JSON.stringify(allPosts));
 
         // Update alreadyFetchedPostIds to include the IDs of newly fetched posts
         alreadyFetchedPostIds.push(...validPosts.map(post => post.id));
@@ -1794,23 +1827,39 @@ async function checkIfClassCodeUnique(code) {
 }
 
 export async function fetchClass(syntax) {
-    // Correctly create a reference to the class document
-    const classRef = doc(db, 'classes', syntax);
     try {
+        // Check if the 'classes' array exists in sessionStorage
+        let classes = JSON.parse(sessionStorage.getItem('classes')) || [];
+
+        // Look for the class in sessionStorage
+        const cachedClass = classes.find(classData => classData.syntax === syntax);
+        if (cachedClass) {
+            console.log('Class found in sessionStorage:', cachedClass);
+            return cachedClass;
+        }
+
+        // If not found in sessionStorage, fetch it from Firestore
+        const classRef = doc(db, 'classes', syntax);
         const docSnap = await getDoc(classRef);
         if (docSnap.exists()) {
             const classdata = docSnap.data();
-            console.log('Fetched classdata:', classdata);
-            return classdata; // Return the class data
+
+            // Add the fetched class to the sessionStorage array
+            classes.push({ syntax, ...classdata });
+            sessionStorage.setItem('classes', JSON.stringify(classes));
+
+            console.log('Fetched classdata from Firestore:', classdata);
+            return classdata;
         } else {
             console.log('No class found for syntax:', syntax);
-            return null; // Return null if no document is found
+            return null;
         }
     } catch (error) {
         console.error('Error fetching class:', error);
-        return null; // Return null if there's an error
+        return null;
     }
 }
+
 
 export async function fetchMembers(syntax) {
     const classRef = doc(db, 'classes', syntax);

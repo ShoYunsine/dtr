@@ -1,3 +1,4 @@
+
 import './firebase.js';
 
 import { checkAttendance, deleteAllAttendanceRecords, getAttendance, getCurrentUser, getUserClasses, markAbsent } from './firebase.js';
