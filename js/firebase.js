@@ -586,7 +586,7 @@ onAuthStateChanged(auth, async (user) => {
                     // Assume facerecognition.faceDetect is a function that processes the image
                     const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor));
-                    
+
                     // Display notifications for feedback
                     basicNotif(descriptors, "", 5000); // Convert Float32Array to Array
                     if (descriptors.length > 0) {
