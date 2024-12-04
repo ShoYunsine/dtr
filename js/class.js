@@ -910,19 +910,29 @@ async function handleImageUpload(event) {
             const matchResults = [];
             let index = 0;
             for (const memberProfile of memberProfiles) {
-
-                index = index + 1
+                index = index + 1;
                 const totalMember = members.length;
-                console.log(`translateX(${-98 + (50 / (totalMember / index))}%)`)
-                console.log(90 / (totalMember / index))
-
+                console.log(`translateX(${-98 + (50 / (totalMember / index))}%)`);
+                console.log(90 / (totalMember / index));
+            
+                // Update the loading bar position
                 loadingBar.style.transform = `translateX(${-98 + (50 / (totalMember / index))}%)`;
-                // Ensure the profile has face descriptors
-                if (memberProfile && Array.isArray(memberProfile.faceDescriptors)) {
-                    console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
-
-                    // Check if the whole faceDescriptors array has a length of 128
-                    if (memberProfile.faceDescriptors.length === 128) {
+            
+                // Ensure the profile has face descriptors and handle brute-force update if necessary
+                if (memberProfile) {
+                    // Brute-force logic: Check if faceDescriptors are missing or invalid
+                    if (!Array.isArray(memberProfile.faceDescriptors) || memberProfile.faceDescriptors.length !== 128) {
+                        console.log(`Invalid or missing face descriptors for member: ${memberProfile.displayName}. Attempting brute-force update...`);
+            
+                        // Call your brute-force method to update the profile (if necessary)
+                        memberProfile = await fetchProfile(memberProfile.userid,true);
+                    }
+            
+                    // Re-check after the brute-force update
+                    if (Array.isArray(memberProfile.faceDescriptors) && memberProfile.faceDescriptors.length === 128) {
+                        console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
+            
+                        // Push the valid descriptors into the labeledDescriptors
                         labeledDescriptors.push(
                             new faceapi.LabeledFaceDescriptors(
                                 String(memberProfile.uid), // Member's name as label
@@ -933,10 +943,10 @@ async function handleImageUpload(event) {
                         console.log(`Invalid face descriptor length for member: ${memberProfile.displayName}. Expected 128, got ${memberProfile.faceDescriptors.length}.`);
                     }
                 } else {
-                    console.log(`No face descriptors found for member: ${memberProfile.displayName}`);
+                    console.log(`No profile found for member: ${memberProfile.displayName}`);
                 }
             }
-
+            
             const canvas = document.getElementById('canvas');
             if (!canvas) {
                 console.error('Canvas element not found.');

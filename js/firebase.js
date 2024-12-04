@@ -1226,37 +1226,51 @@ export async function signOutAccount() {
     });
 }
 
-export async function fetchProfile(userid) {
+export async function fetchProfile(userid, bruteForce = false) {
     try {
-        // Check if the 'profiles' array exists in sessionStorage
-        let profiles = JSON.parse(sessionStorage.getItem('profiles')) || [];
+        // Check if the 'profiles' array exists in localStorage
+        let profiles = JSON.parse(localStorage.getItem('profiles')) || [];
 
-        // Look for the profile in sessionStorage
+        // Look for the profile in localStorage
         const cachedProfile = profiles.find(profile => profile.userid === userid);
-        if (cachedProfile) {
-            console.log('Profile found in sessionStorage:', cachedProfile);
-            return cachedProfile;
+
+        // If brute force flag is set or no profile found in localStorage, fetch from Firestore
+        if (bruteForce || !cachedProfile) {
+            console.log(bruteForce ? 'Brute forcing update from Firestore.' : 'Profile not found in localStorage, fetching from Firestore.');
+
+            // Fetch from Firestore
+            const userDocRef = doc(db, 'users', userid);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                const user = docSnap.data();
+
+                // Add the fetched profile to the localStorage array
+                if (!cachedProfile) {
+                    profiles.push({ userid, ...user });
+                } else {
+                    // Update existing profile
+                    profiles = profiles.map(profile =>
+                        profile.userid === userid ? { userid, ...user } : profile
+                    );
+                }
+                localStorage.setItem('profiles', JSON.stringify(profiles));
+
+                return user;
+            } else {
+                console.log('No profile found for user ID:', userid);
+                return null;
+            }
         }
 
-        // If not found in sessionStorage, fetch it from Firestore
-        const userDocRef = doc(db, 'users', userid);
-        const docSnap = await getDoc(userDocRef);
-        if (docSnap.exists()) {
-            const user = docSnap.data();
-
-            // Add the fetched profile to the sessionStorage array
-            profiles.push({ userid, ...user });
-            sessionStorage.setItem('profiles', JSON.stringify(profiles));
-
-            return user;
-        } else {
-            console.log('No profile found for user ID:', userid);
-        }
+        // If brute force is not set and profile is found in localStorage
+        console.log('Profile found in localStorage:', cachedProfile);
+        return cachedProfile;
     } catch (error) {
         console.error('Error fetching profile:', error);
         return null;
     }
 }
+
 
 
 export function getAverageAndSecondColor(imageUrl) {
@@ -2070,10 +2084,11 @@ export async function checkAttendance(syntax, timezone, id) {
         // Check attendance based on the current time
         if (currentTime >= startTime.minus({ minutes: 5 }) && currentTime <= endTime) {
             // If current time is within 5 minutes before the start time
-            if (currentTime <= startTime) {
+            if (currentTime < startTime) {
+                // If current time is before the start time, mark as present
                 updatedAttendance[currentDate].status = 'present';
             } else {
-                // Otherwise, mark as late if the current time is after the start time but within the allowed range
+                // Otherwise, mark as late if the current time is exactly equal to the start time or after it but within the allowed range
                 updatedAttendance[currentDate].status = 'late';
             }
         
@@ -2083,6 +2098,7 @@ export async function checkAttendance(syntax, timezone, id) {
             // If current time is outside the acceptable window
             console.warn(`Current time is outside the scheduled class time for ${dayOfWeek}`);
         }
+        
 
         // Save the updated attendance
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
