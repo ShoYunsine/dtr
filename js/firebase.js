@@ -1722,13 +1722,33 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
 
         // Check if no new post IDs were found
         if (postIds.length === 0 && classPostsSnapshot.size >= limitNumber) {
-            console.log('No new posts found for this class.');
-            return newCachedPosts;
+export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitNumber) {
+    const classPostsRef = collection(db, 'classes', syntax, 'posts'); // Reference to class posts subcollection
+    const postsCollectionRef = collection(db, 'posts'); // Reference to the global posts collection
+
+    try {
+        // Step 1: Fetch the posts subcollection under the class to get the post IDs
+        const classPostsQuery = query(classPostsRef, limit(limitNumber)); // Limit the number of posts to fetch
+        const classPostsSnapshot = await getDocs(classPostsQuery);
+
+        const postIds = [];
+
+        // Filter out already fetched post IDs
+        classPostsSnapshot.forEach((doc) => {
+            if (!alreadyFetchedPostIds.includes(doc.id)) {
+                postIds.push(doc.id);  // Collect only the post IDs that have not been fetched
+            }
+        });
+
+        // Check if no new post IDs were found
+        if (postIds.length === 0 && classPostsSnapshot.size >= limitNumber) {
+            console.log('No new posts found for this class.', classPostsSnapshot.size >= limitNumber);
+            return await fetchClassPosts(syntax, alreadyFetchedPostIds, limitNumber + 1);
         }
 
-        // Step 3: Fetch the actual posts from the global 'posts' collection using the post IDs
+        // Step 2: Fetch the actual posts from the global 'posts' collection using the post IDs
         const posts = await Promise.all(postIds.map(async (postId) => {
-            const postRef = doc(postsCollectionRef, postId); // Reference to the post in the 'posts' collection
+            const postRef = doc(postsCollectionRef, postId);  // Reference to the post in the 'posts' collection
             const postDocSnapshot = await getDoc(postRef);
             if (postDocSnapshot.exists()) {
                 return { id: postId, ...postDocSnapshot.data() }; // Return the post data if it exists
@@ -1750,10 +1770,6 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
         });
 
         console.log('Fetched new posts:', validPosts);
-
-        // Update sessionStorage with the newly fetched posts
-        const allPosts = [...cachedPosts, ...validPosts];
-        sessionStorage.setItem(`classPosts_${syntax}`, JSON.stringify(allPosts));
 
         // Update alreadyFetchedPostIds to include the IDs of newly fetched posts
         alreadyFetchedPostIds.push(...validPosts.map(post => post.id));
