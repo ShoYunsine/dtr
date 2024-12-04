@@ -586,9 +586,11 @@ onAuthStateChanged(auth, async (user) => {
                     // Assume facerecognition.faceDetect is a function that processes the image
                     const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor));
-
+                    if (detections.length != 1) {
+                        return;
+                    }
                     // Display notifications for feedback
-                    basicNotif(descriptors, "", 5000); // Convert Float32Array to Array
+                    //basicNotif(descriptors, "", 5000); // Convert Float32Array to Array
                     if (descriptors.length > 0) {
                         basicNotif("Face saved", "Face for user has been saved", 5000);
                         // Save descriptors to Firebase

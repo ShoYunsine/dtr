@@ -52,7 +52,7 @@ if ('serviceWorker' in navigator) {
                 function startTracking() {
                     if (navigator.geolocation) {
                         let lastUpdate = 0;  // Track the last time we triggered the function
-                        const throttleInterval = 60000;  // Set the throttle interval (in milliseconds, 10 seconds in this case)
+                        const throttleInterval = 10000;  // Set the throttle interval (in milliseconds, 10 seconds in this case)
             
                         const geoOptions = {
                             maximumAge: 60000, // Cache position for 1 minute (60000 ms)
@@ -131,7 +131,7 @@ if ('serviceWorker' in navigator) {
                     }
                 }
             
-                //startTracking();
+                startTracking();
             }
             
 
