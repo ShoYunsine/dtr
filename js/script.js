@@ -131,7 +131,7 @@ if ('serviceWorker' in navigator) {
                     }
                 }
             
-                startTracking();
+                //startTracking();
             }
             
 
