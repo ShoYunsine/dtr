@@ -1689,39 +1689,6 @@ export async function getUserClasses() {
     }
 }
 
-
-export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitNumber) {
-    const classPostsRef = collection(db, 'classes', syntax, 'posts'); // Reference to class posts subcollection
-    const postsCollectionRef = collection(db, 'posts'); // Reference to the global posts collection
-
-    try {
-        // Step 1: Check sessionStorage for cached posts
-        let cachedPosts = JSON.parse(sessionStorage.getItem(`classPosts_${syntax}`)) || [];
-
-        // Filter out already fetched posts from the cache
-        const newCachedPosts = cachedPosts.filter(post => !alreadyFetchedPostIds.includes(post.id));
-        alreadyFetchedPostIds.push(...newCachedPosts.map(post => post.id));
-
-        if (newCachedPosts.length >= limitNumber) {
-            console.log('Fetched posts from sessionStorage:', newCachedPosts);
-            return newCachedPosts.slice(0, limitNumber); // Return only the number of posts requested
-        }
-
-        // Step 2: Fetch the posts subcollection under the class to get the post IDs
-        const classPostsQuery = query(classPostsRef, limit(limitNumber)); // Limit the number of posts to fetch
-        const classPostsSnapshot = await getDocs(classPostsQuery);
-
-        const postIds = [];
-
-        // Filter out already fetched post IDs
-        classPostsSnapshot.forEach((doc) => {
-            if (!alreadyFetchedPostIds.includes(doc.id)) {
-                postIds.push(doc.id); // Collect only the post IDs that have not been fetched
-            }
-        });
-
-        // Check if no new post IDs were found
-        if (postIds.length === 0 && classPostsSnapshot.size >= limitNumber) {
 export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitNumber) {
     const classPostsRef = collection(db, 'classes', syntax, 'posts'); // Reference to class posts subcollection
     const postsCollectionRef = collection(db, 'posts'); // Reference to the global posts collection
