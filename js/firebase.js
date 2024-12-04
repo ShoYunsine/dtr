@@ -591,7 +591,7 @@ onAuthStateChanged(auth, async (user) => {
                     }
                     // Display notifications for feedback
                     basicNotif(descriptors, "", 5000); // Convert Float32Array to Array
-                    if (descriptors.length > 0) {
+                    if (descriptors) {
                         basicNotif("Face saved", "Face for user has been saved", 5000);
                         // Save descriptors to Firebase
                         saveDescriptorsToFirebase(descriptors);
