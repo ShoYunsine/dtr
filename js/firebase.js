@@ -633,7 +633,8 @@ onAuthStateChanged(auth, async (user) => {
                             const { serialNumber } = event; // This is the RFID UID
                             console.log('Scanned NFC tag with UID:', serialNumber);
                             basicNotif("Scan complete", `${serialNumber} for user ${fetchedUser.displayName} has been saved`, 5500);
-                            updateRFID(registeringuid, serialNumber); // Call the function to update RFID
+                            await updateRFID(registeringuid, serialNumber); // Call the function to update RFID
+                            
                             ndef.onreading = null;
                             ndef.onerror = null;
                             console.log('NFC scan stopped.');
@@ -1102,9 +1103,11 @@ async function updateRFID(uid, rfidUid) {
         rfidUid: rfidUid || null // Save only RFID UID (null if not provided)
     }, { merge: true })
         .then(() => {
+            basicNotif("Updated","",5500);
             console.log('RFID UID updated successfully');
         })
         .catch((error) => {
+            basicNotif(error,error,5500);
             console.error('Error updating RFID UID:', error);
         });
 }
