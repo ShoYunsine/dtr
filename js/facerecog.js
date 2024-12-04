@@ -116,7 +116,7 @@ export async function matchFacesFromVideo(videoElement, profiles) {
     await faceapi.nets.faceRecognitionNet.loadFromUri('./models');
 
     // Create FaceMatcher for matching detected faces against known descriptors
-    const faceMatcher = new faceapi.FaceMatcher(knownDescriptorsArray, 0.75); // Adjusted threshold
+    const faceMatcher = new faceapi.FaceMatcher(knownDescriptorsArray, 0.55); // Adjusted threshold
 
     return new Promise((resolve) => {
         // Wait until video metadata is loaded to get video dimensions
