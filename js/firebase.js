@@ -629,12 +629,12 @@ onAuthStateChanged(auth, async (user) => {
                         const fetchedUser = await fetchProfile(registeringuid);
                         console.log('NFC scanning started...');
                         basicNotif("NFC scanning started...", "Please place RFID to scan", 5500);
-                        ndef.onreading = (event) => {
+                        ndef.onreading = async (event) => {
                             const { serialNumber } = event; // This is the RFID UID
                             console.log('Scanned NFC tag with UID:', serialNumber);
-                            basicNotif("Scan complete", `${serialNumber} for user ${fetchedUser.displayName}`, 5500);
-                            await updateRFID(registeringuid, serialNumber); // Call the function to update RFID
                             
+                            await updateRFID(registeringuid, serialNumber); // Call the function to update RFID
+                            basicNotif("Scan complete", `${serialNumber} for user ${fetchedUser.displayName}`, 5500);
                             ndef.onreading = null;
                             ndef.onerror = null;
                             console.log('NFC scan stopped.');
