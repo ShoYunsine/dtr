@@ -1099,17 +1099,17 @@ function checkpasswordlength(password) {
 }
 
 async function updateRFID(uid, rfidUid) {
-    const userDocRef = doc(db, 'users', uid);
-    await setDoc(userDocRef, {
-        rfidUid: rfidUid || null // Save only RFID UID (null if not provided)
-    }, { merge: true })
-        .then(() => {
-            console.log('RFID UID updated successfully');
-        })
-        .catch((error) => {
-            console.error('Error updating RFID UID:', error);
-        });
+    try {
+        const userDocRef = doc(db, 'users', uid);
+        await setDoc(userDocRef, {
+            rfidUid: rfidUid || null,
+        }, { merge: true });
+        console.log('RFID UID updated successfully');
+    } catch (error) {
+        console.error('Error updating RFID UID:', error);
+    }
 }
+
 
 
 async function updateProfile(displayName, email, uid, photoUrl) {
