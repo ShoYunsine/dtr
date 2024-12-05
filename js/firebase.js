@@ -1103,11 +1103,11 @@ async function updateRFID(uid, rfidUid) {
         rfidUid: rfidUid || null // Save only RFID UID (null if not provided)
     }, { merge: true })
         .then(() => {
-            basicNotif("Updated","",5500);
+            
             console.log('RFID UID updated successfully');
         })
         .catch((error) => {
-            basicNotif(error,error,5500);
+            
             console.error('Error updating RFID UID:', error);
         });
 }
