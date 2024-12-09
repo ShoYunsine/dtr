@@ -499,14 +499,14 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
     function getFilteredData(range, customRange = null) {
         const today = new Date();
         const filteredData = {};
-    
+
         members.forEach(member => {
             const attendance = member.attendance;
-    
+
             for (const date in attendance) {
                 const attendanceDate = new Date(date);
                 let withinRange = false;
-    
+
                 // Check if the attendance date is within the specified range
                 switch (range) {
                     case 'week':
@@ -528,7 +528,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                     default:
                         withinRange = false;
                 }
-    
+
                 // If the date is within the selected range, process the attendance data
                 if (withinRange) {
                     // Initialize the date entry if it doesn't exist
@@ -539,7 +539,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                             absent: { count: 0, names: [] }
                         };
                     }
-    
+
                     // Process attendance for the date
                     if (attendance[date]) {
                         const status = attendance[date].status; // Get the overall attendance status
@@ -551,10 +551,10 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
                 }
             }
         });
-    
+
         return filteredData;
     }
-    
+
 
     // Function to update the chart with filtered data
     let attendanceChart;
@@ -909,29 +909,30 @@ async function handleImageUpload(event) {
 
             const matchResults = [];
             let index = 0;
-            for (const memberProfile of memberProfiles) {
+            for (let memberProfile of memberProfiles) {
                 index = index + 1;
                 const totalMember = members.length;
                 console.log(`translateX(${-98 + (50 / (totalMember / index))}%)`);
                 console.log(90 / (totalMember / index));
-            
+
                 // Update the loading bar position
                 loadingBar.style.transform = `translateX(${-98 + (50 / (totalMember / index))}%)`;
-            
+
                 // Ensure the profile has face descriptors and handle brute-force update if necessary
                 if (memberProfile) {
+                    console.log(memberProfile)
                     // Brute-force logic: Check if faceDescriptors are missing or invalid
-                    if (!Array.isArray(memberProfile.faceDescriptors) || memberProfile.faceDescriptors.length !== 128) {
+                    if (!Array.isArray(memberProfile.faceDescriptors)) {
                         console.log(`Invalid or missing face descriptors for member: ${memberProfile.displayName}. Attempting brute-force update...`);
-            
+
                         // Call your brute-force method to update the profile (if necessary)
-                        memberProfile = await fetchProfile(memberProfile.userid,true);
+                        memberProfile = await fetchProfile(memberProfile.userid, true);
                     }
-            
+
                     // Re-check after the brute-force update
-                    if (Array.isArray(memberProfile.faceDescriptors) && memberProfile.faceDescriptors.length === 128) {
+                    if (Array.isArray(memberProfile.faceDescriptors)) {
                         console.log(`Descriptors for ${memberProfile.displayName}:`, memberProfile.faceDescriptors);
-            
+
                         // Push the valid descriptors into the labeledDescriptors
                         labeledDescriptors.push(
                             new faceapi.LabeledFaceDescriptors(
@@ -940,13 +941,13 @@ async function handleImageUpload(event) {
                             )
                         );
                     } else {
-                        console.log(`Invalid face descriptor length for member: ${memberProfile.displayName}. Expected 128, got ${memberProfile.faceDescriptors.length}.`);
+                        console.log(`Invalid face descriptor length for member: ${memberProfile.displayName}. Expected 128.`);
                     }
                 } else {
                     console.log(`No profile found for member: ${memberProfile.displayName}`);
                 }
             }
-            
+
             const canvas = document.getElementById('canvas');
             if (!canvas) {
                 console.error('Canvas element not found.');
@@ -1280,6 +1281,13 @@ async function addPostTemplate(img, matches) {
                     classroom.lat,
                     classroom.long
                 );
+                console.log(distance)
+                if (distance <= classroom.rad) {
+                    const attendance = await checkAttendance(syntax, classroom.timezone, user.uid);
+                    updateattendanceList();
+                    console.log(attendance)
+                    basicNotif(`Attandance checked`, user.displayName, 5000);
+                };
 
                 if (emails) {
                     const href = `https://shoyunsine.github.io/dtr/post.html?postId=${postSyntax}&syntax=${syntax}`;
@@ -1331,6 +1339,23 @@ document.getElementById('camera-button').addEventListener('click', () => {
     document.getElementById('camera-input').click();
 });
 
+document.getElementById('attendButton').addEventListener('click', async () => {
+    const location = await getCurrentLocation();
+    const user = await getCurrentUser();
+    const distance = calculateDistance(
+        location.latitude,
+        location.longitude,
+        classroom.lat,
+        classroom.long
+    );
+    console.log(distance)
+    if (distance <= classroom.rad) {
+        const attendance = await checkAttendance(syntax, classroom.timezone, user.uid);
+        updateattendanceList();
+        console.log(attendance)
+        basicNotif(`Attandance checked`, user.displayName, 5000);
+    };
+});
 // Event listener to handle the file input change
 document.getElementById('camera-input').addEventListener('change', handleImageUpload);
 async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid, likes) {

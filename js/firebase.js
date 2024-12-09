@@ -519,7 +519,7 @@ onAuthStateChanged(auth, async (user) => {
 
         }
         if (typeof on_login == 'undefined') {
-            updateProfile(user.displayName, user.email, user.uid, user.photoURL);
+            //updateProfile(user.displayName, user.email, user.uid, user.photoURL);
             const qrcode = `${user.uid}`
             const parts = qrcode.split('/');
             console.log(parts);
@@ -629,12 +629,11 @@ onAuthStateChanged(auth, async (user) => {
                         const fetchedUser = await fetchProfile(registeringuid);
                         console.log('NFC scanning started...');
                         basicNotif("NFC scanning started...", "Please place RFID to scan", 5500);
-                        ndef.onreading = async (event) => {
+                        ndef.onreading = (event) => {
                             const { serialNumber } = event; // This is the RFID UID
                             console.log('Scanned NFC tag with UID:', serialNumber);
-                            
-                            await updateRFID(registeringuid, serialNumber); // Call the function to update RFID
-                            basicNotif("Scan complete", `${serialNumber} for user ${fetchedUser.displayName}`, 5500);
+                            basicNotif("Scan complete", `${serialNumber} for user ${fetchedUser.displayName} has been saved`, 5500);
+                            updateRFID(registeringuid, serialNumber); // Call the function to update RFID
                             ndef.onreading = null;
                             ndef.onerror = null;
                             console.log('NFC scan stopped.');
@@ -658,12 +657,11 @@ onAuthStateChanged(auth, async (user) => {
                         await ndef.scan();
                         console.log('NFC scanning started...');
                         basicNotif("NFC scanning started...", "Please place RFID to scan", 5500);
-                        ndef.onreading = async (event) => {
+                        ndef.onreading = (event) => {
                             const { serialNumber } = event; // This is the RFID UID
                             console.log('Scanned NFC tag with UID:', serialNumber);
-                            
-                            await updateRFID(user.uid, serialNumber); 
-                            basicNotif("Scan complete", `${serialNumber} for user ${user.displayName} has been saved`, 5500);// Call the function to update RFID
+                            basicNotif("Scan complete", `${serialNumber} for user ${user.displayName} has been saved`, 5500);
+                            updateRFID(user.uid, serialNumber); // Call the function to update RFID
                             ndef.onreading = null;
                             ndef.onerror = null;
                             console.log('NFC scan stopped.');
@@ -1099,17 +1097,17 @@ function checkpasswordlength(password) {
 }
 
 async function updateRFID(uid, rfidUid) {
-    try {
-        const userDocRef = doc(db, 'users', uid);
-        await setDoc(userDocRef, {
-            rfidUid: rfidUid || null,
-        }, { merge: true });
-        console.log('RFID UID updated successfully');
-    } catch (error) {
-        console.error('Error updating RFID UID:', error);
-    }
+    const userDocRef = doc(db, 'users', uid);
+    await setDoc(userDocRef, {
+        rfidUid: rfidUid || null // Save only RFID UID (null if not provided)
+    }, { merge: true })
+        .then(() => {
+            console.log('RFID UID updated successfully');
+        })
+        .catch((error) => {
+            console.error('Error updating RFID UID:', error);
+        });
 }
-
 
 
 async function updateProfile(displayName, email, uid, photoUrl) {
@@ -1231,7 +1229,7 @@ export async function signOutAccount() {
 export async function fetchProfile(userid, bruteForce = false) {
     try {
         // Check if the 'profiles' array exists in localStorage
-        let profiles = JSON.parse(localStorage.getItem('profiles')) || [];
+        let profiles = JSON.parse(localStorage.getItem('profilesv1')) || [];
 
         // Look for the profile in localStorage
         const cachedProfile = profiles.find(profile => profile.userid === userid);
@@ -1255,7 +1253,7 @@ export async function fetchProfile(userid, bruteForce = false) {
                         profile.userid === userid ? { userid, ...user } : profile
                     );
                 }
-                localStorage.setItem('profiles', JSON.stringify(profiles));
+                localStorage.setItem('profilesv1', JSON.stringify(profiles));
 
                 return user;
             } else {
@@ -1691,12 +1689,25 @@ export async function getUserClasses() {
     }
 }
 
+
 export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitNumber) {
     const classPostsRef = collection(db, 'classes', syntax, 'posts'); // Reference to class posts subcollection
     const postsCollectionRef = collection(db, 'posts'); // Reference to the global posts collection
 
     try {
-        // Step 1: Fetch the posts subcollection under the class to get the post IDs
+        // Step 1: Check sessionStorage for cached posts
+        let cachedPosts = JSON.parse(sessionStorage.getItem(`classPosts_${syntax}`)) || [];
+
+        // Filter out already fetched posts from the cache
+        const newCachedPosts = cachedPosts.filter(post => !alreadyFetchedPostIds.includes(post.id));
+        alreadyFetchedPostIds.push(...newCachedPosts.map(post => post.id));
+
+        if (newCachedPosts.length >= limitNumber) {
+            console.log('Fetched posts from sessionStorage:', newCachedPosts);
+            return newCachedPosts.slice(0, limitNumber); // Return only the number of posts requested
+        }
+
+        // Step 2: Fetch the posts subcollection under the class to get the post IDs
         const classPostsQuery = query(classPostsRef, limit(limitNumber)); // Limit the number of posts to fetch
         const classPostsSnapshot = await getDocs(classPostsQuery);
 
@@ -1705,19 +1716,19 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
         // Filter out already fetched post IDs
         classPostsSnapshot.forEach((doc) => {
             if (!alreadyFetchedPostIds.includes(doc.id)) {
-                postIds.push(doc.id);  // Collect only the post IDs that have not been fetched
+                postIds.push(doc.id); // Collect only the post IDs that have not been fetched
             }
         });
 
         // Check if no new post IDs were found
         if (postIds.length === 0 && classPostsSnapshot.size >= limitNumber) {
-            console.log('No new posts found for this class.', classPostsSnapshot.size >= limitNumber);
-            return await fetchClassPosts(syntax, alreadyFetchedPostIds, limitNumber + 1);
+            console.log('No new posts found for this class.');
+            return newCachedPosts;
         }
 
-        // Step 2: Fetch the actual posts from the global 'posts' collection using the post IDs
+        // Step 3: Fetch the actual posts from the global 'posts' collection using the post IDs
         const posts = await Promise.all(postIds.map(async (postId) => {
-            const postRef = doc(postsCollectionRef, postId);  // Reference to the post in the 'posts' collection
+            const postRef = doc(postsCollectionRef, postId); // Reference to the post in the 'posts' collection
             const postDocSnapshot = await getDoc(postRef);
             if (postDocSnapshot.exists()) {
                 return { id: postId, ...postDocSnapshot.data() }; // Return the post data if it exists
@@ -1739,6 +1750,10 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
         });
 
         console.log('Fetched new posts:', validPosts);
+
+        // Update sessionStorage with the newly fetched posts
+        const allPosts = [...cachedPosts, ...validPosts];
+        sessionStorage.setItem(`classPosts_${syntax}`, JSON.stringify(allPosts));
 
         // Update alreadyFetchedPostIds to include the IDs of newly fetched posts
         alreadyFetchedPostIds.push(...validPosts.map(post => post.id));
