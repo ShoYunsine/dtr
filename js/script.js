@@ -5,7 +5,15 @@ import { checkAttendance, deleteAllAttendanceRecords, getAttendance, getCurrentU
 
 import { basicNotif, confirmNotif } from './notif.js';
 
+const luxonScript = document.createElement('script');
+luxonScript.src = 'https://cdn.jsdelivr.net/npm/luxon@3.2.0/build/global/luxon.min.js';
+document.head.appendChild(luxonScript);
 
+let DateTime;
+
+luxonScript.onload = function () {
+    DateTime = window.luxon.DateTime;
+}
 
 function convertTo12Hour(militaryTime) {
 
@@ -33,108 +41,107 @@ function convertTo12Hour(militaryTime) {
 
 }
 
-
-
-
-
 if ('serviceWorker' in navigator) {
 
     navigator.serviceWorker.register('./js/sw.js')
 
         .then(async registration => {
 
-
-
             if ('sync' in registration) {
                 let classes = await getUserClasses();
                 console.log("Classes", classes);
-            
-                function startTracking() {
-                    if (navigator.geolocation) {
-                        let lastUpdate = 0;  // Track the last time we triggered the function
-                        const throttleInterval = 10000;  // Set the throttle interval (in milliseconds, 10 seconds in this case)
-            
-                        const geoOptions = {
-                            maximumAge: 60000, // Cache position for 1 minute (60000 ms)
-                            timeout: 10000, // Timeout after 10 seconds if no position is found
-                            enableHighAccuracy: true // Use high accuracy if available
-                        };
-            
-                        navigator.geolocation.watchPosition(async (position) => {
-                            const currentTime = Date.now();  // Get the current time in milliseconds
-            
-                            // Only process the position if the throttle interval has passed
-                            if (currentTime - lastUpdate > throttleInterval) {
-                                lastUpdate = currentTime;  // Update the last update time
-            
-                                const location = {
-                                    latitude: position.coords.latitude,
-                                    longitude: position.coords.longitude
-                                };
-            
-                                console.log("Classes", classes);
-            
-                                // Ensure classes is defined and an array
-                                if (classes.length === 0 && classes != "None") {
-                                    // Refetch the classes if empty
-                                    classes = await getUserClasses();
-                                } else if (classes.length >= 1 && classes != "None") {
-                                    // Get today's date for storage key (formatted as YYYY-MM-DD)
-                                    const today = new Date().toISOString().split('T')[0];  // YYYY-MM-DD
-            
-                                    for (const cls of classes) {
-                                        // Generate a unique storage key for each class and date
-                                        const storageKey = `class-${cls.syntax}-${today}`;
-            
-                                        // Check if the class status is already in localStorage for today
-                                        let storedClass = JSON.parse(localStorage.getItem(storageKey));
-                                        let cstatus;
-                                        if (storedClass) {
-                                            console.log(`Status for class ${cls.syntax} on ${today}: ${storedClass.status}`);
-                                            cstatus = storedClass.status
-                                        } else {
-                                            cstatus = await getAttendance(cls.syntax, cls.timezone);
-                                            localStorage.setItem(storageKey, JSON.stringify({ syntax: cls.syntax, status: cstatus}));
-                                        }
-            
-                                        // Fetch the attendance status for the class if not stored in localStorage
-                                        
-                                        console.log("Class status:", cstatus);
-            
-                                        // If the class is within radius, process the attendance
-                                        const distance = calculateDistance(
-                                            location.latitude,
-                                            location.longitude,
-                                            cls.lat,
-                                            cls.long
-                                        );
-            
-                                        if (distance <= cls.rad) {
-                                        
-                                            if (cstatus === "Absent" || cstatus === "absent") {
-                                                const att = await checkAttendance(cls.syntax, cls.timezone);
-                                                localStorage.setItem(storageKey, JSON.stringify({ syntax: cls.syntax, status: att.status}));
-                                            }
-                                            //basicNotif(`${cls.name} inRadius`, "", 5000);
-                                        } else {
-                                            console.log("Toofar")
-                                            if (cstatus === "Absent" || cstatus === "absent") {
-                                                await markAbsent(cls.syntax);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }, (error) => {
-                            console.error("Geolocation error:", error);
-                        }, geoOptions);
+                async function refetch() {
+                    classes = await getUserClasses();
+                    // Check if the result is empty or invalid
+                    if (classes.length === 0 && classes != "None") {
+                        console.log("No classes found, retrying...");
+
+                        // Wait for a specified time before trying again
+                        await new Promise(resolve => setTimeout(resolve, 3000)); // Retry after 3 seconds (you can adjust this)
+
+                        // Recursively call refetch, but only after a delay
+                        await refetch();
+                    } else {
+
+                        console.log("Classes successfully fetched:", classes);
+                        await track()
                     }
                 }
-            
-                startTracking();
-            }
-            
 
+                if (classes.length === 0 && classes != "None") {
+                    await refetch();
+                }
+                async function track() {
+                    const location = await getCurrentLocation();
+                    console.log(location, classes)
+                    for (const cls of classes) {
+                        console.log(cls)
+                        const currentTime = DateTime.now().setZone(cls.timezone);
+                        const dayOfWeek = currentTime.toFormat('cccc'); // Get the full name of the day (e.g., Monday)
+
+                        console.log('Day of week:', dayOfWeek); // Debugging: check the day of the week
+
+                        // Construct field names dynamically based on the day
+                        const startTimeKey = `timeIn${dayOfWeek}first`;
+                        const endTimeKey = `timeIn${dayOfWeek}last`;
+
+                        const startTimeStr = cls[startTimeKey]; // e.g., "07:30"
+                        const endTimeStr = cls[endTimeKey]; // e.g., "09:30"
+
+                        console.log('Start time key:', startTimeKey);
+                        console.log('End time key:', endTimeKey);
+                        console.log('Start time string:', startTimeStr);
+                        console.log('End time string:', endTimeStr);
+                        let startTime;
+                        let endTime;
+                        // Ensure that both time fields exist before processing
+                        if (startTimeStr && endTimeStr) {
+                            startTime = DateTime.fromFormat(startTimeStr, 'HH:mm', { zone: cls.timezone });
+                            endTime = DateTime.fromFormat(endTimeStr, 'HH:mm', { zone: cls.timezone });
+                            console.log('Parsed start time:', startTime);
+                            console.log('Parsed end time:', endTime);
+                        } else {
+                            console.log(`Missing time information for ${dayOfWeek}. Skipping class:`, cls.name);
+                            continue;
+                        }
+
+                        const distance = calculateDistance(
+                            location.latitude,
+                            location.longitude,
+                            cls.lat,
+                            cls.long
+                        );
+                        if (distance <= cls.rad) {
+                            if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
+                                const state = await getAttendance(cls.syntax, cls.timezone);
+                                if (state.status === "absent" || state.status === "Absent") {
+                                    const att = await checkAttendance(cls.syntax, cls.timezone);
+                                }
+                            }
+                        } else {
+
+                            if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
+                                const delay = startTime.minus({ minutes: 10 }).diff(currentTime, 'milliseconds').toObject().milliseconds;
+
+                                console.log('Calculated delay:', delay);
+
+                                if (delay > 0) {
+                                    console.log(`Scheduling task for ${delay / 1000} seconds later today.`);
+                                    setTimeout(async () => {
+                                        console.log('Running scheduled attendance task...');
+                                        const state = await getAttendance(cls.syntax, cls.timezone);
+                                        if (state.status === "absent" || state.status === "Absent") {
+                                            const att = await checkAttendance(cls.syntax, cls.timezone);
+                                        }
+                                    }, delay);
+                                } else {
+                                    console.log('No need to schedule task: the time has already passed.');
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         })
 
         .catch(error => {
@@ -149,19 +156,13 @@ if ('serviceWorker' in navigator) {
 
 };
 
-
-
 const worker = new Worker('./js/worker.js');
-
-
 
 worker.onmessage = (event) => {
 
     console.log('Message from worker:', event.data);
 
 };
-
-
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
 
@@ -184,25 +185,22 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function getCurrentLocation() {
-
-    if (navigator.geolocation) {
-
-        navigator.geolocation.getCurrentPosition(function (position) {
-
-            console.log(`Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`);
-
-        }, function (error) {
-
-            console.error(`Error getting location: ${error.message}`);
-
-        });
-
-    } else {
-
-        console.error("Geolocation is not supported by this browser.");
-
-    }
-
+    return new Promise((resolve, reject) => {
+        if (navigator.geolocation) {
+            console.log("Getting Location");
+            navigator.geolocation.getCurrentPosition(
+                position => resolve(position.coords),
+                error => reject(alert('Unable to retrieve location: ' + error.message)),
+                {
+                    enableHighAccuracy: true, // Set to false for quicker, less accurate location
+                    timeout: 15000, // Set a timeout (e.g., 5000 ms) for the location request
+                    maximumAge: 0 // Don't use cached location data
+                }
+            );
+        } else {
+            reject(new Error('Geolocation is not supported by this browser.'));
+        }
+    });
 }
 
 if (Notification.permission === 'granted') {

@@ -38,6 +38,35 @@ self.addEventListener('fetch', event => {
   }
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'set-alarm') {
+      const targetTime = new Date(event.data.targetTime); // Specific time to execute
+      const checkInterval = 60 * 1000; // 1 minute check interval
+
+      const checkTime = () => {
+          const now = new Date();
+          if (now >= targetTime) {
+              console.log('Running the scheduled task at:', now);
+              runScheduledTask();
+          } else {
+              console.log('Waiting for the target time...');
+              setTimeout(checkTime, checkInterval);
+          }
+      };
+
+      checkTime(); // Start the first check
+  }
+});
+
+function runScheduledTask() {
+  // Perform your scheduled task here
+  console.log('Scheduled Task Executed!');
+  self.registration.showNotification('Task Completed', {
+      body: 'Your scheduled task has been executed!',
+      icon: '../Images/logo.png',
+  });
+}
+
 
 self.addEventListener('activate', event => {
   event.waitUntil(

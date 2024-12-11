@@ -503,6 +503,7 @@ ${(currentmember.role === 'admin' || currentmember.role === 'owner')
         members.forEach(member => {
             const attendance = member.attendance;
 
+            console.log(memberProfiles.find(profile => profile.uid === member.id), member.id)
             for (const date in attendance) {
                 const attendanceDate = new Date(date);
                 let withinRange = false;
@@ -1751,3 +1752,5 @@ function getLocation() {
         }
     });
 }
+
+

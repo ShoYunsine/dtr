@@ -73,7 +73,7 @@
                   <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
                 </form>
                 <a class="classPfp" id="atR"><i id="icon" class="fa-solid fa-id-card"></i></a>
-                <p>Attend(RFID)</p>
+                <p>Attend(ID)</p>
               </div>
             </li>
           </ul>
@@ -97,7 +97,8 @@
               <p>Update face - Upload a clear of your face and your face only so that face recognition will recognize
                 you.</p>
               <br>
-              <p>Register RFID - Used to register your id that has RFID (Only available for those phones that have NFC
+              <p>Register ID - Used to register your id that has RFID/NFC tag (Only available for those phones that have
+                NFC
                 compatability).</p>
             </div>
           </details>
@@ -115,7 +116,7 @@
             <li class="list-item">
               <div>
                 <a class="classPfp" id="registerRFIDBtn"><i id="icon" class="fa-solid fa-id-card"></i></a>
-                <p>Register RFID</p>
+                <p>Register ID</p>
               </div>
             </li>
           </ul>
@@ -123,14 +124,14 @@
           <details class="info-details">
             <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> How it Works</summary>
             <div class="info-panel">
-              <p>This will give you a link that will let someone who has nfc to register your rfid for you.</p>
+              <p>This will give you a link that will let someone who has NFC to register your id for you.</p>
             </div>
           </details>
           <ul class="classList">
             <li class="list-item">
               <div>
                 <a class="classPfp" id="registerWithLink"><i id="icon" class="fa-solid fa-link"></i></a>
-                <p>Register RFID via link</p>
+                <p>Register ID via link</p>
               </div>
             </li>
           </ul>
@@ -241,6 +242,7 @@
             <label for="radius">Radius</label>
             <input type="number" id="radius" name="rad" placeholder="Radius (Meters)">
           </div>
+            
           <div id="datePart">
             <label for="monday">Mon</label>
             <div>
@@ -283,9 +285,10 @@
           </div>
           <button form="classEditform" type="submit" id="editclass-btn" class="submit-btn">Save</button>
         </form>
-        <form >
-          
-          <button class="submit-btn" id="leaveButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> Leave</button>
+        <form>
+
+          <button class="submit-btn" id="leaveButton"><i class="fa-solid fa-arrow-right-from-bracket"></i>
+            Leave</button>
         </form>
       </div>
     </div>
@@ -294,7 +297,7 @@
   <div id="buttonsdown">
     <button id="facescan-button">
       <i class="fa-solid fa-id-card"></i>
-      <a>RFID</a>
+      <a>NFC</a>
     </button>
     <button id="qr-code-reader">
       <i class="fas fa-qrcode"></i>

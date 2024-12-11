@@ -519,7 +519,8 @@ onAuthStateChanged(auth, async (user) => {
 
         }
         if (typeof on_login == 'undefined') {
-            updateProfile(user.displayName, user.email, user.uid, user.photoURL);
+            console.log(user)
+            //updateProfile(user.displayName, user.email, user.uid, user.photoURL);
             const qrcode = `${user.uid}`
             const parts = qrcode.split('/');
             console.log(parts);
@@ -537,7 +538,7 @@ onAuthStateChanged(auth, async (user) => {
                 const code = await generateAttendanceCode();
                 await createqA(code);
                 if (await confirmNotif(`Quick Attendance Code is ${code}`, "would you like to get results")) {
-                    await emailresults(currentUser.email,code);
+                    await emailresults(currentUser.email, code);
                     await deleteAttendanceDoc(code);
                 } else {
                     await deleteAttendanceDoc(code);
@@ -582,7 +583,7 @@ onAuthStateChanged(auth, async (user) => {
                     }
 
                     console.log('File selected:', file); // Log the selected file
-basicNotif("Please wait","...",5500);
+
                     // Assume facerecognition.faceDetect is a function that processes the image
                     const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor));
@@ -678,7 +679,10 @@ basicNotif("Please wait","...",5500);
 
         }
         const account = document.getElementById('account');
-        account.innerHTML = `<img id="accountImg" src="${user.photoURL || 'Images/gear.png'}"></img>`;
+        if (account) {
+            account.innerHTML = `<img id="accountImg" src="${user.photoURL || "Images/gear.png"}"></img>`;
+        }
+
         if (typeof on_post !== 'undefined') {
             const getUrlParams = (param) => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -1168,12 +1172,14 @@ export async function signUpWithEmail() {
                 // Create user with email and password
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-
+                console.log(user)
                 // Update user profile with display name
-                await updateProfile(user, {
-                    displayName: displayName,
-                    photoURL: null // You can add a URL for the photo if desired
-                });
+                await updateProfile(
+                    displayName,
+                    email,
+                    user.uid,
+                );
+                window.location.href = `index.html`;
 
                 console.log('User created successfully:', user);
                 // Handle further logic, like redirecting or showing a success message
@@ -1197,6 +1203,7 @@ export async function loginWithEmail() {
     signInWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             const user = userCredential.user;
+            window.location.href = `index.html`;
         })
         .catch((error) => {
             const errorCode = error.code;
@@ -1633,7 +1640,7 @@ export async function leaveClass(syntax) {
 
 
 export async function getUserClasses() {
-    const user = auth.currentUser;
+    const user = await auth.currentUser;
 
     if (!user) {
         console.error('No user is currently signed in.');
@@ -1695,19 +1702,7 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
     const postsCollectionRef = collection(db, 'posts'); // Reference to the global posts collection
 
     try {
-        // Step 1: Check sessionStorage for cached posts
-        let cachedPosts = JSON.parse(sessionStorage.getItem(`classPosts_${syntax}`)) || [];
-
-        // Filter out already fetched posts from the cache
-        const newCachedPosts = cachedPosts.filter(post => !alreadyFetchedPostIds.includes(post.id));
-        alreadyFetchedPostIds.push(...newCachedPosts.map(post => post.id));
-
-        if (newCachedPosts.length >= limitNumber) {
-            console.log('Fetched posts from sessionStorage:', newCachedPosts);
-            return newCachedPosts.slice(0, limitNumber); // Return only the number of posts requested
-        }
-
-        // Step 2: Fetch the posts subcollection under the class to get the post IDs
+        // Step 1: Fetch the posts subcollection under the class to get the post IDs
         const classPostsQuery = query(classPostsRef, limit(limitNumber)); // Limit the number of posts to fetch
         const classPostsSnapshot = await getDocs(classPostsQuery);
 
@@ -1716,19 +1711,19 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
         // Filter out already fetched post IDs
         classPostsSnapshot.forEach((doc) => {
             if (!alreadyFetchedPostIds.includes(doc.id)) {
-                postIds.push(doc.id); // Collect only the post IDs that have not been fetched
+                postIds.push(doc.id);  // Collect only the post IDs that have not been fetched
             }
         });
 
         // Check if no new post IDs were found
         if (postIds.length === 0 && classPostsSnapshot.size >= limitNumber) {
-            console.log('No new posts found for this class.');
-            return newCachedPosts;
+            console.log('No new posts found for this class.', classPostsSnapshot.size >= limitNumber);
+            return await fetchClassPosts(syntax, alreadyFetchedPostIds, limitNumber + 1);
         }
 
-        // Step 3: Fetch the actual posts from the global 'posts' collection using the post IDs
+        // Step 2: Fetch the actual posts from the global 'posts' collection using the post IDs
         const posts = await Promise.all(postIds.map(async (postId) => {
-            const postRef = doc(postsCollectionRef, postId); // Reference to the post in the 'posts' collection
+            const postRef = doc(postsCollectionRef, postId);  // Reference to the post in the 'posts' collection
             const postDocSnapshot = await getDoc(postRef);
             if (postDocSnapshot.exists()) {
                 return { id: postId, ...postDocSnapshot.data() }; // Return the post data if it exists
@@ -1751,10 +1746,6 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
 
         console.log('Fetched new posts:', validPosts);
 
-        // Update sessionStorage with the newly fetched posts
-        const allPosts = [...cachedPosts, ...validPosts];
-        sessionStorage.setItem(`classPosts_${syntax}`, JSON.stringify(allPosts));
-
         // Update alreadyFetchedPostIds to include the IDs of newly fetched posts
         alreadyFetchedPostIds.push(...validPosts.map(post => post.id));
 
@@ -1764,8 +1755,6 @@ export async function fetchClassPosts(syntax, alreadyFetchedPostIds = [], limitN
         return [];
     }
 }
-
-
 
 export async function displayUserClasses() {
     const user = auth.currentUser;
@@ -2110,26 +2099,25 @@ export async function checkAttendance(syntax, timezone, id) {
         };
 
         // Check attendance based on the current time
-        if (currentTime >= startTime.minus({ minutes: 5 }) && currentTime <= endTime) {
-    // If the current time is within the valid attendance window
-    if (currentTime < startTime) {
-        // If current time is before the start time, mark as present
-        updatedAttendance[currentDate].status = 'present';
-    } else if (currentTime >= startTime.plus({ minutes: 1 })) {
-        // If current time is at least 1 minute after the start time, mark as late
-        updatedAttendance[currentDate].status = 'late';
-    } else {
-        // If the current time is exactly the start time or within the first minute, mark as present
-        updatedAttendance[currentDate].status = 'present';
-    }
-    // Record the time the attendance was checked
-    updatedAttendance[currentDate].timeChecked = currentTime.toFormat('HH:mm');
-} else {
-    // If current time is outside the acceptable window
-    console.warn(`Current time is outside the scheduled class time for ${dayOfWeek}`);
-}
+        if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
+            // If current time is within 5 minutes before the start time
+            if (currentTime < startTime) {
+                // If current time is before the start time, mark as present
+                updatedAttendance[currentDate].status = 'present';
+            } else if (currentTime >= startTime.plus({ minutes: 1 })) {
+                // If current time is at least 1 minute after the start time, mark as late
+                updatedAttendance[currentDate].status = 'late';
+            } else {
+                // If the current time is exactly the start time or within the first minute, mark as present
+                updatedAttendance[currentDate].status = 'present';
+            }
+            // Record the time the attendance was checked
+            updatedAttendance[currentDate].timeChecked = currentTime.toFormat('HH:mm');
+        } else {
+            // If current time is outside the acceptable window
+            console.warn(`Current time is outside the scheduled class time for ${dayOfWeek}`);
+        }
 
-        
 
         // Save the updated attendance
         await setDoc(attendanceDoc, { attendance: updatedAttendance }, { merge: true });
@@ -2667,17 +2655,17 @@ export async function emailresults(email, code) {
             // Email parameters
             const emailParams = {
                 owner_email: email,
-                attendees: attendees,         
+                attendees: attendees,
             };
 
             console.log("Sending email with the following parameters:", emailParams);
 
             // Send email using EmailJS
             const result = await emailjs.send("service_p3ddhzv", "template_3n5ewnh", emailParams);
-            basicNotif("Email sent","Attendance was taken",5000)
+            basicNotif("Email sent", "Attendance was taken", 5000)
             console.log("Email sent successfully:", result);
         } else {
-            basicNotif("No attendees","0 attendance was taken",5000);
+            basicNotif("No attendees", "0 attendance was taken", 5000);
             console.log("No attendees found for this code.");
         }
     } catch (error) {

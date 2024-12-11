@@ -669,7 +669,22 @@
   border-radius: 100%;
 }
 
+#add-item-container {
+  margin: 10px auto;
+  width: 90%;
+  display: flex;
+  justify-content: center;
+}
 
+#item-select, #add-item-btn, #start, #end {
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  color: var(--text-color-main);
+  max-width: 70px;
+  background-color: var(--background-color);
+  border-radius: 4px;
+  margin: 0;
+}
 
 #camera-button,
 #qr-code-reader,

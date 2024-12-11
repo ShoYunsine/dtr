@@ -1,163 +1,135 @@
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = auth.currentUser; 
-        accountName.innerHTML = user.displayName;
-        accountImg.src = user.photoURL;
-        accountEmail.innerHTML = user.email;
-        try {
-            const { averageColor, secondColor } = await getAverageAndSecondColor(user.photoURL);
-            const color = `rgb(${averageColor.r}, ${averageColor.g}, ${averageColor.b})`;
-            const color2 = `rgb(${secondColor.r}, ${secondColor.g}, ${secondColor.b})`;
-            bg.style.backgroundImage = `linear-gradient(45deg, ${color2}, ${color})`;
-            accountDetails.style.backgroundImage = `linear-gradient(${color}, ${color2})`;
-        } catch (error) {
-            console.error(error);
-            const { averageColor, secondColor } = await getAverageAndSecondColor("Images/gear.png");
-            const color = `rgb(${averageColor.r}, ${averageColor.g}, ${averageColor.b})`;
-            const color2 = `rgb(${secondColor.r}, ${secondColor.g}, ${secondColor.b})`;
-            bg.style.backgroundImage = `linear-gradient(45deg, ${color2}, ${color})`;
-            accountDetails.style.backgroundImage = `linear-gradient(${color}, ${color2})`;
-            accountImg.src = "Images/gear.png";
-        }
-        // ...
-    } else {
-        if (typeof on_dash != 'undefined') {
-            dashboard.style.display = "none";
-            signUpcontainer.style.display = "none";
-            loginButton.style.display = "none";
-            signOutButton.style.display = "none";
-        }
-        try {
+if ('sync' in registration) {
+                let classes = await getUserClasses();
+                console.log("Classes", classes);
+            
+                function startTracking() {
+                    if (navigator.geolocation) {
+                        let lastUpdate = 0;  // Track the last time we triggered the function
+                        const throttleInterval = 10000;  // Set the throttle interval (in milliseconds, 10 seconds in this case)
+            
+                        const geoOptions = {
+                            maximumAge: 60000, // Cache position for 1 minute (60000 ms)
+                            timeout: 10000, // Timeout after 10 seconds if no position is found
+                            enableHighAccuracy: true // Use high accuracy if available
+                        };
+            
+                        navigator.geolocation.watchPosition(async (position) => {
+                            const currentTime = Date.now();  // Get the current time in milliseconds
+            
+                            // Only process the position if the throttle interval has passed
+                            if (currentTime - lastUpdate > throttleInterval) {
+                                lastUpdate = currentTime;  // Update the last update time
+            
+                                const location = {
+                                    latitude: position.coords.latitude,
+                                    longitude: position.coords.longitude
+                                };
+            
+                                console.log("Classes", classes);
+            
+                                // Ensure classes is defined and an array
+                                if (classes.length === 0 && classes != "None") {
+                                    // Refetch the classes if empty
+                                    classes = await getUserClasses();
+                                } else if (classes.length >= 1 && classes != "None") {
+                                    // Get today's date for storage key (formatted as YYYY-MM-DD)
+                                    const today = new Date().toISOString().split('T')[0];  // YYYY-MM-DD
+            
+                                    for (const cls of classes) {
+                                        // Generate a unique storage key for each class and date
+                                        const storageKey = `class-${cls.syntax}-${today}`;
+            
+                                        // Check if the class status is already in localStorage for today
+                                        let storedClass = JSON.parse(localStorage.getItem(storageKey));
+                                        let cstatus;
+                                        if (storedClass) {
+                                            console.log(`Status for class ${cls.syntax} on ${today}: ${storedClass.status}`);
+                                            cstatus = storedClass.status
+                                        } else {
+                                            cstatus = await getAttendance(cls.syntax, cls.timezone);
+                                            localStorage.setItem(storageKey, JSON.stringify({ syntax: cls.syntax, status: cstatus}));
+                                        }
+            
+                                        // Fetch the attendance status for the class if not stored in localStorage
+                                        
+                                        console.log("Class status:", cstatus);
+            
+                                        // If the class is within radius, process the attendance
+                                        const distance = calculateDistance(
+                                            location.latitude,
+                                            location.longitude,
+                                            cls.lat,
+                                            cls.long
+                                        );
+            
+                                        if (distance <= cls.rad) {
+                                        
+                                            if (cstatus === "Absent" || cstatus === "absent") {
+                                                const att = await checkAttendance(cls.syntax, cls.timezone);
+                                                localStorage.setItem(storageKey, JSON.stringify({ syntax: cls.syntax, status: att.status}));
+                                            }
+                                            //basicNotif(`${cls.name} inRadius`, "", 5000);
+                                        } else {
+                                            console.log("Toofar")
+                                            if (cstatus === "Absent" || cstatus === "absent") {
+                                                await markAbsent(cls.syntax);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }, (error) => {
+                            console.error("Geolocation error:", error);
+                        }, geoOptions);
+                    }
+                }
+            
+                startTracking();
+            }
 
-            const { averageColor, secondColor } = await getAverageAndSecondColor("Images/gear.png");
-            const color = `rgb(${averageColor.r}, ${averageColor.g}, ${averageColor.b})`;
-            const color2 = `rgb(${secondColor.r}, ${secondColor.g}, ${secondColor.b})`;
-            bg.style.backgroundImage = `linear-gradient(45deg, ${color2}, ${color})`;
-            accountDetails.style.backgroundImage = `linear-gradient(${color}, ${color2})`;
-        } catch (error) {
-            console.error(error);
-        }
-        accountEmail.innerHTML = "·";
+<div id="add-item-container">
+              <select id="item-select">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+              </select>
+              <input type="time" id="start">
+              <input type="time" id="end">
+              <button id="add-item-btn">+</button>
+              
+            </div>
+            <div id="item-list">
+              <!-- Existing list items -->
+            </div>
+
+// Get references to the DOM elements
+const select = document.getElementById('item-select');
+const startInput = document.getElementById('start');
+const endInput = document.getElementById('end');
+const addButton = document.getElementById('add-item-btn');
+const itemList = document.getElementById('item-list');
+
+// Add event listener for the "+" button click
+addButton.addEventListener('click', () => {
+    const selectedDay = select.value;
+    const startTime = startInput.value;
+    const endTime = endInput.value;
+
+    if (selectedDay && startTime && endTime) {
+        // Create a new div to hold the item
+        const itemDiv = document.createElement('div');
+        itemDiv.classList.add('list-item');
+        itemDiv.textContent = `${selectedDay}: ${startTime} - ${endTime}`;
+
+        // Append the new item to the list
+        itemList.appendChild(itemDiv);
+
+        // Optionally, clear the inputs after adding
+        startInput.value = '';
+        endInput.value = '';
+    } else {
+        alert('Please select a day and specify both start and end times.');
     }
 });
-
- <div class="form-section">
-      <h2>Join a Class</h2>
-      <form id="classjoinForm">
-        <div>
-          <h3 for="classCode">Class Code</h3>
-          <input type="text" id="classCode" name="classCode" required placeholder="Code">
-        </div>
-        <button type="submit" class="submit-btn">Join Class</button>
-      </form>
-    </div>
-
-${year}-${month}-${day}/${location.latitude}-${location.longitude}
-await cache.addAll([
-        '../', 
-        '../index.html', 
-        '../css/style.css', 
-        '../js/script.js', 
-        '../classes.html', 
-        '../css/classes.css',
-        '../js/classes.js',
-        '../class.html',
-        '../css/class.css',
-        '../js/class.js',
-        '../css/login-signup-style.css',
-        '../js/firebase.js',
-        '../js/login.js',
-        '../js/index.js',
-        '../Images/logo.png'
-      ]);
-
-src="https://sorsu.edu.ph/wp-content/uploads/2024/04/SORSU-COT-SPECIAL-GENERAL-ASSEMBLY-2.jpg"
-
- const today = new Date();
-            const year = today.getFullYear();
-            const month = today.getMonth() + 1; // Months are zero-indexed (0 = January, 11 = December)
-            const day = today.getDate();
-            
-
-            function getLocation() {
-                return new Promise((resolve, reject) => {
-                    if (navigator.geolocation) {
-                        console.log("Getting Location");
-                        navigator.geolocation.getCurrentPosition(
-                            position => resolve(position.coords),
-                            error => reject(alert('Unable to retrieve location: ' + error.message)),
-                            {
-                                enableHighAccuracy: true,
-                                timeout: 100000000000000000,
-                                maximumAge: 100000000000000000000000000000000 
-                            }
-                        );
-                    } else {
-                        reject(new Error('Geolocation is not supported by this browser.'));
-                    }
-                });
-            }
-            let location = await getLocation();
-            
-// Import Firebase scripts required for service workers
-importScripts('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js');
-
-// Your Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyD2njL-ut8J-eEtp-1Pr6XzF8uEccBEngc",
-  authDomain: "date-time-record.firebaseapp.com",
-  projectId: "date-time-record",
-  storageBucket: "date-time-record.appspot.com",
-  messagingSenderId: "624915234552",
-  appId: "1:624915234552:web:fd98814a56a2d434ce450d",
-  measurementId: "G-EV3TFLDQ7E"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-
- ${currentmember.role === 'owner' ? '<button class="remove-btn"><i id="i" class="fa-solid fa-square-minus"></i> Remove</button>' : ''}
-                    ${currentmember.role === 'admin' || currentmember.role === 'student' ? '<button class="leave-btn"><i id="i" class="fa-solid fa-arrow-right-from-bracket"></i> Leave</button>' : ''}
-
-// Retrieve an instance of Firebase Messaging
-const messaging = firebase.messaging();
-
-// Handle background messages
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-
-  const notificationTitle = 'Background Message Title';
-  const notificationOptions = {
-    body: 'Background Message body.',
-    icon: '../Images/logo.png'
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
-
-<table style="width:100%; border-collapse: collapse;">
-  <thead>
-    <tr>
-      <th style="border: 1px solid #ddd; padding: 8px;">Member Name</th>
-      {{#each weekdays}}
-      <th style="border: 1px solid #ddd; padding: 8px;">{{this}}</th>
-      {{/each}}
-    </tr>
-  </thead>
-  <tbody>
-    {{#each members}}
-    <tr>
-      <td style="border: 1px solid #ddd; padding: 8px;">{{name}}</td>
-      {{#each days}}
-      <td style="border: 1px solid #ddd; padding: 8px; background-color: {{color}};">
-        {{status}} {{timeChecked}}
-      </td>
-      {{/each}}
-    </tr>
-    {{/each}}
-  </tbody>
-</table>
-
- <p id="timeIn">.</p>
-      <p><i><a id="latitude">.</a><a id="longitude">.</a><a id="radius">.</a></i></p>
