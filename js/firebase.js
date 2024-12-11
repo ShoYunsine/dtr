@@ -519,7 +519,7 @@ onAuthStateChanged(auth, async (user) => {
 
         }
         if (typeof on_login == 'undefined') {
-            //updateProfile(user.displayName, user.email, user.uid, user.photoURL);
+            updateProfile(user.displayName, user.email, user.uid, user.photoURL);
             const qrcode = `${user.uid}`
             const parts = qrcode.split('/');
             console.log(parts);
