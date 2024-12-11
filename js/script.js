@@ -116,11 +116,21 @@ if ('serviceWorker' in navigator) {
                                 const state = await getAttendance(cls.syntax, cls.timezone);
                                 if (state.status === "absent" || state.status === "Absent") {
                                     const att = await checkAttendance(cls.syntax, cls.timezone);
+                                } else {
+                                    console.log(`Scheduling task later today.`);
+                                    setTimeout(async () => {
+                                        console.log('Running scheduled attendance task...');
+                                        const state = await getAttendance(cls.syntax, cls.timezone);
+                                        if (state.status === "absent" || state.status === "Absent") {
+                                            const att = await checkAttendance(cls.syntax, cls.timezone);
+                                        }
+                                    }, 300000);
                                 }
                             }
                         } else {
 
                             if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
+                                console.log(startTime)
                                 const delay = startTime.minus({ minutes: 10 }).diff(currentTime, 'milliseconds').toObject().milliseconds;
 
                                 console.log('Calculated delay:', delay);
