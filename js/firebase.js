@@ -582,7 +582,7 @@ onAuthStateChanged(auth, async (user) => {
                     }
 
                     console.log('File selected:', file); // Log the selected file
-
+basicNotif("Please wait","...",5500);
                     // Assume facerecognition.faceDetect is a function that processes the image
                     const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor));
