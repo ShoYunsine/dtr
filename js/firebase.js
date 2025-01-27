@@ -561,18 +561,22 @@ onAuthStateChanged(auth, async (user) => {
             });
 
             // Automatically submit form after image selection
+            const facePreviewContainer = document.getElementById('face-preview-container');
+            const previewImage = document.getElementById('preview-image');
+            const confirmButton = document.getElementById('confirm-button');
+            const cancelButton = document.getElementById('cancel-button');
+
             imageUpload.addEventListener('change', (e) => {
                 e.preventDefault(); // Stop the default action for file change
 
                 if (imageUpload.files.length > 0) {
-                    // Instead of submitting the form, trigger the submit event handler manually
+                    // Trigger the submit event handler manually
                     faceForm.dispatchEvent(new Event('submit'));
                 }
             });
 
-            // Handle form submission
             faceForm.addEventListener('submit', async (e) => {
-                e.preventDefault(); // Prevent page refresh during submit
+                e.preventDefault(); // Prevent form submission
 
                 try {
                     const file = imageUpload.files[0];
@@ -582,31 +586,52 @@ onAuthStateChanged(auth, async (user) => {
                         return;
                     }
 
-                    console.log('File selected:', file); // Log the selected file
+                    console.log('File selected:', file);
 
-                    // Assume facerecognition.faceDetect is a function that processes the image
+                    // Simulate face detection (replace with your faceDetect function)
                     const detections = await facerecognition.faceDetect(file);
                     const descriptors = detections.map(detection => Array.from(detection.descriptor));
-                    if (detections.length != 1) {
+
+                    if (detections.length !== 1) {
+                        console.log('Invalid number of faces detected.');
+                        basicNotif("No faces", "Please provide a cleare picture.", 5000);
                         return;
                     }
-                    // Display notifications for feedback
-                    //basicNotif(descriptors, "", 5000); // Convert Float32Array to Array
-                    if (descriptors.length > 0) {
-                        basicNotif("Face saved", "Face for user has been saved", 5000);
-                        // Save descriptors to Firebase
-                        saveDescriptorsToFirebase(descriptors);
-                    } else {
-                        basicNotif("No face detected", "Please try again", 5000);
-                    }
 
-                    console.log('Returned Detections:', detections);
-                    console.log('Returned Descriptors:', descriptors);
+                    // Display the selected image in the modal
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewImage.src = e.target.result;
+                        facePreviewContainer.style.display = 'flex'; // Show the modal
+                    };
+                    reader.readAsDataURL(file);
+
+                    // Confirm button logic
+                    confirmButton.onclick = () => {
+                        console.log('Face confirmed:', descriptors);
+                        resetImageUpload();
+                        saveDescriptorsToFirebase(descriptors); // Save to Firebase
+                        facePreviewContainer.style.display = 'none'; // Hide the modal
+                        basicNotif("Face saved", "Face for user has been saved", 5000);
+                    };
+
+                    // Cancel button logic
+                    cancelButton.onclick = () => {
+                        console.log('Cancel clicked.');
+                        resetImageUpload();
+                        facePreviewContainer.style.display = 'none'; // Hide the modal
+                    };
 
                 } catch (error) {
+                    resetImageUpload();
                     console.error('Error during image upload and processing:', error);
                 }
+                function resetImageUpload() {
+                    imageUpload.value = ''; // Clear the file input's value
+                }
             });
+
+
             // Handle RFID registration and NFC scanning
             const registerWithLink = document.getElementById('registerWithLink');
 
@@ -1213,11 +1238,11 @@ export async function loginWithEmail() {
 
 export async function loginWithGoogle() {
     signInWithPopup(auth, provider)
-        .then((result) => {
+        .then(async (result) => {
             const credential = GoogleAuthProvider.credentialFromResult(result);
             const token = credential.accessToken;
             const user = result.user;
-            updateProfile(user.displayName, user.email, user.uid);
+            await updateProfile(user.displayName, user.email, user.uid,user.photoURL);
             window.location.href = `index.html`;
         }).catch((error) => {
             const errorCode = error.code;

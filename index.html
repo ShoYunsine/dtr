@@ -91,7 +91,8 @@
               <p>Update face - Upload a clear of your face and your face only so that face recognition will recognize
                 you.</p>
               <br>
-              <p>Register ID - Used to register your id that has RFID/NFC tag (Only available for those phones that have NFC
+              <p>Register ID - Used to register your id that has RFID/NFC tag (Only available for those phones that have
+                NFC
                 compatability).</p>
             </div>
           </details>
@@ -142,6 +143,17 @@
       </ul>
     </nav>
   </aside>
+  <div id="face-preview-container" class="hidden-overlay">
+    <div class="preview-modal">
+      <img id="preview-image" class="preview-image" alt="Preview" />
+      <p>Is this the correct picture?</p>
+      <div class="button-group">
+        <button id="confirm-button" class="button confirm">Confirm</button>
+        <button id="cancel-button" class="button cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <div class="main-container">
     <details class="info-details">
       <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>

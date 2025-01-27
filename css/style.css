@@ -505,10 +505,9 @@ a {
 
 .loader {
   position: relative;
-  width: 100px; /* Adjust width as needed */
-  height: 100px; /* Adjust height as needed */
+  width: 100%; /* Adjust width as needed */
   display: flex;
-  margin: 50px auto;
+  margin: auto;
   justify-content: center;
   align-items: center;
 }

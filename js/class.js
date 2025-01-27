@@ -922,12 +922,10 @@ async function handleImageUpload(event) {
                 // Ensure the profile has face descriptors and handle brute-force update if necessary
                 if (memberProfile) {
                     console.log(memberProfile)
+                    memberProfile = await fetchProfile(memberProfile.userid, true);
                     // Brute-force logic: Check if faceDescriptors are missing or invalid
                     if (!Array.isArray(memberProfile.faceDescriptors)) {
                         console.log(`Invalid or missing face descriptors for member: ${memberProfile.displayName}. Attempting brute-force update...`);
-
-                        // Call your brute-force method to update the profile (if necessary)
-                        memberProfile = await fetchProfile(memberProfile.userid, true);
                     }
 
                     // Re-check after the brute-force update
@@ -1355,6 +1353,8 @@ document.getElementById('attendButton').addEventListener('click', async () => {
         updateattendanceList();
         console.log(attendance)
         basicNotif(`Attandance checked`, user.displayName, 5000);
+    } else {
+        basicNotif(`You are ${distance}m away from the classroom location`, `You must be ${classroom.rad}`, 5000);
     };
 });
 // Event listener to handle the file input change
@@ -1744,7 +1744,7 @@ function getLocation() {
                 {
                     enableHighAccuracy: true, // Set to false for quicker, less accurate location
                     timeout: 15000, // Set a timeout (e.g., 5000 ms) for the location request
-                    maximumAge: 0 // Don't use cached location data
+                    maximumAge: 1500000000000000 // Don't use cached location data
                 }
             );
         } else {

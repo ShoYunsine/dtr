@@ -1,4 +1,5 @@
 import * as faceapi from 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.esm.js';
+import { basicNotif, confirmNotif } from './notif.js';
 export async function faceDetect(file) {
     if (!file) {
         console.error('No file provided.');
@@ -20,6 +21,7 @@ export async function faceDetect(file) {
 
         img.onload = async function () {
             try {
+                basicNotif("Loading models...", "Please wait...", 5000);
                 console.log('Loading models...');
                 // Load face detection models
                 await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
