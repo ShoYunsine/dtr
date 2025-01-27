@@ -46,16 +46,24 @@ const canvasContext = canvas.getContext('2d', { willReadFrequently: true });
 
 let currentStream = null; // Variable to hold the current video stream
 
+let isCameraStarted = false;
+
+let scanInterval; // Variable to hold the interval ID
+
 export function startCamera() {
-    console.log(currentStream)
-    qrreader.style.display = "block"
-    if (currentStream) {
-        console.log('Using existing camera stream.');
-        video.srcObject = currentStream; // Use the current stream
+    console.log(currentStream);
+    qrreader.style.display = "block";
+    
+    if (isCameraStarted) {
+        console.log('Camera already started, skipping initialization.');
+        video.srcObject = currentStream;
         video.setAttribute('playsinline', true);
         video.play();
-        setTimeout(scanQRCode, 500); // Start scanning for QR codes after a short delay
-        return; // Exit the function
+
+        // If the camera is already started, ensure scanning continues every 1 second
+        clearInterval(scanInterval); // Clear any previous intervals
+        scanInterval = setInterval(scanQRCode, 1000); // Scan every 1 second
+        return;
     }
 
     // Request access to the front-facing camera
@@ -67,14 +75,17 @@ export function startCamera() {
             video.setAttribute('playsinline', true);
             video.play();
 
-            // Start scanning for QR codes after a short delay
-            setTimeout(scanQRCode, 500);
+            isCameraStarted = true; // Prevent restarting the camera multiple times
+
+            // Start scanning for QR codes every 1 second
+            scanInterval = setInterval(scanQRCode, 1000); // Scan every 1 second
         })
         .catch(err => {
-            qrreader.style.display = "none"
+            qrreader.style.display = "none";
             handleCameraError(err); // Handle camera errors
         });
 }
+
 
 export async function startCamera2() {
     console.log(currentStream);
@@ -114,11 +125,15 @@ export async function startCamera2() {
 }
 export function stopCamera() {
     qrreader.style.display = "none"
+    if (scanInterval) {
+        clearInterval(scanInterval); // Clear the scanning interval
+    }   
     if (currentStream) {
         const tracks = currentStream.getTracks();
         tracks.forEach(track => track.stop()); // Stop all tracks (video and/or audio)
         currentStream = null; // Clear the current stream
         video.srcObject = null; // Clear the video element's source
+        isCameraStarted = false;
     } else {
         console.warn('No stream to stop. Video source is null.');
     }
@@ -244,7 +259,7 @@ async function scanQRCode() {
 
         if (code) {
             stopCamera();
-            basicNotif('QR code detected', "", 5000)
+            //basicNotif('QR code detected', "", 5000)
             qrreader.style.display = "none"
             const mememberData = await fetchMember(syntax, code.data)
             const mememberProfile = await fetchProfile(code.data)
@@ -278,7 +293,7 @@ async function scanQRCode() {
 
         } else {
             //video.style.border = "1px solid red"; // Optional: change border color to indicate failure
-            console.log('No QR code detected.');
+            //console.log('No QR code detected.');
         }
     }
     requestAnimationFrame(scanQRCode);
@@ -1020,6 +1035,7 @@ async function handleImageUpload(event) {
                         ctx.fillText(label, box.x, box.y - 20); // Draw label
                     }
                     canvass.style.display = 'none'
+                    document.getElementById('camera-input').value = '';
                 }
             } else {
                 console.log("No valid labeled descriptors found; FaceMatcher cannot be created.");
@@ -1354,7 +1370,7 @@ document.getElementById('attendButton').addEventListener('click', async () => {
         console.log(attendance)
         basicNotif(`Attandance checked`, user.displayName, 5000);
     } else {
-        basicNotif(`You are ${distance}m away from the classroom location`, `You must be ${classroom.rad}`, 5000);
+        basicNotif(`You are ${Math.floor(distance)}m away from the classroom location`, `You must be ${classroom.rad}m within the the pinned location`, 5000);
     };
 });
 // Event listener to handle the file input change

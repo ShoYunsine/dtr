@@ -21,10 +21,6 @@
   flex-direction: row;
 }
 
-#className {
-  margin: 0;
-}
-
 #code {
   font-size: 12px;
   border-radius: 5px;

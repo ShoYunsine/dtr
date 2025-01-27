@@ -594,7 +594,7 @@ onAuthStateChanged(auth, async (user) => {
 
                     if (detections.length !== 1) {
                         console.log('Invalid number of faces detected.');
-                        basicNotif("No faces", "Please provide a cleare picture.", 5000);
+                        basicNotif("No faces", "Please provide a clear picture.", 5000);
                         return;
                     }
 
