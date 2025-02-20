@@ -2134,12 +2134,21 @@ export async function getAttendance(syntax, timezone, id) {
     }
 }
 
-export function showNotification(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, {
-            body: body,
-            icon: '../Images/logo.png' // Optional: Add your icon
-        });
+export async function showNotification(title, body) {
+    try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+            registration.showNotification(title, {
+                body: body,
+                icon: '../Images/logo.png', // Replace with your actual icon path
+                vibrate: [200, 100, 200],
+                tag: 'attendance-notification'
+            });
+        } else {
+            console.warn('No service worker registration found.');
+        }
+    } catch (error) {
+        console.error('Error showing notification:', error);
     }
 }
 
@@ -2183,7 +2192,14 @@ export async function checkAttendance(syntax, timezone, id) {
         // Fetch existing attendance document
         const docSnapshot = await getDoc(attendanceDoc);
         const existingAttendance = docSnapshot.exists() ? docSnapshot.data().attendance || {} : {};
-
+        if (existingAttendance[currentDate] && existingAttendance[currentDate].status !== 'absent') {
+            console.warn(`Attendance already marked as ${existingAttendance[currentDate].status} at ${existingAttendance[currentDate].timeChecked}`);
+            return {
+                status: existingAttendance[currentDate].status,
+                time: existingAttendance[currentDate].timeChecked,
+                message: 'Attendance already marked for today.'
+            };
+        }
         // Prepare updated attendance object
         const updatedAttendance = {
             ...existingAttendance,
