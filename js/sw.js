@@ -49,6 +49,6 @@ self.addEventListener('fetch', event => {
                   return fetchResponse;
               });
           });
-      }).catch(() => caches.match('/index.html')) // Fallback for offline
+      }).catch(() => caches.match('../index.html')) // Fallback for offline
   );
 });
