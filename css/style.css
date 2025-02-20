@@ -639,3 +639,13 @@ a {
       transform: rotate(-360deg); /* End rotation */
   }
 }
+
+.list-item.grayed-out div{
+  opacity: 0.5;
+}
+
+.no-schedule {
+  color: gray;
+  font-style: italic;
+  font-size: 0.9rem;
+}

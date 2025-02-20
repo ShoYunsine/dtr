@@ -46,9 +46,10 @@ import {
     limit,
     arrayUnion,
     arrayRemove,
-    initializeFirestore, 
-    persistentLocalCache, 
-    persistentSingleTabManager
+    initializeFirestore,
+    persistentLocalCache,
+    persistentSingleTabManager,
+    enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import { basicNotif, confirmNotif } from "./notif.js";
@@ -72,8 +73,8 @@ const provider = new GoogleAuthProvider();
 const auth = getAuth(app);
 const db = initializeFirestore(app, {
     localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }),
-  });
-  
+});
+
 let currentUser;
 
 
@@ -1248,7 +1249,7 @@ export async function loginWithGoogle() {
             const credential = GoogleAuthProvider.credentialFromResult(result);
             const token = credential.accessToken;
             const user = result.user;
-            await updateProfile(user.displayName, user.email, user.uid,user.photoURL);
+            await updateProfile(user.displayName, user.email, user.uid, user.photoURL);
             window.location.href = `index.html`;
         }).catch((error) => {
             const errorCode = error.code;
@@ -1796,47 +1797,91 @@ export async function displayUserClasses() {
         return;
     }
 
-
-    // Create and append skeleton loaders
-    const skeletonCount = 0; // Number of skeleton items to display
-    for (let i = 0; i < skeletonCount; i++) {
-        const skeletonItem = document.createElement('div');
-        skeletonItem.classList.add('skeleton');
-        classListElement.appendChild(skeletonItem);
-    }
-
     try {
         const userClasses = await getUserClasses();
+        const currentDate = DateTime.now().toISODate();
 
+        const priorityGroups = {
+            nonGrayedOut: [],
+            attendanceTaken: [],
+            timePassed: [],
+            noSchedule: []
+        };
 
-        // Add each class to the list
-        for (const classItem of userClasses) {
+        for (const cls of userClasses) {
             try {
-                const currentmember = await fetchMember(classItem.syntax, user.uid);
+                const currentTime = DateTime.now().setZone(cls.timezone);
+                const dayOfWeek = currentTime.toFormat('cccc');
+
+                const startTimeKey = `timeIn${dayOfWeek}first`;
+                const endTimeKey = `timeIn${dayOfWeek}last`;
+                const hasSchedule = cls[startTimeKey] && cls[endTimeKey];
+
+                let attendanceTaken = false;
+                let timePassed = false;
+
+                if (hasSchedule) {
+                    const startTime = DateTime.fromFormat(cls[startTimeKey], 'HH:mm', { zone: cls.timezone });
+                    const endTime = DateTime.fromFormat(cls[endTimeKey], 'HH:mm', { zone: cls.timezone });
+
+                    if (currentTime > endTime) timePassed = true;
+
+                    const attendanceDoc = await getDoc(doc(db, 'classes', cls.syntax, 'members', user.uid), { source: "cache" })
+                        .catch(() => getDoc(doc(db, 'classes', cls.syntax, 'members', user.uid), { source: "server" }));
+                    const attendanceData = attendanceDoc.exists() ? attendanceDoc.data().attendance : {};
+                    attendanceTaken = !!attendanceData[currentDate];
+                }
 
                 const listItem = document.createElement('li');
                 listItem.classList.add('list-item');
+
                 listItem.innerHTML = `
                     <div>
-                        <p style="background-color: ${classItem.color};" id="classPfp">${classItem.name[0]}</p>
-                        <p>${classItem.name}</p>
-                        <p id="uid">${classItem.syntax}</p>
-                    </div> 
+                        <p style="background-color: ${cls.color};" id="classPfp">${cls.name[0]}</p>
+                        <p>${cls.name}</p>
+                        <p id="uid">${cls.syntax}</p>
+                        ${!hasSchedule ? '<p class="no-schedule">No schedule available</p>' : ''}
+                        ${attendanceTaken ? '<p class="attendance-taken">Attendance already taken</p>' : ''}
+                        ${timePassed ? '<p class="time-passed">Time passed</p>' : ''}
+                    </div>
                 `;
 
-                // Append with a slight delay for each item for a staggered effect
-                setTimeout(() => {
-                    classListElement.appendChild(listItem);
-                }, 100 * userClasses.indexOf(classItem));
+                if (!hasSchedule) {
+                    listItem.classList.add('grayed-out');
+                    priorityGroups.noSchedule.push(listItem);
+                } else if (attendanceTaken) {
+                    listItem.classList.add('grayed-out');
+                    priorityGroups.attendanceTaken.push(listItem);
+                } else if (timePassed) {
+                    listItem.classList.add('grayed-out');
+                    priorityGroups.timePassed.push(listItem);
+                } else {
+                    priorityGroups.nonGrayedOut.push(listItem);
+                }
 
             } catch (error) {
-                console.error(`Error fetching member data for class ${classItem.syntax}:`, error);
+                console.error(`Error processing class ${cls.syntax}:`, error);
             }
         }
+
+        // Append items in priority order with animation
+        const orderedClasses = [
+            ...priorityGroups.nonGrayedOut,
+            ...priorityGroups.attendanceTaken,
+            ...priorityGroups.timePassed,
+            ...priorityGroups.noSchedule
+        ];
+
+        orderedClasses.forEach((listItem, index) => {
+            setTimeout(() => classListElement.appendChild(listItem), 100 * index);
+        });
+
     } catch (error) {
         console.error('Error fetching user classes:', error);
     }
 }
+
+
 
 export async function generateClassCode(syntax) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -2089,6 +2134,14 @@ export async function getAttendance(syntax, timezone, id) {
     }
 }
 
+export function showNotification(title, body) {
+    if (Notification.permission === 'granted') {
+        new Notification(title, {
+            body: body,
+            icon: '../Images/logo.png' // Optional: Add your icon
+        });
+    }
+}
 
 
 export async function checkAttendance(syntax, timezone, id) {
@@ -2131,18 +2184,16 @@ export async function checkAttendance(syntax, timezone, id) {
 
         // Check attendance based on the current time
         if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
-            // If current time is within 5 minutes before the start time
             if (currentTime < startTime) {
-                // If current time is before the start time, mark as present
                 updatedAttendance[currentDate].status = 'present';
+                showNotification('Attendance Marked', `You are marked present. Class starts at ${startTime.toFormat('HH:mm')}`);
             } else if (currentTime >= startTime.plus({ minutes: 1 })) {
-                // If current time is at least 1 minute after the start time, mark as late
                 updatedAttendance[currentDate].status = 'late';
+                showNotification('Attendance Marked', `You are marked late. Class started at ${startTime.toFormat('HH:mm')}`);
             } else {
-                // If the current time is exactly the start time or within the first minute, mark as present
                 updatedAttendance[currentDate].status = 'present';
+                showNotification('Attendance Marked', `You are marked present right on time!`);
             }
-            // Record the time the attendance was checked
             updatedAttendance[currentDate].timeChecked = currentTime.toFormat('HH:mm');
         } else {
             // If current time is outside the acceptable window
