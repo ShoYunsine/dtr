@@ -45,7 +45,10 @@ import {
     addDoc,
     limit,
     arrayUnion,
-    arrayRemove
+    arrayRemove,
+    initializeFirestore, 
+    persistentLocalCache, 
+    persistentSingleTabManager
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 import { basicNotif, confirmNotif } from "./notif.js";
@@ -67,7 +70,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const provider = new GoogleAuthProvider();
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }),
+  });
+  
 let currentUser;
 
 

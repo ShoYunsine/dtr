@@ -3,7 +3,7 @@ import './firebase.js';
 
 import { checkAttendance, deleteAllAttendanceRecords, getAttendance, getCurrentUser, getUserClasses, markAbsent } from './firebase.js';
 
-import { basicNotif, confirmNotif } from './notif.js';
+import { basicNotif, confirmNotif, sendNotification } from './notif.js';
 
 const luxonScript = document.createElement('script');
 luxonScript.src = 'https://cdn.jsdelivr.net/npm/luxon@3.2.0/build/global/luxon.min.js';
@@ -13,32 +13,6 @@ let DateTime;
 
 luxonScript.onload = function () {
     DateTime = window.luxon.DateTime;
-}
-
-function convertTo12Hour(militaryTime) {
-
-    const regex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-    if (!regex.test(militaryTime)) {
-
-        return 'Invalid military time format';
-
-    }
-
-
-
-    let [hours, minutes] = militaryTime.split(':').map(Number);
-
-    let period = hours >= 12 ? 'PM' : 'AM';
-
-    if (hours === 0) hours = 12;
-
-    else if (hours > 12) hours -= 12;
-
-
-
-    return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
-
 }
 
 if ('serviceWorker' in navigator) {
@@ -136,6 +110,7 @@ if ('serviceWorker' in navigator) {
                                 console.log('Calculated delay:', delay);
 
                                 if (delay > 0) {
+                                    sendNotification(`Attendance will be rechecked for ${cls.name} for ${delay / 1000} seconds later today.`)
                                     console.log(`Scheduling task for ${delay / 1000} seconds later today.`);
                                     setTimeout(async () => {
                                         console.log('Running scheduled attendance task...');
@@ -213,6 +188,15 @@ function getCurrentLocation() {
     });
 }
 
+if (Notification.permission !== 'granted') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        console.log("Permission granted for notifications!");
+      }
+    });
+  }
+  
+
 if (Notification.permission === 'granted') {
 
     navigator.serviceWorker.ready.then((registration) => {
@@ -228,6 +212,15 @@ if (Notification.permission === 'granted') {
     });
 
 }
+
+navigator.serviceWorker.ready.then(function(registration) {
+    registration.showNotification('Test Notification', {
+      body: 'This is a test notification triggered manually.',
+      icon: '../Images/logo.png',
+      badge: '../Images/logo.png', 
+    });
+  });
+
 
 function applyDarkMode(isDarkMode) {
 

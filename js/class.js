@@ -29,7 +29,7 @@ import { collection, query, where, getDocs, doc, getDoc } from "https://www.gsta
 import { basicNotif, confirmNotif } from './notif.js';
 import 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 import "https://cdn.jsdelivr.net/npm/chart.js";
-import { faceDetect, matchFacesFromVideo } from './facerecog.js';
+import { faceDetect, matchFacesFromVideo, verifyCurrentUser } from './facerecog.js';
 import * as faceapi from 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.esm.js';
 // Debounce function
 function debounce(func, wait) {
@@ -89,7 +89,7 @@ export function startCamera() {
 
 export async function startCamera2() {
     console.log(currentStream);
-    qrreader.style.display = "block";
+    //qrreader.style.display = "block";
 
     if (currentStream) {
         console.log('Using existing camera stream.');
@@ -1355,24 +1355,40 @@ document.getElementById('camera-button').addEventListener('click', () => {
 });
 
 document.getElementById('attendButton').addEventListener('click', async () => {
-    const location = await getCurrentLocation();
     const user = await getCurrentUser();
+    const location = await getCurrentLocation();
+    
     const distance = calculateDistance(
         location.latitude,
         location.longitude,
         classroom.lat,
         classroom.long
     );
-    console.log(distance)
-    if (distance <= classroom.rad) {
-        const attendance = await checkAttendance(syntax, classroom.timezone, user.uid);
-        updateattendanceList();
-        console.log(attendance)
-        basicNotif(`Attandance checked`, user.displayName, 5000);
-    } else {
-        basicNotif(`You are ${Math.floor(distance)}m away from the classroom location`, `You must be ${classroom.rad}m within the the pinned location`, 5000);
-    };
+
+    console.log(distance);
+
+    if (distance > classroom.rad) {
+        basicNotif(
+            `You are ${Math.floor(distance)}m away from the classroom location`,
+            `You must be within ${classroom.rad}m of the pinned location`,
+            5000
+        );
+        return; // Stop execution if the user is too far
+    }
+
+    basicNotif("Verifying face...", "Please look at the camera.", 5000);
+
+    const verification = await verifyCurrentUser(video,user.uid);
+    if (!verification) {
+        return;
+    }
+    // Proceed with attendance check
+    const attendance = await checkAttendance(syntax, classroom.timezone, user.uid);
+    updateattendanceList();
+    console.log(attendance);
+    basicNotif("Attendance checked", user.displayName, 5000);
 });
+
 // Event listener to handle the file input change
 document.getElementById('camera-input').addEventListener('change', handleImageUpload);
 async function createPostItem(email, img, dateTime, description, currentUserEmail, postId, userid, likes) {

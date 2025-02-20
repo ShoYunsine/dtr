@@ -68,3 +68,14 @@ export function confirmNotif(title, body) {
         notification.addEventListener('click', handleClick);
     });
 }
+
+export async function sendNotification(body) {
+    console.log("Sending")
+    if (Notification.permission === 'granted') {
+        new Notification("Logbook", {
+            body: body,               // The body of the notification
+            icon: '../Images/logo.png',       // Notification icon
+            badge: '../Images/logo.png',     // Badge icon (small icon in notification)
+        });
+    }
+}
