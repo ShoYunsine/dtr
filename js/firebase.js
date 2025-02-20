@@ -2146,6 +2146,14 @@ export function showNotification(title, body) {
 
 export async function checkAttendance(syntax, timezone, id) {
     try {
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    console.log('Notification permission granted.');
+                }
+            });
+        }
+        
         const classdata = await fetchClass(syntax);
         console.log('Class Data:', classdata); // Debugging log
 

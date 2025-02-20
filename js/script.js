@@ -178,8 +178,6 @@ function getCurrentLocation() {
                 error => reject(alert('Unable to retrieve location: ' + error.message)),
                 {
                     enableHighAccuracy: true, // Set to false for quicker, less accurate location
-                    timeout: 15000, // Set a timeout (e.g., 5000 ms) for the location request
-                    maximumAge: 1500000000000000 // Don't use cached location data
                 }
             );
         } else {
