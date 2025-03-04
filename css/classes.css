@@ -446,7 +446,6 @@
 #attendance-List .list-item {
   border: 1px solid var(--border-color);
   display: flex;
-  width: 100%;
   padding: 4px;
   height: auto;
   flex-direction: row;
