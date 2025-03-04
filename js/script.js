@@ -17,114 +17,126 @@ luxonScript.onload = function () {
 
 if ('serviceWorker' in navigator) {
 
-    navigator.serviceWorker.register('./js/sw.js')
+    const swPath = location.hostname === 'localhost' ? '/js/sw.js' : '/dtr/js/sw.js';
+
+    navigator.serviceWorker.register(swPath)
+
+
 
         .then(async registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
 
-            if ('sync' in registration) {
-                let classes = await getUserClasses();
-                console.log("Classes", classes);
-                async function refetch() {
-                    classes = await getUserClasses();
-                    // Check if the result is empty or invalid
-                    if (classes.length === 0 && classes != "None") {
-                        console.log("No classes found, retrying...");
-
-                        // Wait for a specified time before trying again
-                        await new Promise(resolve => setTimeout(resolve, 3000)); // Retry after 3 seconds (you can adjust this)
-
-                        // Recursively call refetch, but only after a delay
-                        await refetch();
-                    } else {
-
-                        console.log("Classes successfully fetched:", classes);
-                        await track()
-                    }
-                }
-
+            let classes = await getUserClasses();
+            console.log("Classes", classes);
+            async function refetch() {
+                classes = await getUserClasses();
+                // Check if the result is empty or invalid
                 if (classes.length === 0 && classes != "None") {
+                    console.log("No classes found, retrying...");
+
+                    // Wait for a specified time before trying again
+                    await new Promise(resolve => setTimeout(resolve, 3000)); // Retry after 3 seconds (you can adjust this)
+
+                    // Recursively call refetch, but only after a delay
                     await refetch();
+                } else {
+
+                    console.log("Classes successfully fetched:", classes);
+                    await track()
                 }
-                async function track() {
-                    const location = await getCurrentLocation();
-                    console.log(location, classes)
-                    for (const cls of classes) {
-                        console.log(cls)
-                        const currentTime = DateTime.now().setZone(cls.timezone);
-                        const dayOfWeek = currentTime.toFormat('cccc'); // Get the full name of the day (e.g., Monday)
+            }
 
-                        console.log('Day of week:', dayOfWeek); // Debugging: check the day of the week
+            if (classes.length === 0 && classes != "None") {
+                await refetch();
+            }
+            async function track() {
+                const location = await getCurrentLocation();
+                console.log(location, classes)
+                for (const cls of classes) {
+                    console.log(cls)
+                    const currentTime = DateTime.now().setZone(cls.timezone);
+                    const dayOfWeek = currentTime.toFormat('cccc'); // Get the full name of the day (e.g., Monday)
 
-                        // Construct field names dynamically based on the day
-                        const startTimeKey = `timeIn${dayOfWeek}first`;
-                        const endTimeKey = `timeIn${dayOfWeek}last`;
+                    console.log('Day of week:', dayOfWeek); // Debugging: check the day of the week
 
-                        const startTimeStr = cls[startTimeKey]; // e.g., "07:30"
-                        const endTimeStr = cls[endTimeKey]; // e.g., "09:30"
+                    // Construct field names dynamically based on the day
+                    const startTimeKey = `timeIn${dayOfWeek}first`;
+                    const endTimeKey = `timeIn${dayOfWeek}last`;
 
-                        console.log('Start time key:', startTimeKey);
-                        console.log('End time key:', endTimeKey);
-                        console.log('Start time string:', startTimeStr);
-                        console.log('End time string:', endTimeStr);
-                        let startTime;
-                        let endTime;
-                        // Ensure that both time fields exist before processing
-                        if (startTimeStr && endTimeStr) {
-                            startTime = DateTime.fromFormat(startTimeStr, 'HH:mm', { zone: cls.timezone });
-                            endTime = DateTime.fromFormat(endTimeStr, 'HH:mm', { zone: cls.timezone });
-                            console.log('Parsed start time:', startTime);
-                            console.log('Parsed end time:', endTime);
-                        } else {
-                            console.log(`Missing time information for ${dayOfWeek}. Skipping class:`, cls.name);
-                            continue;
-                        }
+                    const startTimeStr = cls[startTimeKey]; // e.g., "07:30"
+                    const endTimeStr = cls[endTimeKey]; // e.g., "09:30"
 
-                        const distance = calculateDistance(
-                            location.latitude,
-                            location.longitude,
-                            cls.lat,
-                            cls.long
-                        );
-                        if (distance <= cls.rad) {
-                            if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
-                                const state = await getAttendance(cls.syntax, cls.timezone);
-                                if (state.status === "absent" || state.status === "Absent") {
+                    console.log('Start time key:', startTimeKey);
+                    console.log('End time key:', endTimeKey);
+                    console.log('Start time string:', startTimeStr);
+                    console.log('End time string:', endTimeStr);
+                    let startTime;
+                    let endTime;
+                    // Ensure that both time fields exist before processing
+                    if (startTimeStr && endTimeStr) {
+                        startTime = DateTime.fromFormat(startTimeStr, 'HH:mm', { zone: cls.timezone });
+                        endTime = DateTime.fromFormat(endTimeStr, 'HH:mm', { zone: cls.timezone });
+                        console.log('Parsed start time:', startTime);
+                        console.log('Parsed end time:', endTime);
+                    } else {
+                        console.log(`Missing time information for ${dayOfWeek}. Skipping class:`, cls.name);
+                        continue;
+                    }
+
+                    const distance = calculateDistance(
+                        location.latitude,
+                        location.longitude,
+                        cls.lat,
+                        cls.long
+                    );
+                    if (distance <= cls.rad) {
+                        if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
+                            const state = await getAttendance(cls.syntax, cls.timezone);
+                            if (state.status === "absent" || state.status === "Absent") {
+                                const confirmed = await confirmNotif("Confirm Attendance", `Do you want to check attendance for ${cls.name}?`);
+                                if (confirmed) {
                                     const att = await checkAttendance(cls.syntax, cls.timezone);
-                                } else {
-                                    console.log(`Scheduling task later today.`);
-                                    setTimeout(async () => {
-                                        console.log('Running scheduled attendance task...');
-                                        const state = await getAttendance(cls.syntax, cls.timezone);
-                                        if (state.status === "absent" || state.status === "Absent") {
+                                }
+                            } else {
+                                console.log(`Scheduling task later today.`);
+                                setTimeout(async () => {
+                                    console.log('Running scheduled attendance task...');
+                                    const state = await getAttendance(cls.syntax, cls.timezone);
+                                    if (state.status === "absent" || state.status === "Absent") {
+                                        const confirmed = await confirmNotif("Confirm Attendance", `Do you want to check attendance for ${cls.name}?`);
+                                        if (confirmed) {
                                             const att = await checkAttendance(cls.syntax, cls.timezone);
                                         }
-                                    }, 300000);
-                                }
+                                    }
+                                }, 300000);
                             }
-                        } else {
+                        }
+                    } else {
+                        if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
+                            console.log(startTime);
+                            const delay = startTime.minus({ minutes: 10 }).diff(currentTime, 'milliseconds').toObject().milliseconds;
 
-                            if (currentTime >= startTime.minus({ minutes: 10 }) && currentTime <= endTime) {
-                                console.log(startTime)
-                                const delay = startTime.minus({ minutes: 10 }).diff(currentTime, 'milliseconds').toObject().milliseconds;
+                            console.log('Calculated delay:', delay);
 
-                                console.log('Calculated delay:', delay);
-
-                                if (delay > 0) {
-                                    sendNotification(`Attendance will be rechecked for ${cls.name} for ${delay / 1000} seconds later today.`)
-                                    console.log(`Scheduling task for ${delay / 1000} seconds later today.`);
-                                    setTimeout(async () => {
-                                        console.log('Running scheduled attendance task...');
-                                        const state = await getAttendance(cls.syntax, cls.timezone);
-                                        if (state.status === "absent" || state.status === "Absent") {
+                            if (delay > 0) {
+                                sendNotification(`Attendance will be rechecked for ${cls.name} for ${delay / 1000} seconds later today.`);
+                                console.log(`Scheduling task for ${delay / 1000} seconds later today.`);
+                                setTimeout(async () => {
+                                    console.log('Running scheduled attendance task...');
+                                    const state = await getAttendance(cls.syntax, cls.timezone);
+                                    if (state.status === "absent" || state.status === "Absent") {
+                                        const confirmed = await confirmNotif("Confirm Attendance", `Do you want to check attendance for ${cls.name}?`);
+                                        if (confirmed) {
                                             const att = await checkAttendance(cls.syntax, cls.timezone);
                                         }
-                                    }, delay);
-                                } else {
-                                    console.log('No need to schedule task: the time has already passed.');
-                                }
+                                    }
+                                }, delay);
+                            } else {
+                                console.log('No need to schedule task: the time has already passed.');
                             }
                         }
                     }
+
                 }
             }
         })
@@ -138,14 +150,6 @@ if ('serviceWorker' in navigator) {
 } else {
 
     console.log('Service Workers not supported in this browser.');
-
-};
-
-const worker = new Worker('./js/worker.js');
-
-worker.onmessage = (event) => {
-
-    console.log('Message from worker:', event.data);
 
 };
 
@@ -188,37 +192,11 @@ function getCurrentLocation() {
 
 if (Notification.permission !== 'granted') {
     Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        console.log("Permission granted for notifications!");
-      }
+        if (permission === 'granted') {
+            console.log("Permission granted for notifications!");
+        }
     });
-  }
-  
-
-if (Notification.permission === 'granted') {
-
-    navigator.serviceWorker.ready.then((registration) => {
-
-        registration.showNotification('Hello world!', {
-
-            body: 'This is a background notification.',
-
-            icon: '../Image/logo.pngg'
-
-        });
-
-    });
-
 }
-
-navigator.serviceWorker.ready.then(function(registration) {
-    registration.showNotification('Test Notification', {
-      body: 'This is a test notification triggered manually.',
-      icon: '../Images/logo.png',
-      badge: '../Images/logo.png', 
-    });
-  });
-
 
 function applyDarkMode(isDarkMode) {
 

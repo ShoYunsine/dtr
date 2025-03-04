@@ -1840,9 +1840,9 @@ export async function displayUserClasses() {
                         <p style="background-color: ${cls.color};" id="classPfp">${cls.name[0]}</p>
                         <p>${cls.name}</p>
                         <p id="uid">${cls.syntax}</p>
-                        ${!hasSchedule ? '<p class="no-schedule">No schedule available</p>' : ''}
-                        ${attendanceTaken ? '<p class="attendance-taken">Attendance already taken</p>' : ''}
-                        ${timePassed ? '<p class="time-passed">Time passed</p>' : ''}
+                        ${!hasSchedule ? '<p class="pp no-schedule"><i>Closed</i></p>' : ''}
+                        ${attendanceTaken ? '<p class="pp attendance-taken"><i>Checked</i></p>' : ''}
+                        ${timePassed ? '<p class="pp time-passed"><i>Closed</i></p>' : ''}
                     </div>
                 `;
 

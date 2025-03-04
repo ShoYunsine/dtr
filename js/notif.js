@@ -74,8 +74,8 @@ export async function sendNotification(body) {
     if (Notification.permission === 'granted') {
         new Notification("Logbook", {
             body: body,               // The body of the notification
-            icon: '../Images/logo.png',       // Notification icon
-            badge: '../Images/logo.png',     // Badge icon (small icon in notification)
+            icon: '/Images/logo.png',       // Notification icon
+            badge: '/Images/logo.png',     // Badge icon (small icon in notification)
         });
     }
 }

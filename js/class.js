@@ -317,6 +317,7 @@ let classroom;
 let members;
 const memberProfiles = [];
 const className = document.getElementById('className');
+
 const classCode = document.getElementById('code');
 let syntax;
 
@@ -782,6 +783,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch (err) {
                 }
             });
+            document.title = `Class - ${classroom.name}`;
             function populateForm(classData) {
                 // Set class name
                 document.getElementById('class-Name').value = classData.name;
