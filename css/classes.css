@@ -433,10 +433,11 @@
 
 #attendance-List {
   border: none;
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Auto-fit columns */
+  gap: 8px; /* Adjust spacing */
 }
+
 
 #attendance-List .list-item.hidden {
   display: none;
@@ -463,7 +464,6 @@
 
 #attendance-List .list-item .option:checked + #memberoptions {
   bottom: 0;
-  flex-direction: column;
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -475,7 +475,7 @@
 
 #memberoptions button {
   border: none;
-  margin-left: 10px;
+  width: 200px;
 }
 
 #attendance-List .list-item div {
@@ -506,16 +506,19 @@
   text-align: left;
 }
 
-#attendance-List .list-item div.status-present {
-  border-left: 3px dotted var(--present);
+#attendance-List .list-item div.status-present img{
+  border: 2px dashed var(--present);
+  padding: 2px;
 }
 
-#attendance-List .list-item div.status-late {
-  border-left: 3px dotted var(--late);
+#attendance-List .list-item div.status-late img{
+  border: 2px dashed var(--late);
+  padding: 2px;
 }
 
-#attendance-List .list-item div.status-absent {
-  border-left: 3px dotted var(--absent);
+#attendance-List .list-item div.status-absent img{
+  border: 2px dashed var(--absent);
+  padding: 2px;
 }
 
 .userOptions button:hover,
@@ -589,10 +592,6 @@
   margin-bottom: 5px;
 
 }
-
-
-
-
 
 #addTab:checked~#formSwitch label[for="addTab"],
 #joinTab:checked~#formSwitch label[for="joinTab"] {

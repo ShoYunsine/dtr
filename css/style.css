@@ -649,3 +649,8 @@ a {
   font-style: italic;
   font-size: 0.9rem;
 }
+
+.list-item .pp {
+  font-weight: bold;
+  padding-top: 0px;
+}

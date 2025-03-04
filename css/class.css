@@ -182,6 +182,12 @@
   transition: 0.3s;
   padding: 0;
 }
+#memberoptions {
+  width: 100%;
+  justify-content: center;
+  flex-direction: row;
+  bottom: 0;
+}
 
 #commentSection {
   border: none;
