@@ -433,7 +433,8 @@
 
 #attendance-List {
   border: none;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Auto-fit columns */
   gap: 8px; /* Adjust spacing */
 }
 
@@ -447,9 +448,7 @@
   display: flex;
   padding: 4px;
   height: auto;
-  max-width: 200px;
   flex-direction: row;
-  flex-grow: 1;
   border-radius: 4px;
   flex-wrap: wrap;
 }
@@ -620,7 +619,6 @@ input[type="radio"] {
   }
 
   #attendance-List .list-item {
-    max-width: none;
     flex-grow: 1;
     justify-content: flex-start;
   }
