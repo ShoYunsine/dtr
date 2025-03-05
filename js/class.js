@@ -1770,19 +1770,43 @@ document.getElementById('getLocation').addEventListener('click', async function 
 
 function getLocation() {
     return new Promise((resolve, reject) => {
-        if (navigator.geolocation) {
-            console.log("Getting Location");
-            navigator.geolocation.getCurrentPosition(
-                position => resolve(position.coords),
-                error => reject(alert('Unable to retrieve location: ' + error.message)),
-                {
-                    enableHighAccuracy: true, // Set to false for quicker, less accurate location
-                }
-            );
-        } else {
-            reject(new Error('Geolocation is not supported by this browser.'));
+        if (!navigator.geolocation) {
+            return reject(new Error("Geolocation is not supported by this browser."));
         }
+
+        console.log("Getting quick location...");
+
+        // First, get a quick low-accuracy location
+        navigator.geolocation.getCurrentPosition(
+            (quickPosition) => {
+                console.log("Quick location found:", quickPosition.coords);
+                
+                // Immediately return quick position while requesting an accurate one
+                resolve(quickPosition.coords);
+
+                // Now request a more accurate position
+                navigator.geolocation.getCurrentPosition(
+                    (accuratePosition) => {
+                        console.log("More accurate location found:", accuratePosition.coords);
+                        resolve(accuratePosition.coords); // Update with accurate data
+                    },
+                    (error) => console.warn("Accurate location failed:", error.message),
+                    {
+                        enableHighAccuracy: true, // More accurate but slower
+                        timeout: 5000, // Wait max 5 sec for GPS lock
+                        maximumAge: 0 // Do not use cached results
+                    }
+                );
+            },
+            (error) => reject(new Error("Unable to retrieve location: " + error.message)),
+            {
+                enableHighAccuracy: false, // Faster but less precise
+                timeout: 2000, // Quick timeout for fast retrieval
+                maximumAge: 10000 // Allow using a cached location up to 10 sec old
+            }
+        );
     });
 }
+
 
 

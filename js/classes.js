@@ -22,6 +22,7 @@ function getLocation() {
 }
 
 
+
 document.getElementById('getLocation').addEventListener('click', async function (event) {
     event.preventDefault();
     let location = await getLocation();
