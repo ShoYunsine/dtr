@@ -186,6 +186,7 @@
   width: 100%;
   justify-content: center;
   flex-direction: row;
+  transition: all 0s;
 }
 
 #commentSection {
