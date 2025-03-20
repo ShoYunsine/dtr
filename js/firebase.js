@@ -1802,10 +1802,38 @@ export async function displayUserClasses() {
         const currentDate = DateTime.now().toISODate();
 
         const priorityGroups = {
-            nonGrayedOut: [],
-            attendanceTaken: [],
-            timePassed: [],
+            available: [],
+            grayedOut: [],
             noSchedule: []
+        };
+
+        const getDistance = (lat1, lon1, lat2, lon2) => {
+            const R = 6371; // Earth's radius in km
+            const toRad = angle => (angle * Math.PI) / 180;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        };
+
+        const updateDistance = (pfpElement, cls) => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
+                    const classLat = cls.lat;
+                    const classLon = cls.long;
+                    
+                    if (classLat && classLon) {
+                        const distance = getDistance(userLat, userLon, classLat, classLon);
+                        const distanceElement = pfpElement.querySelector('.distance-badge');
+                        distanceElement.textContent = `${distance.toFixed(2)} km`;
+                    }
+                });
+            }
         };
 
         for (const cls of userClasses) {
@@ -1819,45 +1847,65 @@ export async function displayUserClasses() {
 
                 let attendanceTaken = false;
                 let timePassed = false;
+                let isAvailable = false;
+                let startTimeText = '';
 
                 if (hasSchedule) {
                     const startTime = DateTime.fromFormat(cls[startTimeKey], 'HH:mm', { zone: cls.timezone });
                     const endTime = DateTime.fromFormat(cls[endTimeKey], 'HH:mm', { zone: cls.timezone });
-
-                    if (currentTime > endTime) timePassed = true;
-
+                
+                    const diffMinutes = startTime.diff(currentTime, 'minutes').minutes;
+                
+                    // Keep available if within 10 minutes before start or class is ongoing
+                    isAvailable = (diffMinutes <= 10 && diffMinutes > 0) || (currentTime >= startTime && currentTime <= endTime);
+                
+                    startTimeText = `Starts at ${startTime.toFormat('HH:mm')}`;
+                
+                    if (currentTime > endTime) {
+                        timePassed = true;
+                    }
+                
                     const attendanceDoc = await getDoc(doc(db, 'classes', cls.syntax, 'members', user.uid), { source: "cache" })
                         .catch(() => getDoc(doc(db, 'classes', cls.syntax, 'members', user.uid), { source: "server" }));
                     const attendanceData = attendanceDoc.exists() ? attendanceDoc.data().attendance : {};
                     attendanceTaken = !!attendanceData[currentDate];
                 }
+                
 
                 const listItem = document.createElement('li');
                 listItem.classList.add('list-item');
 
                 listItem.innerHTML = `
                     <div>
-                        <p style="background-color: ${cls.color};" id="classPfp">${cls.name[0]}</p>
+                        <div class="classPfp" style="background-color: ${cls.color};">
+                            <span class="distance-badge">...</span>
+                            ${cls.name[0]}
+                        </div>
                         <p>${cls.name}</p>
                         <p id="uid">${cls.syntax}</p>
                         ${!hasSchedule ? '<p class="pp no-schedule"><i>Closed</i></p>' : ''}
                         ${attendanceTaken ? '<p class="pp attendance-taken"><i>Checked</i></p>' : ''}
                         ${timePassed ? '<p class="pp time-passed"><i>Closed</i></p>' : ''}
+                        ${startTimeText ? `<p class="pp start-time">${startTimeText}</p>` : ''}
                     </div>
                 `;
 
                 if (!hasSchedule) {
                     listItem.classList.add('grayed-out');
                     priorityGroups.noSchedule.push(listItem);
-                } else if (attendanceTaken) {
+                } else if (timePassed || attendanceTaken) {
                     listItem.classList.add('grayed-out');
-                    priorityGroups.attendanceTaken.push(listItem);
-                } else if (timePassed) {
+                    priorityGroups.grayedOut.push(listItem);
+                } else if (!isAvailable) {
                     listItem.classList.add('grayed-out');
-                    priorityGroups.timePassed.push(listItem);
+                    priorityGroups.grayedOut.push(listItem);
                 } else {
-                    priorityGroups.nonGrayedOut.push(listItem);
+                    priorityGroups.available.push(listItem);
                 }
+
+                const pfpElement = listItem.querySelector('.classPfp');
+                updateDistance(pfpElement, cls);
+                setInterval(() => updateDistance(pfpElement, cls), 10000); // Update distance every 10 seconds
 
             } catch (error) {
                 console.error(`Error processing class ${cls.syntax}:`, error);
@@ -1866,9 +1914,8 @@ export async function displayUserClasses() {
 
         // Append items in priority order with animation
         const orderedClasses = [
-            ...priorityGroups.nonGrayedOut,
-            ...priorityGroups.attendanceTaken,
-            ...priorityGroups.timePassed,
+            ...priorityGroups.available,
+            ...priorityGroups.grayedOut,
             ...priorityGroups.noSchedule
         ];
 
@@ -1880,7 +1927,6 @@ export async function displayUserClasses() {
         console.error('Error fetching user classes:', error);
     }
 }
-
 
 
 export async function generateClassCode(syntax) {

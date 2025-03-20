@@ -654,3 +654,17 @@ a {
   font-weight: bold;
   padding-top: 0px;
 }
+.distance-badge {
+  position: absolute;
+  top: -10px;
+  right: -30px;
+  width: 60px;
+  background: rgba(255, 255, 255, 0.253);
+  backdrop-filter: blur(5px);
+  color: var(--text-color-main);
+  padding: 1px 3px;
+  border: #ffffff3b 1px solid;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: bold;
+}
