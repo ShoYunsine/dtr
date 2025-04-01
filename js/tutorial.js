@@ -7,10 +7,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentPage = window.location.pathname.split("/").pop();
 
     if (!localStorage.getItem("seenTutorial") && currentPage == "index.html") {
-        const wantsTutorial = await confirmNotif("Welcome to Logbook", "Would you like a walkthrough?");
-        if (wantsTutorial) {
+        //const wantsTutorial = await confirmNotif("Welcome to Logbook", "Would you like a walkthrough?");
+        //if (wantsTutorial) {
           //  startTutorial();
-        }
+       // }
     }
 
     if (localStorage.getItem("tutorialStep") === "1" && currentPage === "classes.html") {
