@@ -66,12 +66,12 @@
     margin-top: 4px;
 }
 
-.notification #buttons {
+.notification #buttons, .notification .buttons {
     background: transparent;
     margin-top: -4px;
 }
 
-.notification #buttons button {
+.notification #buttons button,  .notification .buttons button{
     color: var(--text-color-main);
     font-size: 12px;
     background-color: transparent;

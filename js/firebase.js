@@ -1866,9 +1866,12 @@ export async function displayUserClasses() {
                     }
                 
                     const attendanceDoc = await getDoc(doc(db, 'classes', cls.syntax, 'members', user.uid), { source: "cache" })
-                        .catch(() => getDoc(doc(db, 'classes', cls.syntax, 'members', user.uid), { source: "server" }));
-                    const attendanceData = attendanceDoc.exists() ? attendanceDoc.data().attendance : {};
-                    attendanceTaken = !!attendanceData[currentDate];
+    .catch(() => getDoc(doc(db, 'classes', cls.syntax, 'members', user.uid), { source: "server" }));
+
+const attendanceData = attendanceDoc.exists() && attendanceDoc.data().attendance ? attendanceDoc.data().attendance : {};
+
+attendanceTaken = !!attendanceData[currentDate];
+
                 }
                 
 

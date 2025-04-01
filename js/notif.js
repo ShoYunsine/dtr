@@ -30,7 +30,7 @@ export function confirmNotif(title, body) {
         const notifs = document.getElementById('notifs');
         if (!notifs) {
             console.error('Element with ID "notifs" not found.');
-            resolve(false); // Resolve with default value if `#notifs` is not found
+            resolve(false);
             return;
         }
 
@@ -39,7 +39,7 @@ export function confirmNotif(title, body) {
         notification.innerHTML = `
             <h3 class="notiftitle">${title || ""}</h3>
             <p class="notifbody">${body || ""}</p>
-            <div id="buttons">
+            <div class="buttons">
                 <button class="true">Confirm</button>
                 <button class="false">Cancel</button>
             </div>
@@ -47,27 +47,29 @@ export function confirmNotif(title, body) {
 
         notifs.appendChild(notification);
 
-        // Event listener to handle button clicks
         function handleClick(event) {
             if (event.target.classList.contains('true')) {
                 resolve(true);
             } else if (event.target.classList.contains('false')) {
                 resolve(false);
+            } else {
+                return; // Ignore clicks that are not on the buttons
             }
 
-            // Trigger animation and removal
+            // Trigger animation and removal only when a button is clicked
             notification.classList.add('death');
             setTimeout(() => {
                 notification.remove();
             }, 500);
 
-            // Remove event listener after handling
             notification.removeEventListener('click', handleClick);
         }
 
-        notification.addEventListener('click', handleClick);
+        // Attach the event listener only to the button container
+        notification.querySelector(".buttons").addEventListener('click', handleClick);
     });
 }
+
 
 export async function sendNotification(body) {
     console.log("Sending")

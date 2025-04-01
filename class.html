@@ -1,336 +1,338 @@
-<!DOCTYPE html>
-<html lang="en">
+  <!DOCTYPE html>
+  <html lang="en">
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" type="text/css" href="css/style.css">
-  <link rel="stylesheet" type="text/css" href="css/classes.css">
-  <link rel="stylesheet" type="text/css" href="css/class.css">
-  <link rel="stylesheet" type="text/css" href="css/notifs.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="shortcut icon" href="Images/logo.png">
-  <link rel="icon" type="image/png" href="Images/logo.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-  <title>Class</title>
-</head>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/classes.css">
+    <link rel="stylesheet" type="text/css" href="css/class.css">
+    <link rel="stylesheet" type="text/css" href="css/notifs.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="shortcut icon" href="Images/logo.png">
+    <link rel="icon" type="image/png" href="Images/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js/dist/css/shepherd.css">
+    <title>Class</title>
+  </head>
 
-<body>
-  <div id="loading-bar"></div>
-  <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle">
-  <label for="sidebar-toggle" class="backdrop"></label>
-  <div class="top-bar">
-    <div class="logo">
-      <label for="sidebar-toggle" class="sidebar-button">☰</label>
-      <a>Logbook</a>
+  <body>
+    <div id="loading-bar"></div>
+    <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle">
+    <label for="sidebar-toggle" class="backdrop"></label>
+    <div class="top-bar">
+      <div class="logo">
+        <label for="sidebar-toggle" class="sidebar-button">☰</label>
+        <a>Logbook</a>
+      </div>
+      <div class="nav-links">
+        <a id="account"><img id="accountImg" src="Images/gear.png"></img></a>
+      </div>
     </div>
-    <div class="nav-links">
-      <a id="account"><img id="accountImg" src="Images/gear.png"></img></a>
-    </div>
-  </div>
-  <aside class="sidebar">
-    <nav>
-      <ul>
-        <li>
-          <a href="index.html">Home</a><i class="fa-solid fa-house"></i>
-        </li>
-        <li>
-          <a>Quick Attendance</a>
-          <input type="text" id="attendance-code" maxlength="3" placeholder="Code">
-          <details class="info-details">
-            <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
-            <div class="info-panel">
-              <p>Quick Attendance is a quick way to start checking attendance with a time limit.</p>
+    <aside class="sidebar">
+      <nav>
+        <ul>
+          <li>
+            <a href="index.html">Home</a><i class="fa-solid fa-house"></i>
+          </li>
+          <li>
+            <a>Quick Attendance</a>
+            <input type="text" id="attendance-code" maxlength="3" placeholder="Code">
+            <details class="info-details">
+              <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+              <div class="info-panel">
+                <p>Quick Attendance is a quick way to start checking attendance with a time limit.</p>
+              </div>
+            </details>
+            <ul style="justify-content: center;" class="classList">
+              <li class="list-item">
+                <div>
+                  <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                    <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  </form>
+                  <a class="classPfp" id="startQA"><i id="icon" class="fas fa-bolt"></i></i></a>
+                  <p>Start Quick Attendance</p>
+                </div>
+              </li>
+            </ul>
+            <ul class="classList">
+              <li class="list-item">
+                <div>
+                  <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                    <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  </form>
+                  <a class="classPfp" id="atD"><i id="icon" class="fa-solid fa-check"></i></i></i></a>
+                  <p>Attend(Default)</p>
+                </div>
+              </li>
+              <li class="list-item">
+                <div>
+                  <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                    <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                  </form>
+                  <a class="classPfp" id="atR"><i id="icon" class="fa-solid fa-id-card"></i></a>
+                  <p>Attend(ID)</p>
+                </div>
+              </li>
+            </ul>
+          </li>
+          <li style="display: none;"><a>Members</a><input id="memberSearch" placeholder="Search ">
+            <ul id="memberList"></ul>
+          </li>
+          <li><a href="#">QR Code</a>
+            <div><canvas id="qrcode"></canvas></div>
+            <div id="accountDetails">
+              <div id="bg"><img id="accountImg" src="Images/gear.png"></img></div>
+              <div id="accountName">Not currently logged in</div>
+              <div id="accountEmail">·</div>
             </div>
-          </details>
-          <ul style="justify-content: center;" class="classList">
-            <li class="list-item">
-              <div>
-                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
-                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
-                </form>
-                <a class="classPfp" id="startQA"><i id="icon" class="fas fa-bolt"></i></i></a>
-                <p>Start Quick Attendance</p>
+          </li>
+          <li>
+            <a>Profile</a>
+            <details class="info-details">
+              <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+              <div class="info-panel">
+                <p>Update face - Upload a clear of your face and your face only so that face recognition will recognize
+                  you.</p>
+                <br>
+                <p>Register ID - Used to register your id that has RFID/NFC tag (Only available for those phones that have
+                  NFC
+                  compatability).</p>
               </div>
-            </li>
-          </ul>
-          <ul class="classList">
-            <li class="list-item">
-              <div>
-                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
-                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
-                </form>
-                <a class="classPfp" id="atD"><i id="icon" class="fa-solid fa-check"></i></i></i></a>
-                <p>Attend(Default)</p>
+            </details>
+            <ul class="classList">
+              <li class="list-item">
+                <div>
+                  <form id="faceForm" style="display: none;" enctype="multipart/form-data">
+                    <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
+                    <input type="file" id="imageUpload" accept="image/*" name="faceImage">
+                  </form>
+                  <a class="classPfp" id="updateFaceBtn"><i id="icon" class="fa-solid fa-user"></i></a>
+                  <p>Update Face</p>
+                </div>
+              </li>
+              <li class="list-item">
+                <div>
+                  <a class="classPfp" id="registerRFIDBtn"><i id="icon" class="fa-solid fa-id-card"></i></a>
+                  <p>Register ID</p>
+                </div>
+              </li>
+            </ul>
+            <a>No NFC?</a>
+            <details class="info-details">
+              <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> How it Works</summary>
+              <div class="info-panel">
+                <p>This will give you a link that will let someone who has NFC to register your id for you.</p>
               </div>
-            </li>
-            <li class="list-item">
-              <div>
-                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
-                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
-                </form>
-                <a class="classPfp" id="atR"><i id="icon" class="fa-solid fa-id-card"></i></a>
-                <p>Attend(ID)</p>
+            </details>
+            <ul style="justify-content: center;" class="classList">
+              <li class="list-item">
+                <div>
+                  <a class="classPfp" id="registerWithLink"><i id="icon" class="fa-solid fa-link"></i></a>
+                  <p>Register ID via link</p>
+                </div>
+              </li>
+            </ul>
+          </li>
+
+          <li>
+            <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
+            <div class="switch">
+              <input type="checkbox" id="darkModeToggle">
+              <label for="darkModeToggle" class="switch-slider"></label>
+            </div>
+          </li>
+          <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
+        </ul>
+      </nav>
+    </aside>
+    <div id="face-preview-container" class="hidden-overlay">
+      <div class="preview-modal">
+        <img id="preview-image" class="preview-image" alt="Preview" />
+        <p>Is this the correct picture?</p>
+        <div class="button-group">
+          <button id="confirm-button" class="button confirm">Confirm</button>
+          <button id="cancel-button" class="button cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="notifs">
+
+    </div>
+    <div id="qrscanner-container">
+      <video id="camera" autoplay></video>
+    </div>
+  <canvas style="display: none;" id="faceCanvas"></canvas>
+
+    <div class="main-container" style="height: 100vh;">
+      <div id="classInfo" class="form-section">
+        <h2 style="margin: 0;" id="className">.</h2>
+        <p id="code"><i>.</i></p>
+      </div>
+      <input type="radio" id="attendanceTab" name="formToggle" checked>
+      <input type="radio" id="postTab" name="formToggle">
+      <input type="radio" id="optionTab" name="formToggle">
+      <div id="formSwitch">
+        <label for="attendanceTab" class="switch-btn">Attendance</label>
+        <label for="postTab" class="switch-btn">Posts</label>
+        <label for="optionTab" class="switch-btn">Options</label>
+      </div>
+      <div class="form-section" style="padding:0; width: 100%;">
+        <div id="attendanceList" class="attendanceList">
+          <div id="dateRangeSelector">
+            <label for="dateRange">Select Date Range:</label>
+            <select id="dateRange">
+              <option value="week">1 Week Ago</option>
+              <option value="month">1 Month Ago</option>
+              <option value="year">1 Year Ago</option>
+              <option value="custom">Custom Range</option> <!-- Custom Range option -->
+            </select>
+            <details class="info-details">
+              <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
+              <div class="info-panel">
+                <p>The heatmap helps visualize dates that attendance was taken. Clicking on the numbers shows the data
+                  collected in that date.</p>
               </div>
-            </li>
-          </ul>
-        </li>
-        <li style="display: none;"><a>Members</a><input id="memberSearch" placeholder="Search ">
-          <ul id="memberList"></ul>
-        </li>
-        <li><a href="#">QR Code</a>
-          <div><canvas id="qrcode"></canvas></div>
-          <div id="accountDetails">
-            <div id="bg"><img id="accountImg" src="Images/gear.png"></img></div>
-            <div id="accountName">Not currently logged in</div>
-            <div id="accountEmail">·</div>
-          </div>
-        </li>
-        <li>
-          <a>Profile</a>
-          <details class="info-details">
-            <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
-            <div class="info-panel">
-              <p>Update face - Upload a clear of your face and your face only so that face recognition will recognize
-                you.</p>
+            </details>
+            <div class="chart-container">
+
+              <div id="heatmap-calendar"></div>
+              <p>Heatmap</p>
+            </div>
+            <!-- Start and End date selectors, hidden initially -->
+            <div id="customRangeSelector" style="display: none;">
+              <label for="startDate">Start Date:</label>
+              <input type="date" id="startDate">
               <br>
-              <p>Register ID - Used to register your id that has RFID/NFC tag (Only available for those phones that have
-                NFC
-                compatability).</p>
+              <label for="endDate">End Date:</label>
+              <input type="date" id="endDate">
             </div>
-          </details>
-          <ul class="classList">
-            <li class="list-item">
-              <div>
-                <form id="faceForm" style="display: none;" enctype="multipart/form-data">
-                  <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
-                  <input type="file" id="imageUpload" accept="image/*" name="faceImage">
-                </form>
-                <a class="classPfp" id="updateFaceBtn"><i id="icon" class="fa-solid fa-user"></i></a>
-                <p>Update Face</p>
-              </div>
-            </li>
-            <li class="list-item">
-              <div>
-                <a class="classPfp" id="registerRFIDBtn"><i id="icon" class="fa-solid fa-id-card"></i></a>
-                <p>Register ID</p>
-              </div>
-            </li>
+
+            <button id="applyDateRange">Apply</button>
+          </div>
+
+
+          <nav>
+            <div id="search"><i class="fa-solid fa-magnifying-glass"></i><input id="attendanceSearch"
+                placeholder="Search"></div>
+            <i class="fa-solid fa-arrow-down-wide-short"></i>
+          </nav>
+          <ul id="attendance-List">
+
           </ul>
-          <a>No NFC?</a>
-          <details class="info-details">
-            <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> How it Works</summary>
-            <div class="info-panel">
-              <p>This will give you a link that will let someone who has NFC to register your id for you.</p>
-            </div>
-          </details>
-          <ul style="justify-content: center;" class="classList">
-            <li class="list-item">
-              <div>
-                <a class="classPfp" id="registerWithLink"><i id="icon" class="fa-solid fa-link"></i></a>
-                <p>Register ID via link</p>
-              </div>
-            </li>
-          </ul>
-        </li>
-
-        <li>
-          <a>Change Appearance</a><i id="moon" class="icon icon-moon fas fa-moon"></i>
-          <div class="switch">
-            <input type="checkbox" id="darkModeToggle">
-            <label for="darkModeToggle" class="switch-slider"></label>
-          </div>
-        </li>
-        <li><a id="signout">Sign Out</a><i class="fas fa-sign-out-alt"></i></li>
-      </ul>
-    </nav>
-  </aside>
-  <div id="face-preview-container" class="hidden-overlay">
-    <div class="preview-modal">
-      <img id="preview-image" class="preview-image" alt="Preview" />
-      <p>Is this the correct picture?</p>
-      <div class="button-group">
-        <button id="confirm-button" class="button confirm">Confirm</button>
-        <button id="cancel-button" class="button cancel">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="notifs">
-
-  </div>
-  <div id="qrscanner-container">
-    <video id="camera" autoplay></video>
-  </div>
-<canvas style="display: none;" id="faceCanvas"></canvas>
-
-  <div class="main-container" style="height: 100vh;">
-    <div id="classInfo" class="form-section">
-      <h2 style="margin: 0;" id="className">.</h2>
-      <p id="code"><i>.</i></p>
-    </div>
-    <input type="radio" id="attendanceTab" name="formToggle" checked>
-    <input type="radio" id="postTab" name="formToggle">
-    <input type="radio" id="optionTab" name="formToggle">
-    <div id="formSwitch">
-      <label for="attendanceTab" class="switch-btn">Attendance</label>
-      <label for="postTab" class="switch-btn">Posts</label>
-      <label for="optionTab" class="switch-btn">Options</label>
-    </div>
-    <div class="form-section" style="padding:0; width: 100%;">
-      <div id="attendanceList" class="attendanceList">
-        <div id="dateRangeSelector">
-          <label for="dateRange">Select Date Range:</label>
-          <select id="dateRange">
-            <option value="week">1 Week Ago</option>
-            <option value="month">1 Month Ago</option>
-            <option value="year">1 Year Ago</option>
-            <option value="custom">Custom Range</option> <!-- Custom Range option -->
-          </select>
-          <details class="info-details">
-            <summary class="info-summary"><i class="fa-solid fa-circle-info"></i> Info</summary>
-            <div class="info-panel">
-              <p>The heatmap helps visualize dates that attendance was taken. Clicking on the numbers shows the data
-                collected in that date.</p>
-            </div>
-          </details>
-          <div class="chart-container">
-
-            <div id="heatmap-calendar"></div>
-            <p>Heatmap</p>
-          </div>
-          <!-- Start and End date selectors, hidden initially -->
-          <div id="customRangeSelector" style="display: none;">
-            <label for="startDate">Start Date:</label>
-            <input type="date" id="startDate">
-            <br>
-            <label for="endDate">End Date:</label>
-            <input type="date" id="endDate">
-          </div>
-
-          <button id="applyDateRange">Apply</button>
         </div>
 
-
-        <nav>
-          <div id="search"><i class="fa-solid fa-magnifying-glass"></i><input id="attendanceSearch"
-              placeholder="Search"></div>
-          <i class="fa-solid fa-arrow-down-wide-short"></i>
-        </nav>
-        <ul id="attendance-List">
-
-        </ul>
-      </div>
-
-      <div id="postList" class="attendanceList">
-        <div id="canvass">
-          <canvas id="canvas" style="display: block;"></canvas>
-          <canvas id="temp" style="display: none;"></canvas>
-          <canvas id="faces" style="display: block;"></canvas>
+        <div id="postList" class="attendanceList">
+          <div id="canvass">
+            <canvas id="canvas" style="display: block;"></canvas>
+            <canvas id="temp" style="display: none;"></canvas>
+            <canvas id="faces" style="display: block;"></canvas>
+          </div>
+          <ul id="posts">
+          </ul>
         </div>
-        <ul id="posts">
-        </ul>
-      </div>
 
-      <div style="margin: 10px;" id="optionList" class="attendanceList">
-        <form style="margin-bottom: 20px;" id="classEditform" class="adminOnly">
-          <div>
-            <label for="class-Name">Class Name</label>
-            <input type="text" id="class-Name" name="name" placeholder="Class Name">
-          </div>
-          <div>
-            <label for="coordinates">Latitude</label>
-            <input type="text" id="lat" name="lat" placeholder="Latitude">
-          </div>
-          <div>
-            <label for="coordinates">Longitude</label>
-            <input type="text" id="long" name="long" placeholder="Longitude">
-          </div>
-          <button type="button" id="getLocation" class="submit-btn">Get Current Location</button>
-          <div>
-            <label for="radius">Radius</label>
-            <input type="number" id="radius" name="rad" placeholder="Radius (Meters)">
-          </div>
-            
-          <div id="datePart">
-            <label for="monday">Mon</label>
+        <div style="margin: 10px;" id="optionList" class="attendanceList">
+          <form style="margin-bottom: 20px;" id="classEditform" class="adminOnly">
             <div>
-              <input type="time" id="timeInMondayfirst" name="timeInMondayfirst">
-              <h5>to</h5>
-              <input type="time" id="timeInMondaylast" name="timeInMondaylast">
+              <label for="class-Name">Class Name</label>
+              <input type="text" id="class-Name" name="name" placeholder="Class Name">
             </div>
-          </div>
-          <div id="datePart">
-            <label for="tuesday">Tue</label>
             <div>
-              <input type="time" id="timeInTuesdayfirst" name="timeInTuesdayfirst">
-              <h5>to</h5>
-              <input type="time" id="timeInTuesdaylast" name="timeInTuesdaylast">
+              <label for="coordinates">Latitude</label>
+              <input type="text" id="lat" name="lat" placeholder="Latitude">
             </div>
-          </div>
-          <div id="datePart">
-            <label for="wednesday">Wed</label>
             <div>
-              <input type="time" id="timeInWednesdayfirst" name="timeInWednesdayfirst">
-              <h5>to</h5>
-              <input type="time" id="timeInWednesdaylast" name="timeInWednesdaylast">
+              <label for="coordinates">Longitude</label>
+              <input type="text" id="long" name="long" placeholder="Longitude">
             </div>
-          </div>
-          <div id="datePart">
-            <label for="thursday">Thur</label>
+            <button type="button" id="getLocation" class="submit-btn">Get Current Location</button>
             <div>
-              <input type="time" id="timeInThursdayfirst" name="timeInThursdayfirst">
-              <h5>to</h5>
-              <input type="time" id="timeInThursdaylast" name="timeInThursdaylast">
+              <label for="radius">Radius</label>
+              <input type="number" id="radius" name="rad" placeholder="Radius (Meters)">
             </div>
-          </div>
-          <div id="datePart">
-            <label for="friday">Fri</label>
-            <div>
-              <input type="time" id="timeInFridayfirst" name="timeInFridayfirst">
-              <h5>to</h5>
-              <input type="time" id="timeInFridaylast" name="timeInFridaylast">
+              
+            <div id="datePart">
+              <label for="monday">Mon</label>
+              <div>
+                <input type="time" id="timeInMondayfirst" name="timeInMondayfirst">
+                <h5>to</h5>
+                <input type="time" id="timeInMondaylast" name="timeInMondaylast">
+              </div>
             </div>
-          </div>
-          <button form="classEditform" type="submit" id="editclass-btn" class="submit-btn">Save</button>
-        </form>
-        <form>
+            <div id="datePart">
+              <label for="tuesday">Tue</label>
+              <div>
+                <input type="time" id="timeInTuesdayfirst" name="timeInTuesdayfirst">
+                <h5>to</h5>
+                <input type="time" id="timeInTuesdaylast" name="timeInTuesdaylast">
+              </div>
+            </div>
+            <div id="datePart">
+              <label for="wednesday">Wed</label>
+              <div>
+                <input type="time" id="timeInWednesdayfirst" name="timeInWednesdayfirst">
+                <h5>to</h5>
+                <input type="time" id="timeInWednesdaylast" name="timeInWednesdaylast">
+              </div>
+            </div>
+            <div id="datePart">
+              <label for="thursday">Thur</label>
+              <div>
+                <input type="time" id="timeInThursdayfirst" name="timeInThursdayfirst">
+                <h5>to</h5>
+                <input type="time" id="timeInThursdaylast" name="timeInThursdaylast">
+              </div>
+            </div>
+            <div id="datePart">
+              <label for="friday">Fri</label>
+              <div>
+                <input type="time" id="timeInFridayfirst" name="timeInFridayfirst">
+                <h5>to</h5>
+                <input type="time" id="timeInFridaylast" name="timeInFridaylast">
+              </div>
+            </div>
+            <button form="classEditform" type="submit" id="editclass-btn" class="submit-btn">Save</button>
+          </form>
+          <form>
 
-          <button class="submit-btn" id="leaveButton"><i class="fa-solid fa-arrow-right-from-bracket"></i>
-            Leave</button>
-        </form>
+            <button class="submit-btn" id="leaveButton"><i class="fa-solid fa-arrow-right-from-bracket"></i>
+              Leave</button>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-  <input type="file" id="camera-input" accept="image/*" style="display: none;">
-  <div id="buttonsdown">
-    <button id="facescan-button">
-      <i class="fa-solid fa-id-card"></i>
-      <a>NFC</a>
-    </button>
-    <button id="qr-code-reader">
-      <i class="fas fa-qrcode"></i>
-      <a>Scan QR</a>
-    </button>
-    <button id="camera-button">
-      <i class="fa-regular fa-square-plus"></i>
-      <a>Post</a>
-    </button>
-    <button id="attendButton">
-      <i class="fa-regular fa-hand"></i>
-      <a>Raise</a>
-    </button>
-  </div>
+    <input type="file" id="camera-input" accept="image/*" style="display: none;">
+    <div id="buttonsdown">
+      <button id="facescan-button">
+        <i class="fa-solid fa-id-card"></i>
+        <a>NFC</a>
+      </button>
+      <button id="qr-code-reader">
+        <i class="fas fa-qrcode"></i>
+        <a>Scan QR</a>
+      </button>
+      <button id="camera-button">
+        <i class="fa-regular fa-square-plus"></i>
+        <a>Post</a>
+      </button>
+      <button id="attendButton">
+        <i class="fa-regular fa-hand"></i>
+        <a>Raise</a>
+      </button>
+    </div>
 
-  <script type="module" src="js/firebase.js"></script>
-  <script type="module" src="js/class.js"></script>
-  <script type="text/javascript">
-    on_class = true;
-  </script>
-  <script type="module" src="js/script.js"></script>
-</body>
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/class.js"></script>
+    <script type="module" src="js/tutorial.js"></script>
+    <script type="text/javascript">
+      on_class = true;
+    </script>
+    <script type="module" src="js/script.js"></script>
+  </body>
 
-</html>
+  </html>
