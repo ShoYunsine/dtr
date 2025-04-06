@@ -1346,10 +1346,6 @@ function cancelFunction(template) {
     template.remove();
 }
 
-function postFunction(email, img, currentDate, currentTime, description, syntax, userid) {
-    postToClass(email, img, currentDate, currentTime, description, syntax, userid);
-    console.log('Post button clicked.');
-}
 
 
 document.getElementById('camera-button').addEventListener('click', () => {
@@ -1758,6 +1754,24 @@ document.getElementById('classEditform').addEventListener('submit', async (event
     // Handle the filtered data (e.g., send it to a server or update UI)
 });
 
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth radius in km
+    const toRad = (x) => (x * Math.PI) / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // distance in km
+}
+
+
 document.getElementById('getLocation').addEventListener('click', async function (event) {
     event.preventDefault();
     let location = await getLocation();
@@ -1808,5 +1822,43 @@ function getLocation() {
     });
 }
 
+function updateDistance(userLat, userLon, classLat, classLon) {
+    const distanceElement = document.getElementById('currentDis');
+    if (!distanceElement) return;
+
+    if (classLat != null && classLon != null) {
+        const distance = getDistance(userLat, userLon, classLat, classLon);
+        distanceElement.textContent = `${distance.toFixed(2)} km`;
+    } else {
+        distanceElement.textContent = "Class location not set";
+    }
+}
 
 
+function watchLocation() {
+    if (!navigator.geolocation) {
+        console.error("Geolocation is not supported by this browser.");
+        document.getElementById('currentDis').textContent = "Location unavailable";
+        return;
+    }
+
+    navigator.geolocation.watchPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+            console.log("Updated position:", latitude, longitude);
+            updateDistance(latitude, longitude, classroom.lat, classroom.long);
+        },
+        (error) => {
+            console.error("Error watching position:", error.message);
+            document.getElementById('currentDis').textContent = "Unable to get location";
+        },
+        {
+            enableHighAccuracy: true, // Get best location data
+            timeout: 5000, // 5 seconds
+            maximumAge: 0 // No caching
+        }
+    );
+}
+
+// Call it when your page loads
+watchLocation();

@@ -676,3 +676,13 @@ input[type="radio"] {
 .info-details[open] .info-panel {
   display: block; /* Shows the panel when the details element is open */
 }
+
+#className {
+  font-size: 24px;
+}
+
+#classInfo span {
+  color: var(--text-color-second);
+  padding: 5px;
+  font-size: 12px;
+}
